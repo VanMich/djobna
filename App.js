@@ -1,20 +1,32 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { StatusBar } from "expo-status-bar";
+
+import HomeScreen from "./src/screens/HomeScreen";
+import OTPScreen from "./src/screens/OTPScreen";
+import PhoneScreen from "./src/screens/PhoneScreen";
+import SplashScreen from "./src/screens/SplashScreen";
 
 export default function App() {
+  const Stack = createNativeStackNavigator();
+  // createNativeStackNavigator() crée un "gestionnaire d'écrans"
+  // Chaque <Stack.Screen> est une page de l'app
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      {/* NavigationContainer contenu obligatoire de toute navigation */}
+      <StatusBar style="light" />
+      <Stack.Navigator
+        initialRouteName="Splash"
+        screenOptions={{ headerShown: false }}
+        // headerShown: false → on supprime la barre de navigation par défaut
+        // On va créer nos propres headers custom dans chaque écran
+      >
+        <Stack.Screen name="Splash" component={SplashScreen}></Stack.Screen>
+        <Stack.Screen name="Phone" component={PhoneScreen}></Stack.Screen>
+        <Stack.Screen name="OTP" component={OTPScreen}></Stack.Screen>
+        <Stack.Screen name="Home" component={HomeScreen}></Stack.Screen>
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
