@@ -6,6 +6,7 @@ import HomeScreen from "./src/screens/HomeScreen";
 import OTPScreen from "./src/screens/OTPScreen";
 import PhoneScreen from "./src/screens/PhoneScreen";
 import SplashScreen from "./src/screens/SplashScreen";
+import ProfileSetupScreen from "./src/screens/ProfileSetupScreen";
 
 export default function App() {
   const Stack = createNativeStackNavigator();
@@ -26,6 +27,7 @@ export default function App() {
         <Stack.Screen name="Phone" component={PhoneScreen}></Stack.Screen>
         <Stack.Screen name="OTP" component={OTPScreen}></Stack.Screen>
         <Stack.Screen name="Home" component={HomeScreen}></Stack.Screen>
+        <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

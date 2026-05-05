@@ -18,8 +18,9 @@ export function useAuth() {
   // ─────────────────────────────────────────
   // ÉTAPE 1 : Envoyer le SMS
   // ─────────────────────────────────────────
-  const sendOTP = async (phoneNumber) => {
+  const sendOTP = async (phoneNumber, recaptchaVerifier) => {
     // phoneNumber doit être au format E.164 : "+237612345678"
+    // recaptchaVerifier vient de FirebaseRecaptchaVerifierModal (OTPScreen)
     setLoading(true);
     setError(null);
 
@@ -29,10 +30,10 @@ export function useAuth() {
       const provider = new PhoneAuthProvider(auth);
 
       // recaptchaVerifier est obligatoire pour la sécurité anti-spam
-      // En dev Expo, utilise le numéro de test Firebase (voir ci-dessous)
+      // Passé en paramètre depuis OTPScreen
       const id = await provider.verifyPhoneNumber(
         phoneNumber,
-        recaptchaVerifier, // voir OTPScreen.js pour l'implémentation
+        recaptchaVerifier,
       );
       setVerificationId(id);
       return { success: true };
@@ -97,6 +98,5 @@ export function useAuth() {
       setLoading(false);
     }
   };
-
   return { sendOTP, verifyOTP, loading, error, verificationId };
 }
