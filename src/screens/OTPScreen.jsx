@@ -138,7 +138,7 @@ export default function OTPScreen({ navigation, route }) {
           if (result.isNewUser) {
             navigation.replace("ProfileSetup"); // Compléter le profil
           } else {
-            navigation.replace("Home");
+            navigation.replace("MainApp");
           }
         } else {
           shakeBoxes();

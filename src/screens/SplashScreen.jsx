@@ -1,4 +1,5 @@
 // src/screens/SplashScreen.js
+import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { Animated, StyleSheet, Text, View } from "react-native";
 import { colors } from "../theme";
@@ -24,7 +25,7 @@ export default function SplashScreen({ navigation }) {
     const timer = setTimeout(async () => {
       // TODO: vérifier le token stocké avec AsyncStorage
       // const token = await AsyncStorage.getItem('userToken');
-      // if (token) { navigation.replace('Home'); }
+      // if (token) { navigation.replace('MainApp'); }
       // else { navigation.replace('Phone'); }
 
       // Pour l'instant on va toujours vers Phone :
@@ -37,6 +38,7 @@ export default function SplashScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <StatusBar style="light" />
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         <View style={styles.logo}>
           <Text style={styles.logoText}>Dj</Text>

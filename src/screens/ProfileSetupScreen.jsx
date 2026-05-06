@@ -105,7 +105,7 @@ export default function ProfileSetupScreen({ navigation }) {
       services: role === "provider" ? selectedServices : undefined,
     });
     if (result.success) {
-      navigation.replace(role === "provider" ? "HomeProvider" : "Home");
+      navigation.replace("MainApp");
     } else {
       Alert.alert("Erreur", result.message || "Échec de création du profil");
     }

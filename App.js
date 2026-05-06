@@ -1,33 +1,41 @@
+// App.js
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { StatusBar } from "expo-status-bar";
 
-import HomeScreen from "./src/screens/HomeScreen";
+import BottomTabNavigator from "./src/navigation/BottomTabNavigator";
 import OTPScreen from "./src/screens/OTPScreen";
 import PhoneScreen from "./src/screens/PhoneScreen";
-import SplashScreen from "./src/screens/SplashScreen";
 import ProfileSetupScreen from "./src/screens/ProfileSetupScreen";
+import ProviderProfileScreen from "./src/screens/ProviderProfileScreen";
+import SplashScreen from "./src/screens/SplashScreen";
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const Stack = createNativeStackNavigator();
-  // createNativeStackNavigator() crée un "gestionnaire d'écrans"
-  // Chaque <Stack.Screen> est une page de l'app
-
   return (
     <NavigationContainer>
-      {/* NavigationContainer contenu obligatoire de toute navigation */}
-      <StatusBar style="light" />
       <Stack.Navigator
         initialRouteName="Splash"
         screenOptions={{ headerShown: false }}
-        // headerShown: false → on supprime la barre de navigation par défaut
-        // On va créer nos propres headers custom dans chaque écran
       >
-        <Stack.Screen name="Splash" component={SplashScreen}></Stack.Screen>
-        <Stack.Screen name="Phone" component={PhoneScreen}></Stack.Screen>
-        <Stack.Screen name="OTP" component={OTPScreen}></Stack.Screen>
-        <Stack.Screen name="Home" component={HomeScreen}></Stack.Screen>
+        {/* ── Authentification ── */}
+        <Stack.Screen name="Splash" component={SplashScreen} />
+        <Stack.Screen name="Phone" component={PhoneScreen} />
+        <Stack.Screen name="OTP" component={OTPScreen} />
         <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+
+        {/* ── App principale ──
+            BottomTabNavigator contient HomeScreen, MapScreen,
+            ChatListScreen et ProfileScreen en onglets
+            On l'appelle 'MainApp' pour être explicite         */}
+        <Stack.Screen name="MainApp" component={BottomTabNavigator} />
+
+        {/* ── Profil du prestataire ── */}
+        <Stack.Screen
+          name="ProviderProfile"
+          component={ProviderProfileScreen}
+          options={{ presentation: "card" }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
