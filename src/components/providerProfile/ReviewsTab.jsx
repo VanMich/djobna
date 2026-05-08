@@ -1,14 +1,24 @@
 // src/components/providerProfile/ReviewsTab.js
-// Onglet "Avis" — Histogramme + Liste avis
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+
+function ReviewItem({ review, isLast }) {
+  return (
+    <View style={[styles.review, isLast && styles.reviewLast]}>
+      <View style={styles.reviewTop}>
+        <Text style={styles.reviewName}>{review.authorName}</Text>
+        <Text style={styles.reviewDate}>{review.date}</Text>
+      </View>
+      <Text style={styles.reviewStars}>{"⭐".repeat(review.rating)}</Text>
+      <Text style={styles.reviewText}>{review.comment}</Text>
+    </View>
+  );
+}
 
 export default function ReviewsTab({ provider }) {
   const rating = provider?.rating || 0;
   const reviewCount = provider?.reviewCount || 0;
   const reviews = provider?.reviews || [];
-
-  // Distribution des notes (mock si pas de données)
   const distribution = provider?.ratingDistribution || {
     5: 75,
     4: 18,
@@ -20,7 +30,6 @@ export default function ReviewsTab({ provider }) {
   return (
     <View style={styles.container}>
       <View style={[styles.section, styles.sectionLast]}>
-        {/* Résumé note */}
         <View style={styles.summary}>
           <View style={styles.bigNote}>
             <Text style={styles.bigVal}>{rating.toFixed(1)}</Text>
@@ -29,8 +38,6 @@ export default function ReviewsTab({ provider }) {
             </Text>
             <Text style={styles.bigCount}>{reviewCount} avis</Text>
           </View>
-
-          {/* Histogramme */}
           <View style={styles.bars}>
             {[5, 4, 3, 2, 1].map((star) => (
               <View key={star} style={styles.barRow}>
@@ -47,11 +54,7 @@ export default function ReviewsTab({ provider }) {
             ))}
           </View>
         </View>
-
-        {/* Séparateur */}
         <View style={styles.divider} />
-
-        {/* Liste avis */}
         {reviews.length > 0 ? (
           reviews.map((review, i) => (
             <ReviewItem
@@ -71,20 +74,6 @@ export default function ReviewsTab({ provider }) {
   );
 }
 
-// ── Composant avis individuel ──────────────────
-function ReviewItem({ review, isLast }) {
-  return (
-    <View style={[styles.review, isLast && styles.reviewLast]}>
-      <View style={styles.reviewTop}>
-        <Text style={styles.reviewName}>{review.authorName}</Text>
-        <Text style={styles.reviewDate}>{review.date}</Text>
-      </View>
-      <Text style={styles.reviewStars}>{"⭐".repeat(review.rating)}</Text>
-      <Text style={styles.reviewText}>{review.comment}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { paddingBottom: 10 },
   section: {
@@ -97,8 +86,6 @@ const styles = StyleSheet.create({
     borderColor: "#EEF0EF",
   },
   sectionLast: { marginBottom: 10 },
-
-  // Résumé
   summary: {
     flexDirection: "row",
     gap: 14,
@@ -109,8 +96,6 @@ const styles = StyleSheet.create({
   bigVal: { fontSize: 36, fontWeight: "800", color: "#111", lineHeight: 40 },
   bigStars: { fontSize: 12, color: "#F5A623", marginTop: 3 },
   bigCount: { fontSize: 10, color: "#888", marginTop: 2 },
-
-  // Barres
   bars: { flex: 1, gap: 5 },
   barRow: { flexDirection: "row", alignItems: "center", gap: 6 },
   barNum: { fontSize: 10, color: "#888", width: 8, textAlign: "right" },
@@ -121,19 +106,8 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     overflow: "hidden",
   },
-  barFill: {
-    height: 5,
-    backgroundColor: "#F5A623",
-    borderRadius: 3,
-  },
-
-  divider: {
-    height: 0.5,
-    backgroundColor: "#F0F0F0",
-    marginBottom: 12,
-  },
-
-  // Avis
+  barFill: { height: 5, backgroundColor: "#F5A623", borderRadius: 3 },
+  divider: { height: 0.5, backgroundColor: "#F0F0F0", marginBottom: 12 },
   review: {
     paddingVertical: 10,
     borderBottomWidth: 0.5,
@@ -150,7 +124,6 @@ const styles = StyleSheet.create({
   reviewDate: { fontSize: 10, color: "#AAB0B7" },
   reviewStars: { fontSize: 10, color: "#F5A623", marginBottom: 4 },
   reviewText: { fontSize: 11, color: "#666", lineHeight: 17 },
-
   emptyReviews: { alignItems: "center", paddingVertical: 20, gap: 8 },
   emptyIcon: { fontSize: 32 },
   emptyText: { fontSize: 12, color: "#AAB0B7" },

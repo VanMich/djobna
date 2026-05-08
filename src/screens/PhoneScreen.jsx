@@ -1,45 +1,45 @@
 // src/screens/PhoneScreen.js
-import { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
+  View,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from "react-native";
-import { colors, radius, spacing } from "../theme";
+import { StatusBar } from "expo-status-bar";
+import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
+import { auth } from "../config/firebase";
+import { useAuth } from "../hooks/useAuth";
+import { colors, spacing, radius } from "../theme";
 
 export default function PhoneScreen({ navigation }) {
   const [phone, setPhone] = useState("");
-  // useState('') = variable réactive.
-  // phone = valeur actuelle, setPhone = fonction pour la changer
-  // Quand setPhone est appelé → le composant se re-affiche
-
   const [loading, setLoading] = useState(false);
+  const recaptchaVerifier = useRef(null);
+  const { sendOTP } = useAuth();
 
   const handleSendOTP = async () => {
-    // Validation simple du numéro camerounais
-    const cleaned = phone.replace(/\s/g, ""); // Supprimer les espaces
-    if (cleaned.length < 9) {
+    const cleaned = phone.replace(/\s/g, "");
+    if (cleaned.length !== 9) {
       Alert.alert("Erreur", "Entrez un numéro valide à 9 chiffres");
       return;
     }
-
     setLoading(true);
     try {
-      // TODO: Appel Firebase Auth ou Twilio ici
-      // await sendOTPviaTwilio('+237' + cleaned);
-
-      // Simuler un délai réseau
-      await new Promise((r) => setTimeout(r, 1000));
-
-      // Naviguer vers l'écran OTP en passant le numéro
-      navigation.navigate("OTP", { phone: "+237" + cleaned });
-      // On passe phone comme paramètre → récupéré dans OTPScreen
-    } catch (error) {
+      const result = await sendOTP("+237" + cleaned, recaptchaVerifier.current);
+      if (result.success) {
+        navigation.navigate("OTP", {
+          phone: "+237" + cleaned,
+          verificationId: result.verificationId,
+        });
+      } else {
+        Alert.alert("Erreur", result.message);
+      }
+    } catch (err) {
       Alert.alert("Erreur", "Impossible d'envoyer le SMS. Réessayez.");
     } finally {
       setLoading(false);
@@ -47,12 +47,19 @@ export default function PhoneScreen({ navigation }) {
   };
 
   return (
-    // KeyboardAvoidingView remonte le contenu quand le clavier s'ouvre
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      // iOS et Android gèrent le clavier différemment → Platform.OS
     >
+      <StatusBar style="light" />
+
+      {/* reCAPTCHA invisible obligatoire pour Firebase Phone Auth */}
+      <FirebaseRecaptchaVerifierModal
+        ref={recaptchaVerifier}
+        firebaseConfig={auth.app.options}
+        attemptInvisibleVerification={true}
+      />
+
       <View style={styles.header}>
         <Text style={styles.brand}>Djobna</Text>
         <Text style={styles.title}>Entrez votre{"\n"}numéro de téléphone</Text>
@@ -70,11 +77,12 @@ export default function PhoneScreen({ navigation }) {
           <TextInput
             style={styles.input}
             placeholder="6 XX XX XX XX"
-            keyboardType="phone-pad" // Affiche le clavier numérique
+            placeholderTextColor={colors.textGray}
+            keyboardType="phone-pad"
             maxLength={9}
             value={phone}
-            onChangeText={setPhone} // Mise à jour automatique à chaque frappe
-            autoFocus // Focus automatique à l'ouverture
+            onChangeText={setPhone}
+            autoFocus
           />
         </View>
 
@@ -84,14 +92,13 @@ export default function PhoneScreen({ navigation }) {
           </Text>
         </View>
 
-        {/* TouchableOpacity = bouton avec effet de clic */}
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
+          style={[styles.btn, loading && styles.btnDisabled]}
           onPress={handleSendOTP}
           disabled={loading}
-          activeOpacity={0.8} // Opacité au clic (0 = invisible, 1 = normal)
+          activeOpacity={0.85}
         >
-          <Text style={styles.buttonText}>
+          <Text style={styles.btnText}>
             {loading ? "Envoi..." : "Recevoir le code SMS →"}
           </Text>
         </TouchableOpacity>
@@ -104,7 +111,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: colors.background,
     padding: spacing.lg,
-    paddingTop: 60, // Espace pour la status bar
+    paddingTop: 60,
     gap: spacing.sm,
   },
   brand: { fontSize: 22, fontWeight: "800", color: colors.primary },
@@ -117,7 +124,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   label: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     color: colors.textGray,
     letterSpacing: 0.5,
@@ -151,13 +158,13 @@ const styles = StyleSheet.create({
     borderColor: "#9FE1CB",
   },
   infoText: { fontSize: 13, color: "#0F6E56", lineHeight: 20 },
-  button: {
+  btn: {
     backgroundColor: colors.primary,
     borderRadius: 14,
     padding: 16,
     alignItems: "center",
     marginTop: "auto",
   },
-  buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  btnDisabled: { opacity: 0.6 },
+  btnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

@@ -1,44 +1,35 @@
 // src/screens/OTPScreen.js
-import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Alert,
-  Animated,
-  StyleSheet,
+  View,
   Text,
   TouchableOpacity,
+  StyleSheet,
+  Animated,
   Vibration,
-  View,
+  Alert,
 } from "react-native";
-import { firebaseConfig } from "../config/firebase";
+import { StatusBar } from "expo-status-bar";
+import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
+import { auth } from "../config/firebase";
 import { useAuth } from "../hooks/useAuth";
 import { colors, spacing } from "../theme";
 
-const OTP_LENGTH = 6;
-// On utilise 6 chiffres comme WhatsApp Cameroun
+const OTP_LENGTH = 6; // Firebase impose 6 chiffres
+
 export default function OTPScreen({ navigation, route }) {
-  // route.params contient les données passées depuis PhoneScreen
-  // navigation.navigate('OTP', { phone: '+237612345678' })
-  const { phone } = route.params;
-
+  const { phone, verificationId } = route.params;
   const [code, setCode] = useState(Array(OTP_LENGTH).fill(""));
-  // code = tableau de 5 strings : ['2','4','','','']
-  // On choisit un tableau plutôt qu'une string pour contrôler chaque case
-
   const [activeIdx, setActiveIdx] = useState(0);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
   const { sendOTP, verifyOTP, loading, error } = useAuth();
-
-  // Ref pour reCAPTCHA
-  const recaptchaRef = useRef(null);
-
-  // Animations
+  const recaptchaVerifier = useRef(null);
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // ── Animation d'entrée ──────────────────
+  // Animation d'entrée
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -47,7 +38,7 @@ export default function OTPScreen({ navigation, route }) {
     }).start();
   }, []);
 
-  // ── Compte à rebours 60s ────────────────
+  // Compte à rebours
   useEffect(() => {
     if (countdown <= 0) {
       setCanResend(true);
@@ -55,43 +46,11 @@ export default function OTPScreen({ navigation, route }) {
     }
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
-    // Le return nettoie le timer si le composant est démonté
-    // → évite les memory leaks
   }, [countdown]);
 
-  // ── Envoi du SMS au montage (avec délai pour reCAPTCHA) ─────
-  useEffect(() => {
-    // Délai de 2s pour laisser reCAPTCHA s'initialiser
-    const timer = setTimeout(() => {
-      if (recaptchaRef.current) {
-        handleSendOTP();
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleSendOTP = async () => {
-    const result = await sendOTP(phone, recaptchaRef.current);
-    if (!result.success) {
-      Alert.alert("Erreur", result.message);
-    }
-  };
-
-  // ── Resend ──────────────────────────────
-  const handleResend = async () => {
-    setCode(Array(OTP_LENGTH).fill(""));
-    setActiveIdx(0);
-    setCountdown(60);
-    setCanResend(false);
-    await handleSendOTP();
-  };
-
-  // ── Animation de secousse (mauvais code) ─
+  // Animation secousse (code incorrect)
   const shakeBoxes = useCallback(() => {
     Vibration.vibrate(200);
-    // Vibration.vibrate() fait vibrer le téléphone (Android/iOS)
-
     Animated.sequence([
       Animated.timing(shakeAnim, {
         toValue: 10,
@@ -116,33 +75,23 @@ export default function OTPScreen({ navigation, route }) {
     ]).start();
   }, [shakeAnim]);
 
-  // ── Saisie d'un chiffre ──────────────────
+  // Saisie d'un chiffre
   const handleKey = useCallback(
     async (digit) => {
       if (activeIdx >= OTP_LENGTH || loading) return;
-
       const newCode = [...code];
       newCode[activeIdx] = digit;
       setCode(newCode);
-
       const nextIdx = activeIdx + 1;
       setActiveIdx(nextIdx);
 
-      // Si toutes les cases sont remplies → vérification auto
       if (nextIdx === OTP_LENGTH) {
         const fullCode = newCode.join("");
-        const result = await verifyOTP(fullCode);
-
+        const result = await verifyOTP(fullCode, verificationId);
         if (result.success) {
-          // Navigation selon si c'est un nouvel utilisateur ou non
-          if (result.isNewUser) {
-            navigation.replace("ProfileSetup"); // Compléter le profil
-          } else {
-            navigation.replace("MainApp");
-          }
+          navigation.replace(result.isNewUser ? "ProfileSetup" : "MainApp");
         } else {
           shakeBoxes();
-          // Reset les cases après 800ms pour ressaisir
           setTimeout(() => {
             setCode(Array(OTP_LENGTH).fill(""));
             setActiveIdx(0);
@@ -150,24 +99,44 @@ export default function OTPScreen({ navigation, route }) {
         }
       }
     },
-    [activeIdx, code, loading, verifyOTP, shakeBoxes, navigation],
+    [
+      activeIdx,
+      code,
+      loading,
+      verifyOTP,
+      verificationId,
+      shakeBoxes,
+      navigation,
+    ],
   );
 
-  // ── Effacement ───────────────────────────
+  // Effacement
   const handleDelete = useCallback(() => {
     if (activeIdx <= 0) return;
     const newCode = [...code];
-    const prevIdx = activeIdx - 1;
-    newCode[prevIdx] = "";
+    newCode[activeIdx - 1] = "";
     setCode(newCode);
-    setActiveIdx(prevIdx);
+    setActiveIdx(activeIdx - 1);
   }, [activeIdx, code]);
 
-  // ── Rendu d'une case OTP ─────────────────
+  // Renvoyer le code
+  const handleResend = async () => {
+    setCode(Array(OTP_LENGTH).fill(""));
+    setActiveIdx(0);
+    setCountdown(60);
+    setCanResend(false);
+    const result = await sendOTP(phone, recaptchaVerifier.current);
+    if (result.verificationId) {
+      navigation.setParams({ verificationId: result.verificationId });
+    } else {
+      Alert.alert("Erreur", result.message || "Impossible de renvoyer le code.");
+    }
+  };
+
+  // Rendu d'une case
   const renderBox = (idx) => {
     const isFilled = code[idx] !== "";
     const isActive = idx === activeIdx;
-
     return (
       <Animated.View
         key={idx}
@@ -181,62 +150,21 @@ export default function OTPScreen({ navigation, route }) {
       >
         <Text style={[styles.boxText, isFilled && styles.boxTextFilled]}>
           {code[idx] || (isActive ? "|" : "")}
-          {/* On affiche un curseur '|' dans la case active vide */}
         </Text>
       </Animated.View>
     );
   };
 
-  // ── Rendu d'une touche du clavier ────────
-  const renderKey = (value) => {
-    if (value === null) return <View style={styles.keyEmpty} />;
-    if (value === "⌫") {
-      return (
-        <TouchableOpacity
-          style={styles.key}
-          onPress={handleDelete}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.keyText}>⌫</Text>
-        </TouchableOpacity>
-      );
-    }
-    return (
-      <TouchableOpacity
-        style={styles.key}
-        onPress={() => handleKey(value)}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.keyText}>{value}</Text>
-      </TouchableOpacity>
-    );
-  };
-
-  const keypad = [
-    "1",
-    "2",
-    "3",
-    "4",
-    "5",
-    "6",
-    "7",
-    "8",
-    "9",
-    null,
-    "0",
-    "⌫",
-    // null = touche vide (position du 0 au centre)
-  ];
+  const keypad = ["1", "2", "3", "4", "5", "6", "7", "8", "9", null, "0", "⌫"];
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
-      {/* FirebaseRecaptchaVerifierModal */}
+      <StatusBar style="light" />
       <FirebaseRecaptchaVerifierModal
-        ref={recaptchaRef}
-        firebaseConfig={firebaseConfig}
+        ref={recaptchaVerifier}
+        firebaseConfig={auth.app.options}
+        attemptInvisibleVerification
       />
-
-      {/* ── Header ── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.back}>← Retour</Text>
@@ -244,20 +172,13 @@ export default function OTPScreen({ navigation, route }) {
         <Text style={styles.title}>Code de{"\n"}vérification</Text>
         <Text style={styles.subtitle}>Code envoyé au {phone}</Text>
       </View>
-
-      {/* ── Body ── */}
       <View style={styles.body}>
-        {/* Cases OTP */}
         <Animated.View
           style={[styles.boxes, { transform: [{ translateX: shakeAnim }] }]}
         >
           {Array.from({ length: OTP_LENGTH }, (_, i) => renderBox(i))}
         </Animated.View>
-
-        {/* Message d'erreur */}
         {error && <Text style={styles.errorText}>{error}</Text>}
-
-        {/* Compte à rebours / Renvoyer */}
         <View style={styles.timerRow}>
           {canResend ? (
             <TouchableOpacity onPress={handleResend}>
@@ -269,11 +190,29 @@ export default function OTPScreen({ navigation, route }) {
             </Text>
           )}
         </View>
-
-        {/* Clavier custom */}
         <View style={styles.keypad}>
           {keypad.map((k, i) => (
-            <React.Fragment key={i}>{renderKey(k)}</React.Fragment>
+            <React.Fragment key={i}>
+              {k === null ? (
+                <View style={styles.keyEmpty} />
+              ) : k === "⌫" ? (
+                <TouchableOpacity
+                  style={styles.key}
+                  onPress={handleDelete}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.keyText}>⌫</Text>
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.key}
+                  onPress={() => handleKey(k)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.keyText}>{k}</Text>
+                </TouchableOpacity>
+              )}
+            </React.Fragment>
           ))}
         </View>
       </View>
@@ -297,22 +236,11 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 26, fontWeight: "700", color: "#fff", lineHeight: 34 },
   subtitle: { fontSize: 13, color: colors.textLight },
-
-  body: {
-    flex: 1,
-    padding: spacing.lg,
-    alignItems: "center",
-    gap: 20,
-  },
-
-  boxes: {
-    flexDirection: "row",
-    gap: 10,
-    marginTop: spacing.md,
-  },
+  body: { flex: 1, padding: spacing.lg, alignItems: "center", gap: 20 },
+  boxes: { flexDirection: "row", gap: 8, marginTop: spacing.md },
   box: {
-    width: 48, // ← réduit de 54 à 48 pour 6 cases
-    height: 60, // garde la hauteur
+    width: 48,
+    height: 60,
     borderRadius: 14,
     borderWidth: 1.5,
     borderColor: colors.border,
@@ -320,41 +248,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  boxFilled: {
-    backgroundColor: "#F0FAF6",
-    borderColor: colors.primary,
-  },
+  boxFilled: { backgroundColor: "#F0FAF6", borderColor: colors.primary },
   boxActive: {
     borderColor: colors.primary,
     backgroundColor: "#fff",
-    // Ombre légère pour indiquer la case active
-    shadowColor: colors.primary,
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
     elevation: 3,
   },
-  boxError: {
-    borderColor: "#E24B4A",
-    backgroundColor: "#FCEBEB",
-  },
-  boxText: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: colors.textGray,
-  },
+  boxError: { borderColor: "#E24B4A", backgroundColor: "#FCEBEB" },
+  boxText: { fontSize: 26, fontWeight: "700", color: colors.textGray },
   boxTextFilled: { color: colors.primaryDark },
-
-  errorText: {
-    fontSize: 13,
-    color: "#E24B4A",
-    textAlign: "center",
-  },
-
+  errorText: { fontSize: 13, color: "#E24B4A", textAlign: "center" },
   timerRow: { alignItems: "center" },
   timerText: { fontSize: 13, color: colors.textGray },
   timerCount: { color: colors.primary, fontWeight: "600" },
   resendBtn: { fontSize: 14, color: colors.primary, fontWeight: "600" },
-
   keypad: {
     width: "100%",
     flexDirection: "row",
@@ -364,7 +271,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
   },
   key: {
-    width: "30%", // 3 colonnes avec les gaps
+    width: "30%",
     height: 56,
     borderRadius: 12,
     backgroundColor: colors.lightGray,

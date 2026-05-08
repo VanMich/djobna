@@ -14,45 +14,40 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { colors } from "../theme";
 
-// Composants
 import ProfileHeader from "../components/providerProfile/ProfileHeader";
 import ProfileTabs from "../components/providerProfile/ProfileTabs";
 import ProfileTab from "../components/providerProfile/ProfileTab";
 import PortfolioTab from "../components/providerProfile/PortfolioTab";
 import ReviewsTab from "../components/providerProfile/ReviewsTab";
 
-// Constantes d'animation
-const STATS_BAR_H = 46; // hauteur de la stats bar
-const TOPBAR_H = 52; // hauteur de la ligne retour + 3 points
-const PADDING_FULL = 44; // paddingTop header complet (avec retour + stats)
-const PADDING_MINI = 14; // paddingTop header réduit (sans retour + stats)
+const STATS_BAR_H = 46;
+const TOPBAR_H = 52;
+const PADDING_FULL = 44;
+const PADDING_MINI = 14;
 
 export default function ProviderProfileScreen({ navigation, route }) {
   const { providerId } = route.params;
-
   const [provider, setProvider] = useState(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [isFav, setIsFav] = useState(false);
 
-  // ── Valeurs animées ─────────────────────────
+  // Valeurs animées
   const topBarOpacity = useRef(new Animated.Value(1)).current;
   const topBarTranslateY = useRef(new Animated.Value(0)).current;
   const statsOpacity = useRef(new Animated.Value(1)).current;
   const statsMaxHeight = useRef(new Animated.Value(STATS_BAR_H)).current;
   const headerPaddingTop = useRef(new Animated.Value(PADDING_FULL)).current;
-
-  // Ref pour tracker l'état actuel (caché ou non)
   const isHidden = useRef(false);
   const lastScrollY = useRef(0);
 
-  // ── Chargement des données ───────────────────
+  // Chargement des données
   useEffect(() => {
-    const fetchProvider = async () => {
+    (async () => {
       try {
-        // Récupérer le profil prestataire
-        const provSnap = await getDoc(doc(db, "providers", providerId));
-        const userSnap = await getDoc(doc(db, "users", providerId));
-
+        const [provSnap, userSnap] = await Promise.all([
+          getDoc(doc(db, "providers", providerId)),
+          getDoc(doc(db, "users", providerId)),
+        ]);
         if (provSnap.exists() && userSnap.exists()) {
           setProvider({
             id: providerId,
@@ -63,18 +58,14 @@ export default function ProviderProfileScreen({ navigation, route }) {
       } catch (err) {
         console.error("Erreur chargement profil:", err);
       }
-    };
-
-    fetchProvider();
+    })();
   }, [providerId]);
 
-  // ── Animation : cacher les éléments ─────────
+  // Cacher les éléments du header
   const hideElements = useCallback(() => {
     if (isHidden.current) return;
     isHidden.current = true;
-
     Animated.parallel([
-      // Retour + 3 points → disparaît vers le haut
       Animated.timing(topBarOpacity, {
         toValue: 0,
         duration: 200,
@@ -85,7 +76,6 @@ export default function ProviderProfileScreen({ navigation, route }) {
         duration: 200,
         useNativeDriver: true,
       }),
-      // Stats bar → se rétracte
       Animated.timing(statsOpacity, {
         toValue: 0,
         duration: 200,
@@ -95,9 +85,7 @@ export default function ProviderProfileScreen({ navigation, route }) {
         toValue: 0,
         duration: 220,
         useNativeDriver: false,
-        // useNativeDriver: false obligatoire pour maxHeight
       }),
-      // Header → rétrécit (moins de paddingTop)
       Animated.timing(headerPaddingTop, {
         toValue: PADDING_MINI,
         duration: 220,
@@ -112,11 +100,10 @@ export default function ProviderProfileScreen({ navigation, route }) {
     headerPaddingTop,
   ]);
 
-  // ── Animation : montrer les éléments ────────
+  // Montrer les éléments du header
   const showElements = useCallback(() => {
     if (!isHidden.current) return;
     isHidden.current = false;
-
     Animated.parallel([
       Animated.timing(topBarOpacity, {
         toValue: 1,
@@ -152,52 +139,30 @@ export default function ProviderProfileScreen({ navigation, route }) {
     headerPaddingTop,
   ]);
 
-  // ── Gestion du scroll ────────────────────────
+  // Gestion du scroll
   const handleScroll = useCallback(
     (e) => {
       const currentY = e.nativeEvent.contentOffset.y;
       const diff = currentY - lastScrollY.current;
-
-      // Scroll vers le haut (lire le contenu) → cacher
-      if (diff > 3 && currentY > 10) {
-        hideElements();
-      }
-      // Scroll vers le bas (revenir) → montrer
-      if (diff < -3) {
-        showElements();
-      }
-
+      if (diff > 3 && currentY > 10) hideElements();
+      if (diff < -3) showElements();
       lastScrollY.current = currentY;
     },
     [hideElements, showElements],
   );
 
-  // ── Actions ──────────────────────────────────
-  const handleBack = useCallback(() => {
-    navigation.goBack();
-  }, [navigation]);
-
-  const handleToggleFav = useCallback(() => {
-    setIsFav((prev) => !prev);
-    // TODO: sauvegarder dans Firestore
-    // await updateDoc(doc(db, 'clients', auth.currentUser.uid), {
-    //   favoriteProviders: isFav
-    //     ? arrayRemove(providerId)
-    //     : arrayUnion(providerId)
-    // });
-  }, []);
-
+  // Actions
+  const handleBack = useCallback(() => navigation.goBack(), [navigation]);
+  const handleToggleFav = useCallback(() => setIsFav((prev) => !prev), []);
   const handleShare = useCallback(async () => {
     try {
       await Share.share({
-        message: `Découvrez ${provider?.displayName} sur Djobna ! Un excellent prestataire à Douala.`,
-        // Share natif iOS/Android
+        message: `Découvrez ${provider?.displayName} sur Djobna !`,
       });
     } catch (err) {
       console.error(err);
     }
   }, [provider]);
-
   const handleMore = useCallback(() => {
     Alert.alert("Options", "", [
       { text: "Signaler ce prestataire", style: "destructive" },
@@ -205,20 +170,15 @@ export default function ProviderProfileScreen({ navigation, route }) {
       { text: "Annuler", style: "cancel" },
     ]);
   }, []);
-
   const handleContact = useCallback(() => {
     navigation.navigate("Chat", {
       providerId,
       providerName: provider?.displayName,
     });
-    // ChatScreen sera développé dans la prochaine étape
   }, [navigation, providerId, provider]);
-
-  // ── Changement d'onglet ──────────────────────
   const handleTabChange = useCallback(
     (tabId) => {
       setActiveTab(tabId);
-      // Réafficher les éléments au changement d'onglet
       showElements();
     },
     [showElements],
@@ -227,8 +187,6 @@ export default function ProviderProfileScreen({ navigation, route }) {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-
-      {/* ── Header animé ── */}
       <SafeAreaView style={styles.headerSafe}>
         <ProfileHeader
           provider={provider}
@@ -245,23 +203,17 @@ export default function ProviderProfileScreen({ navigation, route }) {
           headerPaddingTop={headerPaddingTop}
         />
       </SafeAreaView>
-
-      {/* ── Tabs ── */}
       <ProfileTabs
         activeTab={activeTab}
         reviewCount={provider?.reviewCount}
         onTabChange={handleTabChange}
       />
-
-      {/* ── Contenu scrollable ── */}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        // scrollEventThrottle={16} → événement scroll toutes les 16ms (~60fps)
-        // valeur plus basse = plus fluide mais plus de calculs
       >
         {activeTab === "profile" && <ProfileTab provider={provider} />}
         {activeTab === "portfolio" && <PortfolioTab provider={provider} />}

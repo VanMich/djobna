@@ -1,51 +1,56 @@
 // src/hooks/useProviders.js
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+// Hook pour récupérer les prestataires disponibles en temps réel
+// Utilisé dans HomeScreen.js et MapScreen.js
+
 import { useEffect, useState } from "react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "../config/firebase";
 
 export function useProviders(filterService = null) {
   const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Construire la requête Firestore
-    let q = query(
-      collection(db, "providers"),
-      where("isAvailable", "==", true),
-      // On ne récupère que les prestataires disponibles
-    );
+    setLoading(true);
 
-    // Si un filtre de service est actif :
+    // Construire la requête Firestore
+    // onSnapshot = écoute les changements en TEMPS RÉEL
+    // → la liste se met à jour automatiquement sans recharger
+    let q;
+
     if (filterService) {
+      // Filtre par service
       q = query(
         collection(db, "providers"),
         where("isAvailable", "==", true),
         where("services", "array-contains", filterService),
-        // array-contains vérifie si le tableau 'services'
-        // contient la valeur filterService
       );
+    } else {
+      // Tous les prestataires disponibles
+      q = query(collection(db, "providers"), where("isAvailable", "==", true));
     }
 
-    // onSnapshot = écoute les changements en TEMPS RÉEL
-    // Chaque fois qu'un prestataire change son statut →
-    // la liste se met à jour automatiquement sans recharger
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const data = [];
-      for (const doc of snapshot.docs) {
-        // Récupérer aussi les infos du profil utilisateur
-        data.push({
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
-        });
-      }
-      setProviders(data);
-      setLoading(false);
-    });
+        }));
+        setProviders(data);
+        setLoading(false);
+      },
+      (err) => {
+        console.error("Erreur chargement prestataires:", err);
+        setError(err.message);
+        setLoading(false);
+      },
+    );
 
-    // Nettoyage : stopper l'écoute quand le composant est démonté
-    // Très important pour éviter les fuites mémoire
+    // Nettoyer l'écoute quand le composant est démonté
     return () => unsubscribe();
   }, [filterService]);
 
-  return { providers, loading };
+  return { providers, loading, error };
 }

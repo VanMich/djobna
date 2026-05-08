@@ -1,20 +1,20 @@
 // src/screens/MapScreen.js
-import { Ionicons } from "@expo/vector-icons";
-import * as Location from "expo-location";
-import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
-  Animated,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  Animated,
+  ScrollView,
 } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import { SERVICES } from "../constants/services";
+import * as Location from "expo-location";
+import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
 import { useProviders } from "../hooks/useProviders";
+import { SERVICES } from "../constants/services";
 import { colors, spacing } from "../theme";
 
 const DOUALA_CENTER = {
@@ -22,6 +22,15 @@ const DOUALA_CENTER = {
   longitude: 9.7679,
   latitudeDelta: 0.05,
   longitudeDelta: 0.05,
+};
+
+const MARKER_COLORS = {
+  mechanic: "#1D9E75",
+  electrician: "#3C3489",
+  plumber: "#185FA5",
+  barber: "#BA7517",
+  painter: "#993C1D",
+  default: "#1D9E75",
 };
 
 export default function MapScreen({ navigation }) {
@@ -35,24 +44,20 @@ export default function MapScreen({ navigation }) {
   const cardAnim = useRef(new Animated.Value(0)).current;
   const panelHeight = useRef(new Animated.Value(0)).current;
   const filterRotate = useRef(new Animated.Value(0)).current;
-
   const PANEL_H = 90;
 
-  // ── Géolocalisation ───────────────────────
+  // Géolocalisation
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") return;
-
       const location = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-
       setUserLocation({
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       });
-
       mapRef.current?.animateToRegion(
         {
           latitude: location.coords.latitude,
@@ -65,14 +70,11 @@ export default function MapScreen({ navigation }) {
     })();
   }, []);
 
-  // ── Toggle filtre ─────────────────────────
+  // Toggle filtre
   const toggleFilter = useCallback(() => {
     const opening = !filterOpen;
-
     if (opening) {
       setFilterOpen(true);
-
-      // Ouverture → spring (effet naturel)
       Animated.parallel([
         Animated.spring(panelHeight, {
           toValue: PANEL_H,
@@ -87,7 +89,6 @@ export default function MapScreen({ navigation }) {
         }),
       ]).start();
     } else {
-      // Fermeture → timing (sans rebond)
       Animated.parallel([
         Animated.timing(panelHeight, {
           toValue: 0,
@@ -99,18 +100,14 @@ export default function MapScreen({ navigation }) {
           duration: 220,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        setFilterOpen(false);
-      });
+      ]).start(() => setFilterOpen(false));
     }
   }, [filterOpen, panelHeight, filterRotate]);
 
-  // ── Sélection filtre ──────────────────────
+  // Sélection filtre
   const handleSelectFilter = useCallback(
     (serviceId) => {
       setActiveFilter(serviceId);
-
-      // Fermeture → timing (sans rebond)
       Animated.parallel([
         Animated.timing(panelHeight, {
           toValue: 0,
@@ -122,20 +119,17 @@ export default function MapScreen({ navigation }) {
           duration: 220,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        setFilterOpen(false);
-      });
+      ]).start(() => setFilterOpen(false));
     },
     [panelHeight, filterRotate],
   );
 
-  // Interpolation rotation icône
   const iconRotation = filterRotate.interpolate({
     inputRange: [0, 1],
     outputRange: ["0deg", "90deg"],
   });
 
-  // ── Fiche prestataire ─────────────────────
+  // Fiche prestataire
   const showProviderCard = (provider) => {
     setSelectedProvider(provider);
     Animated.spring(cardAnim, {
@@ -159,26 +153,13 @@ export default function MapScreen({ navigation }) {
     outputRange: [200, 0],
   });
 
-  // ── Couleurs markers ──────────────────────
-  const markerColors = {
-    mechanic: "#1D9E75",
-    electrician: "#3C3489",
-    plumber: "#185FA5",
-    barber: "#BA7517",
-    painter: "#993C1D",
-    default: "#1D9E75",
-  };
-
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
 
-      {/* ════════════════════════════════════ */}
-      {/* HEADER FIXE                         */}
-      {/* ════════════════════════════════════ */}
+      {/* HEADER */}
       <SafeAreaView style={styles.headerSafe}>
         <View style={styles.header}>
-          {/* Ligne 1 : Titre + Badge compteur */}
           <View style={styles.topRow}>
             <View style={styles.greetingBlock}>
               <Text style={styles.greetingText}>Explorez 🗺️</Text>
@@ -189,8 +170,6 @@ export default function MapScreen({ navigation }) {
               <Text style={styles.countText}>{providers.length}</Text>
             </View>
           </View>
-
-          {/* Ligne 2 : Recherche + Bouton filtre */}
           <View style={styles.searchRow}>
             <TouchableOpacity
               style={styles.searchBar}
@@ -204,8 +183,6 @@ export default function MapScreen({ navigation }) {
                 Rechercher un service…
               </Text>
             </TouchableOpacity>
-
-            {/* Bouton filtre */}
             <TouchableOpacity
               style={[styles.filterBtn, filterOpen && styles.filterBtnActive]}
               onPress={toggleFilter}
@@ -218,8 +195,6 @@ export default function MapScreen({ navigation }) {
                   color={filterOpen ? "#fff" : "#9FE1CB"}
                 />
               </Animated.View>
-
-              {/* Badge filtre actif */}
               {activeFilter && (
                 <View
                   style={[
@@ -241,9 +216,7 @@ export default function MapScreen({ navigation }) {
           </View>
         </View>
 
-        {/* ════════════════════════════════════ */}
-        {/* PANNEAU FILTRES ANIMÉ               */}
-        {/* ════════════════════════════════════ */}
+        {/* Panneau filtres animé */}
         <Animated.View style={[styles.filterPanel, { height: panelHeight }]}>
           <View style={styles.filterPanelInner}>
             <Text style={styles.filterPanelLabel}>CATÉGORIE DE SERVICE</Text>
@@ -252,7 +225,6 @@ export default function MapScreen({ navigation }) {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.chipsRow}
             >
-              {/* Chip "Tous" */}
               <TouchableOpacity
                 style={[styles.chip, !activeFilter && styles.chipActive]}
                 onPress={() => handleSelectFilter(null)}
@@ -267,8 +239,6 @@ export default function MapScreen({ navigation }) {
                   🌟 Tous
                 </Text>
               </TouchableOpacity>
-
-              {/* Un chip par service */}
               {SERVICES.map((service) => (
                 <TouchableOpacity
                   key={service.id}
@@ -294,24 +264,21 @@ export default function MapScreen({ navigation }) {
         </Animated.View>
       </SafeAreaView>
 
-      {/* ════════════════════════════════════ */}
-      {/* CARTE                               */}
-      {/* ════════════════════════════════════ */}
+      {/* CARTE */}
       <MapView
         ref={mapRef}
         style={styles.map}
         provider={PROVIDER_GOOGLE}
         initialRegion={DOUALA_CENTER}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
+        showsUserLocation
+        showsMyLocationButton
         onPress={hideProviderCard}
       >
         {providers.map((provider) => {
           if (!provider.location) return null;
           const markerColor =
-            markerColors[provider.services?.[0]] || markerColors.default;
+            MARKER_COLORS[provider.services?.[0]] || MARKER_COLORS.default;
           const svc = SERVICES.find((s) => s.id === provider.services?.[0]);
-
           return (
             <Marker
               key={provider.id}
@@ -335,9 +302,7 @@ export default function MapScreen({ navigation }) {
         })}
       </MapView>
 
-      {/* ════════════════════════════════════ */}
-      {/* FICHE PRESTATAIRE ANIMÉE            */}
-      {/* ════════════════════════════════════ */}
+      {/* Fiche prestataire animée */}
       {selectedProvider && (
         <Animated.View
           style={[
@@ -350,7 +315,7 @@ export default function MapScreen({ navigation }) {
               styles.cardAvatar,
               {
                 backgroundColor:
-                  markerColors[selectedProvider.services?.[0]] ||
+                  MARKER_COLORS[selectedProvider.services?.[0]] ||
                   colors.primary,
               },
             ]}
@@ -364,7 +329,6 @@ export default function MapScreen({ navigation }) {
                 .toUpperCase()}
             </Text>
           </View>
-
           <View style={styles.cardInfo}>
             <Text style={styles.cardName}>{selectedProvider.displayName}</Text>
             <Text style={styles.cardMeta}>
@@ -376,7 +340,6 @@ export default function MapScreen({ navigation }) {
                 ` · ⭐ ${selectedProvider.rating.toFixed(1)}`}
             </Text>
           </View>
-
           <TouchableOpacity
             style={styles.cardBtn}
             onPress={() => {
@@ -397,8 +360,6 @@ export default function MapScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-
-  // ── Header ───────────────────────────────
   headerSafe: { backgroundColor: colors.background },
   header: {
     backgroundColor: colors.background,
@@ -420,8 +381,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     letterSpacing: -0.5,
   },
-
-  // Badge compteur
   countBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -434,13 +393,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,.08)",
   },
   countText: { fontSize: 13, fontWeight: "700", color: "#fff" },
-
-  // Recherche + filtre
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   searchBar: {
     flex: 1,
     backgroundColor: "rgba(255,255,255,.1)",
@@ -462,7 +415,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   searchPlaceholder: { flex: 1, fontSize: 13, color: "#9FE1CB" },
-
   filterBtn: {
     width: 46,
     height: 46,
@@ -494,8 +446,6 @@ const styles = StyleSheet.create({
   filterBadgeOpen: { backgroundColor: "#fff" },
   filterBadgeText: { fontSize: 8, fontWeight: "800", color: "#fff" },
   filterBadgeTextOpen: { color: colors.primary },
-
-  // ── Panneau filtres animé ─────────────────
   filterPanel: {
     backgroundColor: colors.background,
     overflow: "hidden",
@@ -519,11 +469,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,.35)",
     letterSpacing: 0.6,
   },
-  chipsRow: {
-    flexDirection: "row",
-    gap: 7,
-    paddingRight: 20,
-  },
+  chipsRow: { flexDirection: "row", gap: 7, paddingRight: 20 },
   chip: {
     flexShrink: 0,
     paddingVertical: 7,
@@ -536,11 +482,7 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 12, fontWeight: "600", color: "#fff" },
   chipTextActive: { color: "#fff" },
-
-  // ── Carte ─────────────────────────────────
   map: { flex: 1 },
-
-  // ── Markers ───────────────────────────────
   marker: {
     flexDirection: "row",
     alignItems: "center",
@@ -567,8 +509,6 @@ const styles = StyleSheet.create({
     borderRightColor: "transparent",
     marginTop: -1,
   },
-
-  // ── Fiche prestataire ─────────────────────
   providerCard: {
     position: "absolute",
     bottom: 0,

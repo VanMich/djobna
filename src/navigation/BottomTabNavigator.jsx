@@ -1,7 +1,11 @@
 // src/navigation/BottomTabNavigator.js
-import { Ionicons } from "@expo/vector-icons";
+// Barre de navigation principale de l'app
+// Icônes Ionicons vectorielles (incluses dans Expo)
+
+import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Platform, StyleSheet, Text, View } from "react-native";
+import { View, Text, StyleSheet, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import HomeScreen from "../screens/HomeScreen";
 import MapScreen from "../screens/MapScreen";
@@ -9,14 +13,13 @@ import { colors } from "../theme";
 
 const Tab = createBottomTabNavigator();
 
-// ── Composant icône personnalisé ──────────────
+// Icône personnalisée pour chaque onglet
 function TabIcon({ name, focused }) {
   return (
     <View style={styles.iconWrap}>
-      {/* Indicateur actif — trait vert au dessus */}
+      {/* Trait indicateur vert en haut */}
       <View style={[styles.indicator, focused && styles.indicatorActive]} />
-
-      {/* Fond coloré derrière l'icône active */}
+      {/* Bulle fond vert clair si actif */}
       <View style={[styles.iconBubble, focused && styles.iconBubbleActive]}>
         <Ionicons
           name={focused ? name : `${name}-outline`}
@@ -28,29 +31,13 @@ function TabIcon({ name, focused }) {
   );
 }
 
-// Écrans placeholder pour Messages et Profil
+// Écrans placeholder — à remplacer quand ils seront développés
 function PlaceholderScreen({ route }) {
   const icons = { Messages: "chatbubble", Profile: "person" };
   return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "#F4F6F5",
-      }}
-    >
+    <View style={styles.placeholder}>
       <Ionicons name={icons[route.name]} size={48} color="#DDD" />
-      <Text
-        style={{
-          fontSize: 16,
-          fontWeight: "600",
-          color: "#333",
-          marginTop: 12,
-        }}
-      >
-        Bientôt disponible
-      </Text>
+      <Text style={styles.placeholderText}>Bientôt disponible</Text>
     </View>
   );
 }
@@ -82,26 +69,18 @@ export default function BottomTabNavigator() {
 }
 
 const styles = StyleSheet.create({
-  // ── Barre principale ───────────────────────
   tabBar: {
     backgroundColor: "#fff",
     borderTopWidth: 0,
-
-    // Ombre iOS
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: -4 },
-
-    // Ombre Android
     elevation: 16,
-
     height: Platform.OS === "ios" ? 72 : 58,
     paddingTop: 0,
     paddingBottom: 0,
   },
-
-  // ── Wrapper icône ──────────────────────────
   iconWrap: {
     flex: 1,
     width: "100%",
@@ -110,8 +89,6 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? 4 : 2,
     paddingBottom: Platform.OS === "ios" ? 0 : 2,
   },
-
-  // ── Indicateur actif ───────────────────────
   indicator: {
     position: "absolute",
     top: 0,
@@ -121,11 +98,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 2,
     borderBottomRightRadius: 2,
   },
-  indicatorActive: {
-    backgroundColor: colors.primary,
-  },
-
-  // ── Bulle icône ────────────────────────────
+  indicatorActive: { backgroundColor: colors.primary },
   iconBubble: {
     width: 48,
     height: 38,
@@ -134,7 +107,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "transparent",
   },
-  iconBubbleActive: {
-    backgroundColor: "#F0FAF6",
+  iconBubbleActive: { backgroundColor: "#F0FAF6" },
+  placeholder: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F4F6F5",
+    gap: 12,
   },
+  placeholderText: { fontSize: 16, fontWeight: "600", color: "#333" },
 });

@@ -1,47 +1,34 @@
-import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
+// src/hooks/useAuth.js
+// Hook pour l'authentification OTP via Firebase Auth
+// Utilisé dans PhoneScreen.js et OTPScreen.js
+
 import { useState } from "react";
 import { auth } from "../config/firebase";
-
-// ⚠️ Note importante sur React Native + Firebase Auth :
-// Firebase Auth côté web utilise reCAPTCHA (invisible sur mobile)
-// Pour React Native natif, on utilise expo-firebase-recaptcha
-// Pour Expo Go (dev), on peut utiliser le mode "test" Firebase
+import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 
 export function useAuth() {
   const [verificationId, setVerificationId] = useState(null);
-  // verificationId = l'identifiant de session SMS retourné par Firebase
-  // On en a besoin pour vérifier le code OTP ensuite
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // ─────────────────────────────────────────
-  // ÉTAPE 1 : Envoyer le SMS
+  // ÉTAPE 1 : Envoyer le SMS OTP
+  // phoneNumber : format E.164 ex "+237612345678"
+  // recaptchaVerifier : ref passée depuis PhoneScreen
   // ─────────────────────────────────────────
   const sendOTP = async (phoneNumber, recaptchaVerifier) => {
-    // phoneNumber doit être au format E.164 : "+237612345678"
-    // recaptchaVerifier vient de FirebaseRecaptchaVerifierModal (OTPScreen)
     setLoading(true);
     setError(null);
 
     try {
-      // PhoneAuthProvider.verifyPhoneNumber() envoie le SMS
-      // et retourne un verificationId unique pour cette session
       const provider = new PhoneAuthProvider(auth);
-
-      // recaptchaVerifier est obligatoire pour la sécurité anti-spam
-      // Passé en paramètre depuis OTPScreen
       const id = await provider.verifyPhoneNumber(
         phoneNumber,
         recaptchaVerifier,
       );
       setVerificationId(id);
-      return { success: true };
+      return { success: true, verificationId: id };
     } catch (err) {
-      // Codes d'erreur Firebase courants au Cameroun :
-      // auth/invalid-phone-number  → numéro mal formaté
-      // auth/too-many-requests     → trop de tentatives (rate limit)
-      // auth/quota-exceeded        → quota SMS dépassé (plan gratuit)
       const msg =
         err.code === "auth/invalid-phone-number"
           ? "Numéro de téléphone invalide"
@@ -57,10 +44,12 @@ export function useAuth() {
   };
 
   // ─────────────────────────────────────────
-  // ÉTAPE 2 : Vérifier le code OTP
+  // ÉTAPE 2 : Vérifier le code OTP (6 chiffres)
   // ─────────────────────────────────────────
-  const verifyOTP = async (otpCode) => {
-    if (!verificationId) {
+  const verifyOTP = async (otpCode, idFromRoute = null) => {
+    const id = verificationId || idFromRoute;
+
+    if (!id) {
       setError("Session expirée. Renvoyez le code.");
       return { success: false };
     }
@@ -69,20 +58,13 @@ export function useAuth() {
     setError(null);
 
     try {
-      // PhoneAuthProvider.credential() combine verificationId + code
-      // → crée un "credential" (preuve d'identité)
-      const credential = PhoneAuthProvider.credential(verificationId, otpCode);
-
-      // signInWithCredential() connecte l'utilisateur avec ce credential
-      // → retourne un UserCredential avec user.uid, user.phoneNumber, etc.
+      const credential = PhoneAuthProvider.credential(id, otpCode);
       const result = await signInWithCredential(auth, credential);
 
       return {
         success: true,
         user: result.user,
         isNewUser: result._tokenResponse?.isNewUser ?? false,
-        // isNewUser → true si c'est la première connexion
-        // → utile pour rediriger vers l'écran de complétion du profil
       };
     } catch (err) {
       const msg =
@@ -98,5 +80,6 @@ export function useAuth() {
       setLoading(false);
     }
   };
+
   return { sendOTP, verifyOTP, loading, error, verificationId };
 }

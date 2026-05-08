@@ -1,5 +1,5 @@
 // src/components/providerProfile/ProfileHeader.js
-import React, { useCallback } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Animated,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { AVATAR_COLORS } from "../../constants/services";
 import { colors } from "../../theme";
 
 export default function ProfileHeader({
@@ -18,7 +19,6 @@ export default function ProfileHeader({
   onShare,
   onMore,
   onContact,
-  // Valeurs animées passées depuis le screen parent
   topBarOpacity,
   topBarTranslateY,
   statsOpacity,
@@ -31,25 +31,11 @@ export default function ProfileHeader({
     .join("")
     .slice(0, 2)
     .toUpperCase();
-
-  const avatarColors = {
-    mechanic: "#1D9E75",
-    electrician: "#3C3489",
-    plumber: "#185FA5",
-    barber: "#BA7517",
-    painter: "#993C1D",
-  };
-  const avatarColor = avatarColors[provider?.services?.[0]] || colors.primary;
+  const avatarColor = AVATAR_COLORS[provider?.services?.[0]] || colors.primary;
 
   return (
-    <Animated.View
-      style={[
-        styles.header,
-        { paddingTop: headerPaddingTop },
-        // paddingTop animé → le header rétrécit quand les éléments disparaissent
-      ]}
-    >
-      {/* ── Ligne 1 : Retour + 3 points (animée) ── */}
+    <Animated.View style={[styles.header, { paddingTop: headerPaddingTop }]}>
+      {/* Ligne 1 : Retour + 3 points (animée) */}
       <Animated.View
         style={[
           styles.topBar,
@@ -67,7 +53,6 @@ export default function ProfileHeader({
           <Ionicons name="arrow-back" size={18} color="#5DCAA5" />
           <Text style={styles.backText}>Retour</Text>
         </TouchableOpacity>
-
         <TouchableOpacity
           style={styles.iconBtn}
           onPress={onMore}
@@ -77,9 +62,8 @@ export default function ProfileHeader({
         </TouchableOpacity>
       </Animated.View>
 
-      {/* ── Ligne 2 : Avatar + Infos (toujours visible) ── */}
+      {/* Ligne 2 : Avatar + Infos (toujours visible) */}
       <View style={styles.profileRow}>
-        {/* Avatar */}
         <View style={styles.avatarWrap}>
           <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
             <Text style={styles.avatarText}>{initials}</Text>
@@ -90,25 +74,16 @@ export default function ProfileHeader({
             </View>
           )}
         </View>
-
-        {/* Infos */}
         <View style={styles.profileInfos}>
           <Text style={styles.providerName}>{provider?.displayName}</Text>
-
-          {/* Statut disponible */}
           <View style={styles.statusRow}>
             <View style={styles.onlineDot} />
             <Text style={styles.statusText}>Disponible maintenant</Text>
           </View>
-
-          {/* Localisation */}
           <Text style={styles.locationText}>
             📍 {provider?.quartier || "Douala"}
           </Text>
-
-          {/* ── Actions icônes (toujours visibles) ── */}
           <View style={styles.actionsRow}>
-            {/* Contact */}
             <TouchableOpacity
               style={[styles.actionBtn, styles.actionBtnContact]}
               onPress={onContact}
@@ -116,8 +91,6 @@ export default function ProfileHeader({
             >
               <Ionicons name="chatbubble" size={14} color="#5DCAA5" />
             </TouchableOpacity>
-
-            {/* Favori */}
             <TouchableOpacity
               style={[styles.actionBtn, isFav && styles.actionBtnFavActive]}
               onPress={onToggleFav}
@@ -129,8 +102,6 @@ export default function ProfileHeader({
                 color={isFav ? "#F5A623" : "#9FE1CB"}
               />
             </TouchableOpacity>
-
-            {/* Partager */}
             <TouchableOpacity
               style={styles.actionBtn}
               onPress={onShare}
@@ -142,67 +113,46 @@ export default function ProfileHeader({
         </View>
       </View>
 
-      {/* ── Stats bar (animée) ── */}
+      {/* Stats bar (animée) */}
       <Animated.View
         style={[
           styles.statsBar,
-          {
-            opacity: statsOpacity,
-            maxHeight: statsMaxHeight,
-            // maxHeight animée → la stats bar se rétracte proprement
-          },
+          { opacity: statsOpacity, maxHeight: statsMaxHeight },
         ]}
       >
-        <StatItem
-          value={`${provider?.rating?.toFixed(1) || "–"}⭐`}
-          label="Note"
-        />
-        <StatItem value={provider?.reviewCount || 0} label="Avis" />
-        <StatItem value={provider?.completedJobs || 0} label="Missions" />
-        <StatItem value="2 ans" label="Expérience" />
+        {[
+          { value: `${provider?.rating?.toFixed(1) || "–"}⭐`, label: "Note" },
+          { value: provider?.reviewCount || 0, label: "Avis" },
+          { value: provider?.completedJobs || 0, label: "Missions" },
+          { value: "2 ans", label: "Expérience" },
+        ].map((item, i, arr) => (
+          <View
+            key={item.label}
+            style={[
+              styles.statItem,
+              i === arr.length - 1 && styles.statItemLast,
+            ]}
+          >
+            <Text style={styles.statValue}>{item.value}</Text>
+            <Text style={styles.statLabel}>{item.label}</Text>
+          </View>
+        ))}
       </Animated.View>
     </Animated.View>
   );
 }
 
-// ── Composant stat individuel ──────────────────
-function StatItem({ value, label }) {
-  return (
-    <View style={styles.statItem}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
-  header: {
-    backgroundColor: colors.background,
-    // paddingTop animé depuis le parent
-    paddingBottom: 0,
-    zIndex: 10,
-  },
-
-  // Ligne retour + 3 points
+  header: { backgroundColor: colors.background, zIndex: 10 },
   topBar: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
     paddingBottom: 12,
-    // overflow: 'hidden' non nécessaire ici
-    // l'animation opacity + translateY suffit
   },
-  backBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  backText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#5DCAA5",
-  },
+  backBtn: { flexDirection: "row", alignItems: "center", gap: 5 },
+  backText: { fontSize: 12, fontWeight: "600", color: "#5DCAA5" },
   iconBtn: {
     width: 34,
     height: 34,
@@ -213,8 +163,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
-  // Ligne avatar + infos
   profileRow: {
     flexDirection: "row",
     gap: 14,
@@ -222,8 +170,6 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
     alignItems: "flex-start",
   },
-
-  // Avatar
   avatarWrap: { position: "relative", flexShrink: 0 },
   avatar: {
     width: 64,
@@ -246,8 +192,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
-  // Infos
   profileInfos: { flex: 1, gap: 4, paddingTop: 2 },
   providerName: {
     fontSize: 19,
@@ -255,11 +199,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     letterSpacing: -0.4,
   },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
+  statusRow: { flexDirection: "row", alignItems: "center", gap: 5 },
   onlineDot: {
     width: 7,
     height: 7,
@@ -268,13 +208,7 @@ const styles = StyleSheet.create({
   },
   statusText: { fontSize: 11, color: "#9FE1CB" },
   locationText: { fontSize: 11, color: "rgba(255,255,255,.4)" },
-
-  // Actions icônes
-  actionsRow: {
-    flexDirection: "row",
-    gap: 7,
-    marginTop: 4,
-  },
+  actionsRow: { flexDirection: "row", gap: 7, marginTop: 4 },
   actionBtn: {
     width: 32,
     height: 32,
@@ -293,16 +227,12 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(245,166,35,.15)",
     borderColor: "rgba(245,166,35,.3)",
   },
-
-  // Stats bar
   statsBar: {
     flexDirection: "row",
     backgroundColor: "rgba(29,158,117,.18)",
     borderTopWidth: 1,
     borderTopColor: "rgba(29,158,117,.15)",
     overflow: "hidden",
-    // overflow: hidden → la stats bar se cache proprement
-    // quand maxHeight passe à 0
   },
   statItem: {
     flex: 1,
@@ -312,6 +242,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: "rgba(29,158,117,.2)",
   },
+  statItemLast: { borderRightWidth: 0 },
   statValue: { fontSize: 14, fontWeight: "800", color: "#5DCAA5" },
   statLabel: {
     fontSize: 9,

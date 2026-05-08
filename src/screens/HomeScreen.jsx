@@ -1,30 +1,28 @@
 // src/screens/HomeScreen.js
-import { Ionicons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
-import { useCallback, useRef, useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
   ActivityIndicator,
   Animated,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
 } from "react-native";
+import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
 import { auth } from "../config/firebase";
-import { SERVICES } from "../constants/services";
 import { useProviders } from "../hooks/useProviders";
-import { colors } from "../theme";
+import { SERVICES, AVATAR_COLORS, PRICE_RANGES } from "../constants/services";
+import { colors, spacing, radius } from "../theme";
 
 export default function HomeScreen({ navigation }) {
   const [activeService, setActiveService] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
-
   const { providers, loading } = useProviders(activeService);
   const user = auth.currentUser;
   const firstName = user?.displayName?.split(" ")[0] || "vous";
-
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? "Bonjour 👋" : hour < 18 ? "Bon après-midi 👋" : "Bonsoir 👋";
@@ -33,14 +31,10 @@ export default function HomeScreen({ navigation }) {
   const filterRotate = useRef(new Animated.Value(0)).current;
   const PANEL_H = 90;
 
-  // ── Toggle filtre ─────────────────────────
   const toggleFilter = useCallback(() => {
     const opening = !filterOpen;
-
     if (opening) {
       setFilterOpen(true);
-
-      // Ouverture → spring (effet naturel)
       Animated.parallel([
         Animated.spring(panelHeight, {
           toValue: PANEL_H,
@@ -55,31 +49,24 @@ export default function HomeScreen({ navigation }) {
         }),
       ]).start();
     } else {
-      // Fermeture → timing (pas de rebond)
       Animated.parallel([
         Animated.timing(panelHeight, {
           toValue: 0,
           duration: 220,
           useNativeDriver: false,
-          // easing par défaut = linéaire, pas de rebond
         }),
         Animated.timing(filterRotate, {
           toValue: 0,
           duration: 220,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        // Ferme l'état APRÈS la fin de l'animation
-        setFilterOpen(false);
-      });
+      ]).start(() => setFilterOpen(false));
     }
   }, [filterOpen, panelHeight, filterRotate]);
 
   const handleSelectService = useCallback(
     (serviceId) => {
       setActiveService(serviceId);
-
-      // Fermeture → timing (pas de rebond)
       Animated.parallel([
         Animated.timing(panelHeight, {
           toValue: 0,
@@ -91,9 +78,7 @@ export default function HomeScreen({ navigation }) {
           duration: 220,
           useNativeDriver: true,
         }),
-      ]).start(() => {
-        setFilterOpen(false);
-      });
+      ]).start(() => setFilterOpen(false));
     },
     [panelHeight, filterRotate],
   );
@@ -106,13 +91,8 @@ export default function HomeScreen({ navigation }) {
   return (
     <View style={styles.root}>
       <StatusBar style="light" />
-
-      {/* ════════════════════════════════════ */}
-      {/* HEADER FIXE                         */}
-      {/* ════════════════════════════════════ */}
       <SafeAreaView style={styles.headerSafe}>
         <View style={styles.header}>
-          {/* Ligne 1 : Salutation + Notif */}
           <View style={styles.topRow}>
             <View style={styles.greetingBlock}>
               <Text style={styles.greetingText}>{greeting}</Text>
@@ -125,8 +105,6 @@ export default function HomeScreen({ navigation }) {
               </View>
             </TouchableOpacity>
           </View>
-
-          {/* Ligne 2 : Recherche + Bouton filtre */}
           <View style={styles.searchRow}>
             <TouchableOpacity
               style={styles.searchBar}
@@ -140,8 +118,6 @@ export default function HomeScreen({ navigation }) {
                 Quel service cherchez-vous ?
               </Text>
             </TouchableOpacity>
-
-            {/* Bouton filtre */}
             <TouchableOpacity
               style={[styles.filterBtn, filterOpen && styles.filterBtnActive]}
               onPress={toggleFilter}
@@ -154,8 +130,6 @@ export default function HomeScreen({ navigation }) {
                   color={filterOpen ? "#fff" : "#9FE1CB"}
                 />
               </Animated.View>
-
-              {/* Badge filtre actif */}
               {activeService && (
                 <View
                   style={[
@@ -176,10 +150,6 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* ════════════════════════════════════ */}
-        {/* PANNEAU FILTRES ANIMÉ               */}
-        {/* ════════════════════════════════════ */}
         <Animated.View style={[styles.filterPanel, { height: panelHeight }]}>
           <View style={styles.filterPanelInner}>
             <Text style={styles.filterPanelLabel}>CATÉGORIE DE SERVICE</Text>
@@ -188,7 +158,6 @@ export default function HomeScreen({ navigation }) {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.chipsRow}
             >
-              {/* Chip "Tous" */}
               <TouchableOpacity
                 style={[styles.chip, !activeService && styles.chipActive]}
                 onPress={() => handleSelectService(null)}
@@ -203,8 +172,6 @@ export default function HomeScreen({ navigation }) {
                   🌟 Tous
                 </Text>
               </TouchableOpacity>
-
-              {/* Un chip par service */}
               {SERVICES.map((service) => (
                 <TouchableOpacity
                   key={service.id}
@@ -230,25 +197,19 @@ export default function HomeScreen({ navigation }) {
         </Animated.View>
       </SafeAreaView>
 
-      {/* ════════════════════════════════════ */}
-      {/* CORPS                               */}
-      {/* ════════════════════════════════════ */}
       <ScrollView
         style={styles.body}
         contentContainerStyle={styles.bodyContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Ligne stats */}
         <View style={styles.statsRow}>
           <View style={styles.statPill}>
             <Ionicons name="ellipse" size={8} color={colors.primary} />
             <Text style={styles.statText}>
-              <Text style={styles.statNum}>{providers.length} </Text>
-              disponible{providers.length > 1 ? "s" : ""}
+              <Text style={styles.statNum}>{providers.length} </Text>disponible
+              {providers.length > 1 ? "s" : ""}
             </Text>
           </View>
-
-          {/* Pill filtre actif */}
           {activeService && (
             <TouchableOpacity
               style={styles.activeFilterPill}
@@ -267,8 +228,6 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           )}
         </View>
-
-        {/* Titre section */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
             {activeService
@@ -279,15 +238,19 @@ export default function HomeScreen({ navigation }) {
             <Text style={styles.seeAll}>Voir tout</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Liste prestataires */}
         {loading ? (
           <View style={styles.loaderWrap}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loaderText}>Chargement...</Text>
           </View>
         ) : providers.length === 0 ? (
-          <EmptyState />
+          <View style={styles.empty}>
+            <Ionicons name="search" size={44} color="#DDD" />
+            <Text style={styles.emptyTitle}>Aucun prestataire disponible</Text>
+            <Text style={styles.emptySub}>
+              Essayez une autre catégorie ou revenez plus tard.
+            </Text>
+          </View>
         ) : (
           providers.map((provider) => (
             <ProviderCard
@@ -306,18 +269,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
-// ── Carte prestataire ─────────────────────────────────────
 function ProviderCard({ provider, onPress }) {
-  const AVATAR_COLORS = {
-    mechanic: "#1D9E75",
-    electrician: "#3C3489",
-    plumber: "#185FA5",
-    barber: "#BA7517",
-    painter: "#993C1D",
-    housekeeper: "#0F6E56",
-    caterer: "#6B3FA0",
-  };
-
   const avatarColor = AVATAR_COLORS[provider.services?.[0]] || colors.primary;
   const initials = (provider.displayName || "XX")
     .split(" ")
@@ -326,6 +278,8 @@ function ProviderCard({ provider, onPress }) {
     .slice(0, 2)
     .toUpperCase();
   const mainService = SERVICES.find((s) => s.id === provider.services?.[0]);
+  const priceRange =
+    PRICE_RANGES[provider.services?.[0]] || PRICE_RANGES.default;
 
   return (
     <TouchableOpacity
@@ -333,15 +287,12 @@ function ProviderCard({ provider, onPress }) {
       onPress={onPress}
       activeOpacity={0.88}
     >
-      {/* Avatar + point disponible */}
       <View style={styles.cardLeft}>
         <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
           <Text style={styles.avatarText}>{initials}</Text>
         </View>
         <View style={styles.availDot} />
       </View>
-
-      {/* Infos */}
       <View style={styles.cardBody}>
         <View style={styles.cardTopRow}>
           <Text style={styles.cardName} numberOfLines={1}>
@@ -353,13 +304,11 @@ function ProviderCard({ provider, onPress }) {
             </View>
           )}
         </View>
-
         <Text style={styles.cardService}>
           {mainService?.icon} {mainService?.label}
           {"  ·  "}
           {provider.quartier || "Douala"}
         </Text>
-
         <View style={styles.cardBottomRow}>
           {provider.rating > 0 && (
             <View style={styles.ratingPill}>
@@ -371,44 +320,17 @@ function ProviderCard({ provider, onPress }) {
             </View>
           )}
           <View style={styles.pricePill}>
-            <Text style={styles.priceText}>
-              {mainService?.id === "barber"
-                ? "2 000–8 000 FCFA"
-                : mainService?.id === "mechanic"
-                  ? "5 000–20 000 FCFA"
-                  : mainService?.id === "plumber"
-                    ? "5 000–15 000 FCFA"
-                    : mainService?.id === "electrician"
-                      ? "8 000–30 000 FCFA"
-                      : "5 000–25 000 FCFA"}
-            </Text>
+            <Text style={styles.priceText}>{priceRange}</Text>
           </View>
         </View>
       </View>
-
       <Ionicons name="chevron-forward" size={18} color="#DDD" />
     </TouchableOpacity>
   );
 }
 
-// ── État vide ─────────────────────────────────────────────
-function EmptyState() {
-  return (
-    <View style={styles.empty}>
-      <Ionicons name="search" size={44} color="#DDD" />
-      <Text style={styles.emptyTitle}>Aucun prestataire disponible</Text>
-      <Text style={styles.emptySub}>
-        Essayez une autre catégorie ou revenez plus tard.
-      </Text>
-    </View>
-  );
-}
-
-// ══════════════════════════════════════════════════════════
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-
-  // ── Header ───────────────────────────────
   headerSafe: { backgroundColor: colors.background },
   header: {
     backgroundColor: colors.background,
@@ -430,7 +352,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     letterSpacing: -0.5,
   },
-
   notifBtn: {
     width: 42,
     height: 42,
@@ -454,13 +375,7 @@ const styles = StyleSheet.create({
     borderColor: colors.background,
   },
   notifBadgeText: { fontSize: 7, fontWeight: "800", color: "#fff" },
-
-  // Recherche + filtre
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
+  searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   searchBar: {
     flex: 1,
     backgroundColor: "rgba(255,255,255,.1)",
@@ -482,7 +397,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   searchPlaceholder: { flex: 1, fontSize: 13, color: "#9FE1CB" },
-
   filterBtn: {
     width: 46,
     height: 46,
@@ -514,8 +428,6 @@ const styles = StyleSheet.create({
   filterBadgeOpen: { backgroundColor: "#fff" },
   filterBadgeText: { fontSize: 8, fontWeight: "800", color: "#fff" },
   filterBadgeTextOpen: { color: colors.primary },
-
-  // ── Panneau filtres ───────────────────────
   filterPanel: {
     backgroundColor: colors.background,
     overflow: "hidden",
@@ -539,11 +451,7 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,.35)",
     letterSpacing: 0.6,
   },
-  chipsRow: {
-    flexDirection: "row",
-    gap: 7,
-    paddingRight: 20,
-  },
+  chipsRow: { flexDirection: "row", gap: 7, paddingRight: 20 },
   chip: {
     flexShrink: 0,
     paddingVertical: 7,
@@ -556,11 +464,8 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 12, fontWeight: "600", color: "#fff" },
   chipTextActive: { color: "#fff" },
-
-  // ── Corps ─────────────────────────────────
   body: { flex: 1, backgroundColor: "#F4F6F5" },
   bodyContent: { padding: 14, paddingBottom: 30, gap: 10 },
-
   statsRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -580,7 +485,6 @@ const styles = StyleSheet.create({
   },
   statText: { fontSize: 11, color: "#666" },
   statNum: { fontWeight: "700", color: colors.primary },
-
   activeFilterPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -593,7 +497,6 @@ const styles = StyleSheet.create({
     borderColor: "#9FE1CB",
   },
   activeFilterText: { fontSize: 11, fontWeight: "600", color: colors.primary },
-
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -601,8 +504,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 16, fontWeight: "700", color: "#111" },
   seeAll: { fontSize: 12, color: colors.primary, fontWeight: "600" },
-
-  // ── Carte prestataire ─────────────────────
   card: {
     backgroundColor: "#fff",
     borderRadius: 18,
@@ -673,12 +574,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
   },
   priceText: { fontSize: 10, fontWeight: "600", color: "#555" },
-
-  // Loader
   loaderWrap: { alignItems: "center", paddingTop: 50, gap: 12 },
   loaderText: { fontSize: 13, color: "#888" },
-
-  // État vide
   empty: { alignItems: "center", paddingTop: 60, gap: 10 },
   emptyTitle: { fontSize: 16, fontWeight: "700", color: "#333" },
   emptySub: {

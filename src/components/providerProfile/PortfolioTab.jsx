@@ -1,5 +1,4 @@
 // src/components/providerProfile/PortfolioTab.js
-// Onglet "Réalisations" — Photos + Missions
 import React from "react";
 import {
   View,
@@ -16,7 +15,6 @@ export default function PortfolioTab({ provider }) {
 
   return (
     <View style={styles.container}>
-      {/* Photos */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Photos de travaux</Text>
         {portfolio.length > 0 ? (
@@ -32,15 +30,12 @@ export default function PortfolioTab({ provider }) {
             ))}
           </ScrollView>
         ) : (
-          // Placeholder si pas encore de photos
           <View style={styles.emptyPhotos}>
             <Text style={styles.emptyIcon}>📷</Text>
             <Text style={styles.emptyText}>Pas encore de photos</Text>
           </View>
         )}
       </View>
-
-      {/* Dernières missions */}
       {lastJobs.length > 0 && (
         <View style={[styles.section, styles.sectionLast]}>
           <Text style={styles.sectionTitle}>Dernières missions</Text>
@@ -92,7 +87,6 @@ const styles = StyleSheet.create({
   emptyPhotos: { alignItems: "center", paddingVertical: 20, gap: 8 },
   emptyIcon: { fontSize: 32 },
   emptyText: { fontSize: 12, color: "#AAB0B7" },
-
   missionRow: {
     flexDirection: "row",
     justifyContent: "space-between",

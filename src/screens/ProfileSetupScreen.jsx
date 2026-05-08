@@ -1,21 +1,22 @@
 // src/screens/ProfileSetupScreen.js
-import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
+  View,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  StyleSheet,
+  ScrollView,
+  Image,
+  Alert,
+  ActivityIndicator,
+  SafeAreaView,
 } from "react-native";
-import { QUARTIERS_DOUALA, SERVICES } from "../constants/services";
+import { StatusBar } from "expo-status-bar";
+import * as ImagePicker from "expo-image-picker";
 import { useProfile } from "../hooks/useProfile";
-import { colors, radius, spacing } from "../theme";
+import { SERVICES, QUARTIERS_DOUALA } from "../constants/services";
+import { colors, spacing, radius } from "../theme";
 
 export default function ProfileSetupScreen({ navigation }) {
   const [step, setStep] = useState(0);
@@ -28,7 +29,6 @@ export default function ProfileSetupScreen({ navigation }) {
 
   const { createProfile, loading } = useProfile();
 
-  // ─── Données selon l'étape ─────────────────────────
   const steps = [
     {
       label: "ÉTAPE 1 / 3",
@@ -46,10 +46,8 @@ export default function ProfileSetupScreen({ navigation }) {
       subtitle: "Sélectionnez tout ce que vous proposez",
     },
   ];
-
   const progressWidth = ["33%", "66%", "100%"][step];
 
-  // ─── Photo picker ──────────────────────────────────
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -68,17 +66,12 @@ export default function ProfileSetupScreen({ navigation }) {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
 
-  // ─── Toggle service ────────────────────────────────
   const toggleService = (id) => {
     setSelectedServices((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
     );
   };
 
-  // ─── Continuer étape 1 → 2 ────────────────────────
-  const handleContinueRole = () => setStep(1);
-
-  // ─── Continuer étape 2 → 3 ou créer profil ────────
   const handleContinueInfos = () => {
     if (!displayName.trim()) {
       Alert.alert("Erreur", "Entrez votre nom complet");
@@ -91,7 +84,6 @@ export default function ProfileSetupScreen({ navigation }) {
     role === "client" ? handleCreateProfile() : setStep(2);
   };
 
-  // ─── Créer le profil Firestore ─────────────────────
   const handleCreateProfile = async () => {
     if (role === "provider" && selectedServices.length === 0) {
       Alert.alert("Erreur", "Sélectionnez au moins une spécialité");
@@ -111,7 +103,6 @@ export default function ProfileSetupScreen({ navigation }) {
     }
   };
 
-  // ─── Loader ────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -121,18 +112,14 @@ export default function ProfileSetupScreen({ navigation }) {
     );
   }
 
-  // ─── Rendu principal ───────────────────────────────
   return (
-    // SafeAreaView gère les encoches iPhone (notch, dynamic island)
     <SafeAreaView style={styles.safeArea}>
-      {/* ── HEADER FIXE (en dehors du ScrollView) ── */}
+      <StatusBar style="light" />
+      {/* Header fixe */}
       <View style={styles.header}>
-        {/* Barre de progression tout en haut */}
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
-
-        {/* Bouton retour (sauf à l'étape 0) */}
         {step > 0 && (
           <TouchableOpacity
             style={styles.backBtn}
@@ -141,83 +128,65 @@ export default function ProfileSetupScreen({ navigation }) {
             <Text style={styles.backText}>← Retour</Text>
           </TouchableOpacity>
         )}
-
-        {/* Textes du header */}
         <Text style={styles.stepLabel}>{steps[step].label}</Text>
         <Text style={styles.title}>{steps[step].title}</Text>
         <Text style={styles.subtitle}>{steps[step].subtitle}</Text>
       </View>
 
-      {/* ── CONTENU qui défile ── */}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        // keyboardShouldPersistTaps="handled" → le clavier ne se ferme pas
-        // si on tape en dehors d'un TextInput (évite les fermetures accidentelles)
         showsVerticalScrollIndicator={false}
       >
-        {/* ════════════════════════════════════ */}
-        {/* ÉTAPE 0 — Choix du rôle             */}
-        {/* ════════════════════════════════════ */}
+        {/* ÉTAPE 0 : Rôle */}
         {step === 0 && (
           <View style={styles.stepContent}>
             <View style={styles.roleGrid}>
-              <TouchableOpacity
-                style={[
-                  styles.roleCard,
-                  role === "client" && styles.roleCardSelected,
-                ]}
-                onPress={() => setRole("client")}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.roleIcon}>🙋</Text>
-                <Text
+              {[
+                {
+                  id: "client",
+                  icon: "🙋",
+                  name: "Client",
+                  desc: "Je cherche des prestataires",
+                },
+                {
+                  id: "provider",
+                  icon: "🔧",
+                  name: "Prestataire",
+                  desc: "Je propose mes services",
+                },
+              ].map((r) => (
+                <TouchableOpacity
+                  key={r.id}
                   style={[
-                    styles.roleName,
-                    role === "client" && styles.roleNameSelected,
+                    styles.roleCard,
+                    role === r.id && styles.roleCardSelected,
                   ]}
+                  onPress={() => setRole(r.id)}
+                  activeOpacity={0.8}
                 >
-                  Client
-                </Text>
-                <Text style={styles.roleDesc}>
-                  Je cherche des prestataires de service
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.roleCard,
-                  role === "provider" && styles.roleCardSelected,
-                ]}
-                onPress={() => setRole("provider")}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.roleIcon}>🔧</Text>
-                <Text
-                  style={[
-                    styles.roleName,
-                    role === "provider" && styles.roleNameSelected,
-                  ]}
-                >
-                  Prestataire
-                </Text>
-                <Text style={styles.roleDesc}>
-                  Je propose mes services professionnels
-                </Text>
-              </TouchableOpacity>
+                  <Text style={styles.roleIcon}>{r.icon}</Text>
+                  <Text
+                    style={[
+                      styles.roleName,
+                      role === r.id && styles.roleNameSelected,
+                    ]}
+                  >
+                    {r.name}
+                  </Text>
+                  <Text style={styles.roleDesc}>{r.desc}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
-
             <View style={styles.infoBox}>
               <Text style={styles.infoText}>
-                💡 Vous pourrez changer de rôle ou avoir les deux à la fois plus
-                tard depuis votre profil.
+                💡 Vous pourrez changer de rôle plus tard depuis votre profil.
               </Text>
             </View>
-
             <TouchableOpacity
               style={styles.btnPrimary}
-              onPress={handleContinueRole}
+              onPress={() => setStep(1)}
               activeOpacity={0.85}
             >
               <Text style={styles.btnText}>Continuer →</Text>
@@ -225,12 +194,9 @@ export default function ProfileSetupScreen({ navigation }) {
           </View>
         )}
 
-        {/* ════════════════════════════════════ */}
-        {/* ÉTAPE 1 — Informations              */}
-        {/* ════════════════════════════════════ */}
+        {/* ÉTAPE 1 : Infos */}
         {step === 1 && (
           <View style={styles.stepContent}>
-            {/* Nom */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>NOM COMPLET</Text>
               <TextInput
@@ -240,17 +206,13 @@ export default function ProfileSetupScreen({ navigation }) {
                 value={displayName}
                 onChangeText={setDisplayName}
                 autoCapitalize="words"
-                returnKeyType="done"
               />
             </View>
-
-            {/* Quartier */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>QUARTIER À DOUALA</Text>
               <TouchableOpacity
                 style={[styles.picker, quartier && styles.pickerSelected]}
                 onPress={() => setShowQuartierPicker(!showQuartierPicker)}
-                activeOpacity={0.8}
               >
                 <Text
                   style={[
@@ -264,16 +226,9 @@ export default function ProfileSetupScreen({ navigation }) {
                   {showQuartierPicker ? "▴" : "▾"}
                 </Text>
               </TouchableOpacity>
-
-              {/* Liste déroulante quartiers */}
               {showQuartierPicker && (
                 <View style={styles.pickerDropdown}>
-                  <ScrollView
-                    style={{ maxHeight: 200 }}
-                    nestedScrollEnabled={true}
-                    // nestedScrollEnabled = true obligatoire pour un ScrollView
-                    // imbriqué dans un autre ScrollView (Android)
-                  >
+                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
                     {QUARTIERS_DOUALA.map((q) => (
                       <TouchableOpacity
                         key={q}
@@ -303,8 +258,6 @@ export default function ProfileSetupScreen({ navigation }) {
                 </View>
               )}
             </View>
-
-            {/* Photo de profil */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>PHOTO DE PROFIL (OPTIONNEL)</Text>
               <View style={styles.photoRow}>
@@ -329,7 +282,6 @@ export default function ProfileSetupScreen({ navigation }) {
                 </TouchableOpacity>
               </View>
             </View>
-
             <TouchableOpacity
               style={styles.btnPrimary}
               onPress={handleContinueInfos}
@@ -342,9 +294,7 @@ export default function ProfileSetupScreen({ navigation }) {
           </View>
         )}
 
-        {/* ════════════════════════════════════ */}
-        {/* ÉTAPE 2 — Services (provider)       */}
-        {/* ════════════════════════════════════ */}
+        {/* ÉTAPE 2 : Services */}
         {step === 2 && (
           <View style={styles.stepContent}>
             <View style={styles.servicesGrid}>
@@ -373,13 +323,11 @@ export default function ProfileSetupScreen({ navigation }) {
                 );
               })}
             </View>
-
             <Text style={styles.serviceCount}>
               {selectedServices.length} spécialité
               {selectedServices.length > 1 ? "s" : ""} sélectionnée
               {selectedServices.length > 1 ? "s" : ""}
             </Text>
-
             <TouchableOpacity
               style={styles.btnPrimary}
               onPress={handleCreateProfile}
@@ -395,13 +343,7 @@ export default function ProfileSetupScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  // ── Conteneurs principaux ─────────────────
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background,
-    // backgroundColor ici = couleur derrière la SafeArea (zone encoche iPhone)
-    // → donne l'impression que le header remonte jusqu'en haut de l'écran
-  },
+  safeArea: { flex: 1, backgroundColor: colors.background },
   loadingContainer: {
     flex: 1,
     alignItems: "center",
@@ -409,10 +351,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   loadingText: { marginTop: 12, fontSize: 14, color: colors.textGray },
-
-  // ── Header fixe ───────────────────────────
   header: {
-    backgroundColor: colors.background, // #0D1F1A → fond sombre comme la maquette
+    backgroundColor: colors.background,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     paddingTop: spacing.sm,
@@ -424,11 +364,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginBottom: spacing.md,
   },
-  progressFill: {
-    height: 3,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-  },
+  progressFill: { height: 3, backgroundColor: colors.primary, borderRadius: 2 },
   backBtn: { marginBottom: 6 },
   backText: { color: colors.primary, fontSize: 14, fontWeight: "500" },
   stepLabel: {
@@ -439,18 +375,9 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 26, fontWeight: "700", color: "#fff", lineHeight: 34 },
   subtitle: { fontSize: 13, color: colors.textLight },
-
-  // ── Scroll ────────────────────────────────
   scroll: { flex: 1, backgroundColor: "#fff" },
-  // backgroundColor: '#fff' → le scroll devient blanc en dessous du header
-  scrollContent: {
-    padding: spacing.lg,
-    paddingBottom: 40,
-    gap: spacing.lg,
-  },
+  scrollContent: { padding: spacing.lg, paddingBottom: 40, gap: spacing.lg },
   stepContent: { gap: spacing.md },
-
-  // ── Rôle ──────────────────────────────────
   roleGrid: { flexDirection: "row", gap: 12 },
   roleCard: {
     flex: 1,
@@ -462,10 +389,7 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: "#fff",
   },
-  roleCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: "#F0FAF6",
-  },
+  roleCardSelected: { borderColor: colors.primary, backgroundColor: "#F0FAF6" },
   roleIcon: { fontSize: 32 },
   roleName: { fontSize: 15, fontWeight: "700", color: colors.textDark },
   roleNameSelected: { color: colors.primary },
@@ -475,7 +399,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 16,
   },
-
   infoBox: {
     backgroundColor: "#F0FAF6",
     borderRadius: radius.md,
@@ -484,8 +407,6 @@ const styles = StyleSheet.create({
     borderColor: "#9FE1CB",
   },
   infoText: { fontSize: 12, color: "#0F6E56", lineHeight: 18 },
-
-  // ── Inputs ────────────────────────────────
   inputGroup: { gap: 6 },
   label: {
     fontSize: 10,
@@ -502,8 +423,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.border,
   },
-
-  // ── Picker quartier ───────────────────────
   picker: {
     backgroundColor: colors.lightGray,
     borderRadius: radius.md,
@@ -524,13 +443,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.primary,
-    // Ombre (iOS)
+    elevation: 4,
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
-    // Élévation (Android)
-    elevation: 4,
   },
   pickerItem: {
     padding: 13,
@@ -544,8 +461,6 @@ const styles = StyleSheet.create({
   pickerItemText: { fontSize: 14, color: colors.textDark },
   pickerItemTextSelected: { color: colors.primary, fontWeight: "600" },
   checkMark: { fontSize: 14, color: colors.primary, fontWeight: "700" },
-
-  // ── Photo profil ──────────────────────────
   photoRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   photoPreview: {
     width: 60,
@@ -569,8 +484,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   photoBtnText: { fontSize: 13, color: colors.textGray, fontWeight: "600" },
-
-  // ── Services ──────────────────────────────
   servicesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   serviceChip: {
     flexDirection: "row",
@@ -596,20 +509,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
   },
-
-  // ── Bouton principal ──────────────────────
   btnPrimary: {
     backgroundColor: colors.primary,
     borderRadius: 14,
     padding: 16,
     alignItems: "center",
     marginTop: spacing.sm,
-    // Ombre (iOS)
     shadowColor: colors.primary,
     shadowOpacity: 0.3,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
-    // Élévation (Android)
     elevation: 4,
   },
   btnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
