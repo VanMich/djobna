@@ -1,22 +1,22 @@
 // src/screens/ProfileSetupScreen.js
-import React, { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
+import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Image,
-  Alert,
-  ActivityIndicator,
-  SafeAreaView,
+  View,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import * as ImagePicker from "expo-image-picker";
+import { QUARTIERS_DOUALA, SERVICES } from "../constants/services";
 import { useProfile } from "../hooks/useProfile";
-import { SERVICES, QUARTIERS_DOUALA } from "../constants/services";
-import { colors, spacing, radius } from "../theme";
+import { colors, radius, spacing } from "../theme";
 
 export default function ProfileSetupScreen({ navigation }) {
   const [step, setStep] = useState(0);
@@ -96,10 +96,13 @@ export default function ProfileSetupScreen({ navigation }) {
       role,
       services: role === "provider" ? selectedServices : undefined,
     });
+    // ✅ Correction — redirection selon le rôle
     if (result.success) {
-      navigation.replace("MainApp");
-    } else {
-      Alert.alert("Erreur", result.message || "Échec de création du profil");
+      if (role === "provider") {
+        navigation.replace("HomeProvider"); // ← dashboard prestataire
+      } else {
+        navigation.replace("MainApp"); // ← app client
+      }
     }
   };
 

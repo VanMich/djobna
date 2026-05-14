@@ -174,6 +174,7 @@ export default function ProviderProfileScreen({ navigation, route }) {
     navigation.navigate("Chat", {
       providerId,
       providerName: provider?.displayName,
+      providerServices: provider?.services,
     });
   }, [navigation, providerId, provider]);
   const handleTabChange = useCallback(

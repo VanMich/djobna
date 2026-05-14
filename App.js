@@ -3,11 +3,13 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 import BottomTabNavigator from "./src/navigation/BottomTabNavigator";
+import ChatScreen from "./src/screens/ChatScreen";
 import OTPScreen from "./src/screens/OTPScreen";
 import PhoneScreen from "./src/screens/PhoneScreen";
 import ProfileSetupScreen from "./src/screens/ProfileSetupScreen";
 import ProviderProfileScreen from "./src/screens/ProviderProfileScreen";
 import SplashScreen from "./src/screens/SplashScreen";
+import HomeProviderScreen from "./src/screens/HomeProviderScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -36,6 +38,13 @@ export default function App() {
           component={ProviderProfileScreen}
           options={{ presentation: "card" }}
         />
+        <Stack.Screen
+          name="Chat"
+          component={ChatScreen}
+          options={{ animation: "slide_from_right" }}
+        />
+
+        <Stack.Screen name="HomeProvider" component={HomeProviderScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

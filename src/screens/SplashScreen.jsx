@@ -1,10 +1,26 @@
 // src/screens/SplashScreen.jsx
+import React, { useEffect, useRef } from "react";
+import { View, Text, StyleSheet, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { onAuthStateChanged } from "firebase/auth";
-import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text, View } from "react-native";
-import { auth } from "../config/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
 import { colors } from "../theme";
+
+async function getAuthenticatedRoute(user) {
+  if (!user) return "Phone";
+
+  try {
+    const snap = await getDoc(doc(db, "users", user.uid));
+    if (!snap.exists()) return "ProfileSetup";
+
+    const role = snap.data().role;
+    return role === "provider" || role === "both" ? "HomeProvider" : "MainApp";
+  } catch (err) {
+    console.error("Erreur chargement role utilisateur:", err);
+    return "MainApp";
+  }
+}
 
 export default function SplashScreen({ navigation }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -59,10 +75,11 @@ export default function SplashScreen({ navigation }) {
 
     let timer;
     let unsubscribe = () => {};
-    unsubscribe = onAuthStateChanged(auth, (user) => {
+    unsubscribe = onAuthStateChanged(auth, async (user) => {
       unsubscribe();
+      const nextRoute = await getAuthenticatedRoute(user);
       timer = setTimeout(() => {
-        navigation.replace(user ? "MainApp" : "Phone");
+        navigation.replace(nextRoute);
       }, 1200);
     });
 

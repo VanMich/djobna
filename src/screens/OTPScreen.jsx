@@ -11,7 +11,8 @@ import {
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
-import { auth } from "../config/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "../config/firebase";
 import { useAuth } from "../hooks/useAuth";
 import { colors, spacing } from "../theme";
 
@@ -28,6 +29,23 @@ export default function OTPScreen({ navigation, route }) {
   const recaptchaVerifier = useRef(null);
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const getAuthenticatedRoute = useCallback(async (user) => {
+    if (!user) return "ProfileSetup";
+
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (!snap.exists()) return "ProfileSetup";
+
+      const role = snap.data().role;
+      return role === "provider" || role === "both"
+        ? "HomeProvider"
+        : "MainApp";
+    } catch (err) {
+      console.error("Erreur chargement role utilisateur:", err);
+      return "MainApp";
+    }
+  }, []);
 
   // Animation d'entrée
   useEffect(() => {
@@ -89,7 +107,10 @@ export default function OTPScreen({ navigation, route }) {
         const fullCode = newCode.join("");
         const result = await verifyOTP(fullCode, verificationId);
         if (result.success) {
-          navigation.replace(result.isNewUser ? "ProfileSetup" : "MainApp");
+          const nextRoute = result.isNewUser
+            ? "ProfileSetup"
+            : await getAuthenticatedRoute(result.user);
+          navigation.replace(nextRoute);
         } else {
           shakeBoxes();
           setTimeout(() => {
@@ -106,6 +127,7 @@ export default function OTPScreen({ navigation, route }) {
       verifyOTP,
       verificationId,
       shakeBoxes,
+      getAuthenticatedRoute,
       navigation,
     ],
   );

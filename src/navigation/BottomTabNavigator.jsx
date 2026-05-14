@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import HomeScreen from "../screens/HomeScreen";
 import MapScreen from "../screens/MapScreen";
+import ChatListScreen from "../screens/ChatListScreen";
 import { colors } from "../theme";
 
 const Tab = createBottomTabNavigator();
@@ -62,7 +63,7 @@ export default function BottomTabNavigator() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Map" component={MapScreen} />
-      <Tab.Screen name="Messages" component={PlaceholderScreen} />
+      <Tab.Screen name="Messages" component={ChatListScreen} />
       <Tab.Screen name="Profile" component={PlaceholderScreen} />
     </Tab.Navigator>
   );
