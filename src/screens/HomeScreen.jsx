@@ -1,21 +1,21 @@
 // src/screens/HomeScreen.js
-import React, { useState, useRef, useCallback } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import { useCallback, useRef, useState } from "react";
 import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   Animated,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
-import { Ionicons } from "@expo/vector-icons";
 import { auth } from "../config/firebase";
+import { AVATAR_COLORS, PRICE_RANGES, SERVICES } from "../constants/services";
 import { useProviders } from "../hooks/useProviders";
-import { SERVICES, AVATAR_COLORS, PRICE_RANGES } from "../constants/services";
-import { colors, spacing, radius } from "../theme";
+import { colors } from "../theme";
 
 export default function HomeScreen({ navigation }) {
   const [activeService, setActiveService] = useState(null);
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   headerSafe: { backgroundColor: colors.background },
   header: {
     backgroundColor: colors.background,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingBottom: 18,
     gap: 16,
   },

@@ -37,10 +37,7 @@ export default function OTPScreen({ navigation, route }) {
       const snap = await getDoc(doc(db, "users", user.uid));
       if (!snap.exists()) return "ProfileSetup";
 
-      const role = snap.data().role;
-      return role === "provider" || role === "both"
-        ? "HomeProvider"
-        : "MainApp";
+      return "MainApp";
     } catch (err) {
       console.error("Erreur chargement role utilisateur:", err);
       return "MainApp";

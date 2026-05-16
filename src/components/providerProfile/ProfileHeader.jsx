@@ -1,14 +1,8 @@
-// src/components/providerProfile/ProfileHeader.js
-import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-} from "react-native";
+// src/components/providerProfile/ProfileHeader.jsx
 import { Ionicons } from "@expo/vector-icons";
-import { AVATAR_COLORS } from "../../constants/services";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+import { AVATAR_COLORS, SERVICES } from "../../constants/services";
 import { colors } from "../../theme";
 
 export default function ProfileHeader({
@@ -19,11 +13,6 @@ export default function ProfileHeader({
   onShare,
   onMore,
   onContact,
-  topBarOpacity,
-  topBarTranslateY,
-  statsOpacity,
-  statsMaxHeight,
-  headerPaddingTop,
 }) {
   const initials = (provider?.displayName || "XX")
     .split(" ")
@@ -32,38 +21,64 @@ export default function ProfileHeader({
     .slice(0, 2)
     .toUpperCase();
   const avatarColor = AVATAR_COLORS[provider?.services?.[0]] || colors.primary;
+  const serviceLabels = (provider?.services || [])
+    .map((id) => SERVICES.find((s) => s.id === id))
+    .filter(Boolean)
+    .map((s) => `${s.icon} ${s.label}`)
+    .join(" · ");
+
+  const stats = [
+    {
+      value: provider?.rating > 0 ? `${provider.rating.toFixed(1)} ⭐` : "-",
+      label: "Note",
+    },
+    { value: provider?.reviewCount || 0, label: "Avis" },
+    { value: provider?.completedJobs || 0, label: "Missions" },
+    { value: "2 ans", label: "Expér." },
+  ];
 
   return (
-    <Animated.View style={[styles.header, { paddingTop: headerPaddingTop }]}>
-      {/* Ligne 1 : Retour + 3 points (animée) */}
-      <Animated.View
-        style={[
-          styles.topBar,
-          {
-            opacity: topBarOpacity,
-            transform: [{ translateY: topBarTranslateY }],
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={onBack}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="arrow-back" size={18} color="#5DCAA5" />
-          <Text style={styles.backText}>Retour</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.iconBtn}
-          onPress={onMore}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="ellipsis-vertical" size={18} color="#9FE1CB" />
-        </TouchableOpacity>
-      </Animated.View>
+    <View style={styles.header}>
+      <View style={styles.topFrame}>
+        <View style={styles.topRow}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={onBack}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="arrow-back" size={18} color="#9FE1CB" />
+          </TouchableOpacity>
+          <View style={styles.topActions}>
+            <TouchableOpacity
+              style={[styles.iconBtn, isFav && styles.iconBtnFavActive]}
+              onPress={onToggleFav}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={isFav ? "heart" : "heart-outline"}
+                size={18}
+                color={isFav ? colors.star : "#9FE1CB"}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={onShare}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="share-social-outline" size={18} color="#9FE1CB" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={onMore}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="ellipsis-vertical" size={18} color="#9FE1CB" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
 
-      {/* Ligne 2 : Avatar + Infos (toujours visible) */}
-      <View style={styles.profileRow}>
+      <View style={styles.avatarRow}>
         <View style={styles.avatarWrap}>
           <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
             <Text style={styles.avatarText}>{initials}</Text>
@@ -74,102 +89,94 @@ export default function ProfileHeader({
             </View>
           )}
         </View>
-        <View style={styles.profileInfos}>
-          <Text style={styles.providerName}>{provider?.displayName}</Text>
-          <View style={styles.statusRow}>
-            <View style={styles.onlineDot} />
-            <Text style={styles.statusText}>Disponible maintenant</Text>
-          </View>
-          <Text style={styles.locationText}>
-            📍 {provider?.quartier || "Douala"}
+
+        <View style={styles.infoBlock}>
+          <Text style={styles.name}>{provider?.displayName}</Text>
+          {serviceLabels ? (
+            <Text style={styles.services} numberOfLines={1}>
+              {serviceLabels}
+            </Text>
+          ) : null}
+          <Text style={styles.phone}>
+            📍 {provider?.quartier || "Douala"} · Disponible maintenant
           </Text>
-          <View style={styles.actionsRow}>
-            <TouchableOpacity
-              style={[styles.actionBtn, styles.actionBtnContact]}
-              onPress={onContact}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="chatbubble" size={14} color="#5DCAA5" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.actionBtn, isFav && styles.actionBtnFavActive]}
-              onPress={onToggleFav}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={isFav ? "heart" : "heart-outline"}
-                size={14}
-                color={isFav ? "#F5A623" : "#9FE1CB"}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionBtn}
-              onPress={onShare}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="share-social-outline" size={14} color="#9FE1CB" />
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
 
-      {/* Stats bar (animée) */}
-      <Animated.View
-        style={[
-          styles.statsBar,
-          { opacity: statsOpacity, maxHeight: statsMaxHeight },
-        ]}
-      >
-        {[
-          { value: `${provider?.rating?.toFixed(1) || "–"}⭐`, label: "Note" },
-          { value: provider?.reviewCount || 0, label: "Avis" },
-          { value: provider?.completedJobs || 0, label: "Missions" },
-          { value: "2 ans", label: "Expérience" },
-        ].map((item, i, arr) => (
-          <View
-            key={item.label}
-            style={[
-              styles.statItem,
-              i === arr.length - 1 && styles.statItemLast,
-            ]}
-          >
-            <Text style={styles.statValue}>{item.value}</Text>
-            <Text style={styles.statLabel}>{item.label}</Text>
-          </View>
-        ))}
-      </Animated.View>
-    </Animated.View>
+      <View style={styles.contactFrame}>
+        <TouchableOpacity
+          style={styles.contactBtn}
+          onPress={onContact}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="chatbubble" size={16} color="#fff" />
+          <Text style={styles.contactText}>Solliciter un service</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.statsFrame}>
+        <View style={styles.statsBar}>
+          {stats.map((s, i, arr) => (
+            <View
+              key={s.label}
+              style={[
+                styles.statItem,
+                i < arr.length - 1 && styles.statItemBorder,
+              ]}
+            >
+              <Text style={styles.statValue}>{s.value}</Text>
+              <Text style={styles.statLabel}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { backgroundColor: colors.background, zIndex: 10 },
-  topBar: {
+  header: {
+    backgroundColor: colors.background,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 12,
+    zIndex: 10,
+  },
+  topFrame: {
+    marginBottom: 14,
+  },
+  topRow: {
+    height: 40,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingBottom: 12,
   },
-  backBtn: { flexDirection: "row", alignItems: "center", gap: 5 },
-  backText: { fontSize: 12, fontWeight: "600", color: "#5DCAA5" },
-  iconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: "rgba(255,255,255,.1)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,.08)",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.08)",
   },
-  profileRow: {
-    flexDirection: "row",
-    gap: 14,
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    alignItems: "flex-start",
+  topActions: { flexDirection: "row", gap: 8 },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.08)",
   },
+  iconBtnFavActive: {
+    backgroundColor: "rgba(245,166,35,.15)",
+    borderColor: "rgba(245,166,35,.3)",
+  },
+  avatarRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   avatarWrap: { position: "relative", flexShrink: 0 },
   avatar: {
     width: 64,
@@ -192,46 +199,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  profileInfos: { flex: 1, gap: 4, paddingTop: 2 },
-  providerName: {
-    fontSize: 19,
-    fontWeight: "800",
-    color: "#fff",
-    letterSpacing: -0.4,
+  infoBlock: { flex: 1, gap: 4 },
+  name: { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
+  services: { fontSize: 11, color: "#5DCAA5", fontWeight: "600" },
+  phone: { fontSize: 11, color: "rgba(255,255,255,.4)" },
+  contactFrame: {
+    marginTop: 14,
   },
-  statusRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  onlineDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#22C55E",
-  },
-  statusText: { fontSize: 11, color: "#9FE1CB" },
-  locationText: { fontSize: 11, color: "rgba(255,255,255,.4)" },
-  actionsRow: { flexDirection: "row", gap: 7, marginTop: 4 },
-  actionBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,.1)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,.08)",
+  contactBtn: {
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    gap: 8,
   },
-  actionBtnContact: {
-    backgroundColor: "rgba(29,158,117,.3)",
-    borderColor: "rgba(29,158,117,.4)",
-  },
-  actionBtnFavActive: {
-    backgroundColor: "rgba(245,166,35,.15)",
-    borderColor: "rgba(245,166,35,.3)",
+  contactText: { color: "#fff", fontSize: 13, fontWeight: "800" },
+  statsFrame: {
+    marginTop: 14,
   },
   statsBar: {
+    height: 46,
     flexDirection: "row",
     backgroundColor: "rgba(29,158,117,.18)",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(29,158,117,.15)",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(29,158,117,.2)",
     overflow: "hidden",
   },
   statItem: {
@@ -239,10 +233,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     alignItems: "center",
     gap: 2,
+  },
+  statItemBorder: {
     borderRightWidth: 1,
     borderRightColor: "rgba(29,158,117,.2)",
   },
-  statItemLast: { borderRightWidth: 0 },
   statValue: { fontSize: 14, fontWeight: "800", color: "#5DCAA5" },
   statLabel: {
     fontSize: 9,

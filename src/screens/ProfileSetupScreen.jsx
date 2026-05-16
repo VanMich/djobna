@@ -96,13 +96,8 @@ export default function ProfileSetupScreen({ navigation }) {
       role,
       services: role === "provider" ? selectedServices : undefined,
     });
-    // ✅ Correction — redirection selon le rôle
     if (result.success) {
-      if (role === "provider") {
-        navigation.replace("HomeProvider"); // ← dashboard prestataire
-      } else {
-        navigation.replace("MainApp"); // ← app client
-      }
+      navigation.replace("MainApp");
     }
   };
 

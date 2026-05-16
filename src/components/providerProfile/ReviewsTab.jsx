@@ -1,6 +1,9 @@
-// src/components/providerProfile/ReviewsTab.js
+// src/components/providerProfile/ReviewsTab.jsx
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+
+import MenuSection from "../clientProfile/MenuSection";
+import { colors } from "../../theme";
 
 function ReviewItem({ review, isLast }) {
   return (
@@ -29,13 +32,11 @@ export default function ReviewsTab({ provider }) {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.section, styles.sectionLast]}>
+      <MenuSection title="Résumé des avis">
         <View style={styles.summary}>
           <View style={styles.bigNote}>
             <Text style={styles.bigVal}>{rating.toFixed(1)}</Text>
-            <Text style={styles.bigStars}>
-              {"⭐".repeat(Math.round(rating))}
-            </Text>
+            <Text style={styles.bigStars}>{"⭐".repeat(Math.round(rating))}</Text>
             <Text style={styles.bigCount}>{reviewCount} avis</Text>
           </View>
           <View style={styles.bars}>
@@ -54,11 +55,13 @@ export default function ReviewsTab({ provider }) {
             ))}
           </View>
         </View>
-        <View style={styles.divider} />
+      </MenuSection>
+
+      <MenuSection title="Avis clients">
         {reviews.length > 0 ? (
           reviews.map((review, i) => (
             <ReviewItem
-              key={i}
+              key={`${review.authorName}-${review.date}-${i}`}
               review={review}
               isLast={i === reviews.length - 1}
             />
@@ -69,32 +72,23 @@ export default function ReviewsTab({ provider }) {
             <Text style={styles.emptyText}>Pas encore d'avis</Text>
           </View>
         )}
-      </View>
+      </MenuSection>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { paddingBottom: 10 },
-  section: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    margin: 10,
-    marginBottom: 0,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#EEF0EF",
-  },
-  sectionLast: { marginBottom: 10 },
   summary: {
     flexDirection: "row",
     gap: 14,
     alignItems: "center",
-    marginBottom: 12,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
   },
   bigNote: { alignItems: "center", minWidth: 64 },
   bigVal: { fontSize: 36, fontWeight: "800", color: "#111", lineHeight: 40 },
-  bigStars: { fontSize: 12, color: "#F5A623", marginTop: 3 },
+  bigStars: { fontSize: 12, color: colors.star, marginTop: 3 },
   bigCount: { fontSize: 10, color: "#888", marginTop: 2 },
   bars: { flex: 1, gap: 5 },
   barRow: { flexDirection: "row", alignItems: "center", gap: 6 },
@@ -106,14 +100,14 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     overflow: "hidden",
   },
-  barFill: { height: 5, backgroundColor: "#F5A623", borderRadius: 3 },
-  divider: { height: 0.5, backgroundColor: "#F0F0F0", marginBottom: 12 },
+  barFill: { height: 5, backgroundColor: colors.star, borderRadius: 3 },
   review: {
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 0.5,
     borderBottomColor: "#F5F5F5",
   },
-  reviewLast: { borderBottomWidth: 0, paddingBottom: 0 },
+  reviewLast: { borderBottomWidth: 0, paddingBottom: 14 },
   reviewTop: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -122,7 +116,7 @@ const styles = StyleSheet.create({
   },
   reviewName: { fontSize: 12, fontWeight: "700", color: "#111" },
   reviewDate: { fontSize: 10, color: "#AAB0B7" },
-  reviewStars: { fontSize: 10, color: "#F5A623", marginBottom: 4 },
+  reviewStars: { fontSize: 10, color: colors.star, marginBottom: 4 },
   reviewText: { fontSize: 11, color: "#666", lineHeight: 17 },
   emptyReviews: { alignItems: "center", paddingVertical: 20, gap: 8 },
   emptyIcon: { fontSize: 32 },

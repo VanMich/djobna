@@ -1,6 +1,7 @@
-// src/components/providerProfile/ProfileTabs.js
+// src/components/providerProfile/ProfileTabs.jsx
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
 import { colors } from "../../theme";
 
 const TABS = [
@@ -11,44 +12,52 @@ const TABS = [
 
 export default function ProfileTabs({ activeTab, reviewCount, onTabChange }) {
   return (
-    <View style={styles.container}>
-      {TABS.map((tab) => (
-        <TouchableOpacity
-          key={tab.id}
-          style={[styles.tab, activeTab === tab.id && styles.tabActive]}
-          onPress={() => onTabChange(tab.id)}
-          activeOpacity={0.8}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              activeTab === tab.id && styles.tabTextActive,
-            ]}
+    <View style={styles.wrap}>
+      <View style={styles.container}>
+        {TABS.map((tab) => (
+          <TouchableOpacity
+            key={tab.id}
+            style={[styles.tab, activeTab === tab.id && styles.tabActive]}
+            onPress={() => onTabChange(tab.id)}
+            activeOpacity={0.8}
           >
-            {tab.label}
-            {tab.id === "reviews" && ` (${reviewCount || 0})`}
-          </Text>
-        </TouchableOpacity>
-      ))}
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === tab.id && styles.tabTextActive,
+              ]}
+            >
+              {tab.label}
+              {tab.id === "reviews" && ` (${reviewCount || 0})`}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrap: {
+    backgroundColor: "#F4F6F5",
+    paddingHorizontal: 12,
+    paddingTop: 10,
+  },
   container: {
     flexDirection: "row",
     backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEF0EF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EEF0EF",
+    padding: 4,
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 9,
     alignItems: "center",
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
+    borderRadius: 12,
   },
-  tabActive: { borderBottomColor: colors.primary },
+  tabActive: { backgroundColor: "#F0FAF6" },
   tabText: { fontSize: 12, fontWeight: "700", color: "#AAB0B7" },
   tabTextActive: { color: colors.primary },
 });

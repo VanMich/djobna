@@ -1,168 +1,84 @@
-// src/screens/ProviderProfileScreen.js
-import React, { useState, useRef, useCallback, useEffect } from "react";
+// src/screens/ProviderProfileScreen.jsx
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  View,
-  StyleSheet,
-  ScrollView,
-  Animated,
-  SafeAreaView,
-  Share,
+  ActivityIndicator,
   Alert,
+  SafeAreaView,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { doc, getDoc } from "firebase/firestore";
+
+import PortfolioTab from "../components/providerProfile/PortfolioTab";
+import ProfileHeader from "../components/providerProfile/ProfileHeader";
+import ProfileTab from "../components/providerProfile/ProfileTab";
+import ProfileTabs from "../components/providerProfile/ProfileTabs";
+import ReviewsTab from "../components/providerProfile/ReviewsTab";
 import { db } from "../config/firebase";
 import { colors } from "../theme";
 
-import ProfileHeader from "../components/providerProfile/ProfileHeader";
-import ProfileTabs from "../components/providerProfile/ProfileTabs";
-import ProfileTab from "../components/providerProfile/ProfileTab";
-import PortfolioTab from "../components/providerProfile/PortfolioTab";
-import ReviewsTab from "../components/providerProfile/ReviewsTab";
-
-const STATS_BAR_H = 46;
-const TOPBAR_H = 52;
-const PADDING_FULL = 44;
-const PADDING_MINI = 14;
-
 export default function ProviderProfileScreen({ navigation, route }) {
-  const { providerId } = route.params;
+  const { providerId } = route.params || {};
   const [provider, setProvider] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("profile");
   const [isFav, setIsFav] = useState(false);
 
-  // Valeurs animées
-  const topBarOpacity = useRef(new Animated.Value(1)).current;
-  const topBarTranslateY = useRef(new Animated.Value(0)).current;
-  const statsOpacity = useRef(new Animated.Value(1)).current;
-  const statsMaxHeight = useRef(new Animated.Value(STATS_BAR_H)).current;
-  const headerPaddingTop = useRef(new Animated.Value(PADDING_FULL)).current;
-  const isHidden = useRef(false);
-  const lastScrollY = useRef(0);
+  const scrollRef = useRef(null);
 
-  // Chargement des données
   useEffect(() => {
+    if (!providerId) {
+      setLoading(false);
+      return undefined;
+    }
+
+    let active = true;
+
     (async () => {
       try {
-        const [provSnap, userSnap] = await Promise.all([
+        const [providerSnap, userSnap] = await Promise.all([
           getDoc(doc(db, "providers", providerId)),
           getDoc(doc(db, "users", providerId)),
         ]);
-        if (provSnap.exists() && userSnap.exists()) {
+
+        if (active && providerSnap.exists() && userSnap.exists()) {
           setProvider({
             id: providerId,
             ...userSnap.data(),
-            ...provSnap.data(),
+            ...providerSnap.data(),
           });
         }
       } catch (err) {
         console.error("Erreur chargement profil:", err);
+      } finally {
+        if (active) setLoading(false);
       }
     })();
+
+    return () => {
+      active = false;
+    };
   }, [providerId]);
 
-  // Cacher les éléments du header
-  const hideElements = useCallback(() => {
-    if (isHidden.current) return;
-    isHidden.current = true;
-    Animated.parallel([
-      Animated.timing(topBarOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(topBarTranslateY, {
-        toValue: -8,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(statsOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(statsMaxHeight, {
-        toValue: 0,
-        duration: 220,
-        useNativeDriver: false,
-      }),
-      Animated.timing(headerPaddingTop, {
-        toValue: PADDING_MINI,
-        duration: 220,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [
-    topBarOpacity,
-    topBarTranslateY,
-    statsOpacity,
-    statsMaxHeight,
-    headerPaddingTop,
-  ]);
-
-  // Montrer les éléments du header
-  const showElements = useCallback(() => {
-    if (!isHidden.current) return;
-    isHidden.current = false;
-    Animated.parallel([
-      Animated.timing(topBarOpacity, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(topBarTranslateY, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(statsOpacity, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(statsMaxHeight, {
-        toValue: STATS_BAR_H,
-        duration: 220,
-        useNativeDriver: false,
-      }),
-      Animated.timing(headerPaddingTop, {
-        toValue: PADDING_FULL,
-        duration: 220,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [
-    topBarOpacity,
-    topBarTranslateY,
-    statsOpacity,
-    statsMaxHeight,
-    headerPaddingTop,
-  ]);
-
-  // Gestion du scroll
-  const handleScroll = useCallback(
-    (e) => {
-      const currentY = e.nativeEvent.contentOffset.y;
-      const diff = currentY - lastScrollY.current;
-      if (diff > 3 && currentY > 10) hideElements();
-      if (diff < -3) showElements();
-      lastScrollY.current = currentY;
-    },
-    [hideElements, showElements],
-  );
-
-  // Actions
   const handleBack = useCallback(() => navigation.goBack(), [navigation]);
   const handleToggleFav = useCallback(() => setIsFav((prev) => !prev), []);
+
   const handleShare = useCallback(async () => {
+    if (!provider) return;
+
     try {
       await Share.share({
-        message: `Découvrez ${provider?.displayName} sur Djobna !`,
+        message: `Découvrez ${provider.displayName} sur Djobna !`,
       });
     } catch (err) {
       console.error(err);
     }
   }, [provider]);
+
   const handleMore = useCallback(() => {
     Alert.alert("Options", "", [
       { text: "Signaler ce prestataire", style: "destructive" },
@@ -170,20 +86,42 @@ export default function ProviderProfileScreen({ navigation, route }) {
       { text: "Annuler", style: "cancel" },
     ]);
   }, []);
+
   const handleContact = useCallback(() => {
+    if (!providerId) return;
+
     navigation.navigate("Chat", {
       providerId,
       providerName: provider?.displayName,
       providerServices: provider?.services,
     });
   }, [navigation, providerId, provider]);
-  const handleTabChange = useCallback(
-    (tabId) => {
-      setActiveTab(tabId);
-      showElements();
-    },
-    [showElements],
-  );
+
+  const handleTabChange = useCallback((tabId) => {
+    setActiveTab(tabId);
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={styles.loader}>
+        <StatusBar style="light" />
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!provider) {
+    return (
+      <View style={styles.loader}>
+        <StatusBar style="light" />
+        <Text style={styles.emptyTitle}>Profil introuvable</Text>
+        <Text style={styles.emptyText}>
+          Ce prestataire n'est plus disponible.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.root}>
@@ -197,24 +135,20 @@ export default function ProviderProfileScreen({ navigation, route }) {
           onShare={handleShare}
           onMore={handleMore}
           onContact={handleContact}
-          topBarOpacity={topBarOpacity}
-          topBarTranslateY={topBarTranslateY}
-          statsOpacity={statsOpacity}
-          statsMaxHeight={statsMaxHeight}
-          headerPaddingTop={headerPaddingTop}
         />
       </SafeAreaView>
+
       <ProfileTabs
         activeTab={activeTab}
         reviewCount={provider?.reviewCount}
         onTabChange={handleTabChange}
       />
+
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
       >
         {activeTab === "profile" && <ProfileTab provider={provider} />}
         {activeTab === "portfolio" && <PortfolioTab provider={provider} />}
@@ -226,7 +160,21 @@ export default function ProviderProfileScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  headerSafe: { backgroundColor: colors.background },
+  headerSafe: {
+    backgroundColor: colors.background,
+    zIndex: 20,
+    elevation: 20,
+  },
+  loader: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.background,
+    gap: 8,
+    paddingHorizontal: 24,
+  },
+  emptyTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
+  emptyText: { color: colors.textLight, fontSize: 13, textAlign: "center" },
   scroll: { flex: 1, backgroundColor: "#F4F6F5" },
   scrollContent: { paddingBottom: 30 },
 });
