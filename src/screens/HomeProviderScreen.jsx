@@ -151,7 +151,7 @@ export default function HomeProviderScreen({ navigation }) {
     );
   }
 
-  // ── Prestataire hors ligne → écran simplifié ──────────────────────────────
+  // ── Prestataire hors ligne → header + demandes en attente déjà reçues ────
   if (!isAvailable) {
     return (
       <View style={styles.root}>
@@ -160,19 +160,46 @@ export default function HomeProviderScreen({ navigation }) {
           provider={provider}
           isAvailable={false}
           stats={stats}
-          requestCount={0}
+          requestCount={requests.length}
           onToggle={toggleAvailability}
           onNotif={() => navigation.navigate("Notifications")}
         />
-        <View style={styles.offlineBody}>
-          <View style={styles.offlineIcon}>
-            <Text style={styles.offlineEmoji}>😴</Text>
-          </View>
-          <Text style={styles.offlineTitle}>Vous êtes hors ligne</Text>
-          <Text style={styles.offlineSub}>
-            Activez votre disponibilité pour recevoir des demandes de clients.
-          </Text>
-        </View>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Demandes reçues avant la mise hors ligne */}
+          {requests.length > 0 ? (
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Demandes en attente</Text>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countBadgeText}>{requests.length}</Text>
+                </View>
+              </View>
+              {requests.map((request) => (
+                <RequestCard
+                  key={request.id}
+                  request={request}
+                  onAccept={handleAccept}
+                  onDecline={handleDecline}
+                  onProposeOtherTime={handleProposeOtherTime}
+                />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.offlineBody}>
+              <View style={styles.offlineIcon}>
+                <Text style={styles.offlineEmoji}>😴</Text>
+              </View>
+              <Text style={styles.offlineTitle}>Vous êtes hors ligne</Text>
+              <Text style={styles.offlineSub}>
+                Activez votre disponibilité pour recevoir des demandes de clients.
+              </Text>
+            </View>
+          )}
+        </ScrollView>
       </View>
     );
   }

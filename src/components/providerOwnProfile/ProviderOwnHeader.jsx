@@ -28,7 +28,7 @@ export default function ProviderOwnHeader({ profile, provider, onSettings }) {
 
   const stats = [
     {
-      value: provider?.rating > 0 ? `${provider.rating.toFixed(1)} ⭐` : "-",
+      value: (provider?.rating?.global ?? 0) > 0 ? `${(provider.rating.global).toFixed(1)} ⭐` : "-",
       label: "Note",
     },
     { value: provider?.reviewCount || 0, label: "Avis" },

@@ -1,5 +1,5 @@
 // src/screens/ClientProfileScreen.js
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   Switch,
   ActivityIndicator,
+  Animated,
   TouchableOpacity,
 } from "react-native";
 import { CommonActions } from "@react-navigation/native";
@@ -33,21 +34,36 @@ export default function ClientProfileScreen({ navigation }) {
 
   const { providerStatus, switchRole, loading: roleLoading } = useRoleSwitch();
 
+  const roleScale = useRef(new Animated.Value(1)).current;
+  const onRolePressIn = useCallback(() => {
+    Animated.spring(roleScale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  }, [roleScale]);
+  const onRolePressOut = useCallback(() => {
+    Animated.spring(roleScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 8 }).start();
+  }, [roleScale]);
+
   const handleProviderButton = useCallback(async () => {
     if (providerStatus === null) {
       // Pas encore de compte prestataire → lancer la création
       navigation.navigate("ProviderSetup");
     } else if (providerStatus === "approved") {
-      // Compte validé → basculer en mode prestataire
-      await switchRole("provider");
-      // AppNavigator écoute en temps réel : la tab bar bascule automatiquement
+      const result = await switchRole("provider");
+      if (result?.success) {
+        // Réinitialise la stack — AppNavigator relit active_role depuis la DB
+        navigation.dispatch(
+          CommonActions.reset({ index: 0, routes: [{ name: "MainApp" }] })
+        );
+      }
     } else if (providerStatus === "pending") {
       navigation.navigate("VerificationPending");
     } else if (providerStatus === "rejected") {
       Alert.alert(
         "Dossier rejeté",
-        "Votre dossier a été rejeté. Retournez sur l'écran de vérification pour soumettre à nouveau vos documents.",
-        [{ text: "OK" }]
+        "Votre dossier a été rejeté. Vous pouvez soumettre à nouveau vos documents.",
+        [
+          { text: "Annuler", style: "cancel" },
+          { text: "Soumettre à nouveau", onPress: () => navigation.navigate("ProviderSetup") },
+        ]
       );
     }
   }, [providerStatus, navigation, switchRole]);
@@ -144,38 +160,46 @@ export default function ClientProfileScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {/* ── Bascule de rôle ── */}
-        <TouchableOpacity
-          style={[
-            styles.roleCard,
-            providerStatus === "approved" && styles.roleCardActive,
-            providerStatus === "pending" && styles.roleCardPending,
-            providerStatus === "rejected" && styles.roleCardRejected,
-          ]}
-          onPress={handleProviderButton}
-          activeOpacity={0.85}
-          disabled={roleLoading || providerStatus === undefined}
-        >
-          <Text style={styles.roleCardIcon}>
-            {providerStatus === null ? "🔧" :
-             providerStatus === "pending" ? "⏳" :
-             providerStatus === "approved" ? "✅" : "❌"}
-          </Text>
-          <View style={styles.roleCardText}>
-            <Text style={styles.roleCardTitle}>
-              {providerStatus === null ? "Devenir prestataire" :
-               providerStatus === "pending" ? "Vérification en cours..." :
-               providerStatus === "approved" ? "Passer en mode Prestataire" :
-               "Dossier rejeté — Réessayer"}
+        <Animated.View style={{ transform: [{ scale: roleScale }] }}>
+          <TouchableOpacity
+            style={[
+              styles.roleCard,
+              providerStatus === "approved" && styles.roleCardActive,
+              providerStatus === "pending" && styles.roleCardPending,
+              providerStatus === "rejected" && styles.roleCardRejected,
+            ]}
+            onPress={handleProviderButton}
+            onPressIn={onRolePressIn}
+            onPressOut={onRolePressOut}
+            activeOpacity={1}
+            disabled={roleLoading || providerStatus === undefined}
+          >
+            <Text style={styles.roleCardIcon}>
+              {providerStatus === null ? "🔧" :
+               providerStatus === "pending" ? "⏳" :
+               providerStatus === "approved" ? "✅" : "❌"}
             </Text>
-            <Text style={styles.roleCardSub}>
-              {providerStatus === null ? "Proposez vos services sur Djobna" :
-               providerStatus === "pending" ? "Votre dossier est en cours d'examen" :
-               providerStatus === "approved" ? "Votre compte prestataire est validé" :
-               "Cliquez pour soumettre à nouveau"}
-            </Text>
-          </View>
-          <Text style={styles.roleCardArrow}>›</Text>
-        </TouchableOpacity>
+            <View style={styles.roleCardText}>
+              <Text style={styles.roleCardTitle}>
+                {providerStatus === null ? "Devenir prestataire" :
+                 providerStatus === "pending" ? "Vérification en cours..." :
+                 providerStatus === "approved" ? "Passer en mode Prestataire" :
+                 "Dossier rejeté — Réessayer"}
+              </Text>
+              <Text style={styles.roleCardSub}>
+                {roleLoading ? "Changement de mode en cours…" :
+                 providerStatus === null ? "Proposez vos services sur Djobna" :
+                 providerStatus === "pending" ? "Votre dossier est en cours d'examen" :
+                 providerStatus === "approved" ? "Votre compte prestataire est validé" :
+                 "Cliquez pour soumettre à nouveau"}
+              </Text>
+            </View>
+            {roleLoading
+              ? <ActivityIndicator size="small" color={colors.primary} />
+              : <Text style={styles.roleCardArrow}>›</Text>
+            }
+          </TouchableOpacity>
+        </Animated.View>
 
         {/* ── Favoris ── */}
         <MenuSection title="Mes prestataires favoris">

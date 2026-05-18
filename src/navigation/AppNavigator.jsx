@@ -39,23 +39,42 @@ export default function AppNavigator({ navigation }) {
           return;
         }
 
-        // Lecture initiale de active_role — remplace snap.data().activeRole
+        // Lecture initiale de active_role + role — remplace snap.data().activeRole
         // maybeSingle() : pas d'erreur si le profil n'existe pas encore
         const { data } = await supabase
           .from("users")
-          .select("active_role")
-          .eq("id", user.id) // user.id = user.uid Firebase
+          .select("active_role, role")
+          .eq("id", user.id)
           .maybeSingle();
 
         if (!data) {
-          // Pas de profil → l'utilisateur doit compléter son inscription
           setLoading(false);
           navigation.replace("ProfileSetup");
           return;
         }
 
-        // active_role remplace activeRole (camelCase Firestore → snake_case PostgreSQL)
-        setActiveRole(data.active_role || "client");
+        let resolvedRole = data.active_role || "client";
+
+        // Guard : si active_role est "provider", vérifier que la vérification est approuvée.
+        // Empêche l'accès au dashboard prestataire si le dossier n'est pas encore validé.
+        if (resolvedRole === "provider") {
+          const { data: providerData } = await supabase
+            .from("providers")
+            .select("verification_status")
+            .eq("id", user.id)
+            .maybeSingle();
+
+          if (!providerData || providerData.verification_status !== "approved") {
+            resolvedRole = "client";
+            // Corrige l'incohérence en base
+            await supabase
+              .from("users")
+              .update({ active_role: "client" })
+              .eq("id", user.id);
+          }
+        }
+
+        setActiveRole(resolvedRole);
         setLoading(false);
 
         // Realtime : écoute les changements de rôle pour basculer l'UI sans redémarrer

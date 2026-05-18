@@ -42,3 +42,4 @@ yarn-error.*
 
 # sensitive credentials
 identifiants.md
+scripts/setup-supabase.js

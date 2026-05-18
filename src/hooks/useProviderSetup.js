@@ -33,7 +33,7 @@ async function uploadKycDoc(userId, uri, filename) {
   const blob = await fetch(uri).then((r) => r.blob());
   const path = `${userId}/${filename}`;
   const { error } = await supabase.storage
-    .from("document")
+    .from("documents")
     .upload(path, blob, { upsert: true });
   if (error) throw error;
   return path;
@@ -101,12 +101,10 @@ export function useProviderSetup() {
         years_of_experience: Number(data.yearsOfExperience) || 0, // yearsOfExperience → years_of_experience
         languages: data.languages,
         availability: false,
-        latitude: null,
-        longitude: null,
-        rating: { global: 0, punctuality: 0, quality: 0, communication: 0, valueForMoney: 0 },
-        review_count: 0,                      // reviewCount → review_count
-        verification_status: "pending",       // verificationStatus → verification_status
-        subscription: { plan: "none", expiresAt: null, trialUsed: false },
+        location: { latitude: null, longitude: null },
+        review_count: 0,
+        verification_status: "pending",
+        subscription_plan: "classic",
         wallet_balance: 0,                    // walletBalance → wallet_balance
         portfolio: [],
         created_at: now,
@@ -127,12 +125,20 @@ export function useProviderSetup() {
       });
       if (verifError) throw verifError;
 
-      // Mise à jour du rôle utilisateur → "both" (client + prestataire)
-      // L'utilisateur reste en mode "client" jusqu'à validation du compte
-      // Remplace updateDoc(doc(db,'users', uid), { role: 'both' })
+      // Mise à jour du profil utilisateur + rôle → "both"
+      // On synchronise display_name, photo_url, ville, quartier, pays dans users
+      // car tous les écrans lisent ces champs depuis users (JOIN users!inner)
       const { error: userError } = await supabase
         .from("users")
-        .update({ role: "both", updated_at: now })
+        .update({
+          role: "both",
+          display_name: data.displayName,
+          photo_url,
+          ville: data.ville,
+          quartier: data.quartier,
+          pays: data.pays,
+          updated_at: now,
+        })
         .eq("id", user.id);
       if (userError) throw userError;
 

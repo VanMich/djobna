@@ -50,7 +50,7 @@ export default function VerificationPendingScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.btn}
-          onPress={() => navigation.replace("MainApp")}
+          onPress={() => navigation.navigate("MainApp")}
           activeOpacity={0.85}
         >
           <Text style={styles.btnText}>Continuer en mode Client →</Text>

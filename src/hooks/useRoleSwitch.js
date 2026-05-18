@@ -9,31 +9,56 @@
 //   activeRole                    → active_role  (snake_case PostgreSQL)
 //   verificationStatus            → verification_status
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "../config/supabase";
 
 export function useRoleSwitch() {
   const [providerStatus, setProviderStatus] = useState(undefined); // undefined = chargement
   const [loading, setLoading] = useState(false);
+  const channelRef = useRef(null);
 
   useEffect(() => {
-    // getUser() est async sous Supabase — on ne peut plus faire auth.currentUser directement
+    let active = true;
+
     supabase.auth.getUser().then(({ data }) => {
       const uid = data?.user?.id;
       if (!uid) { setProviderStatus(null); return; }
 
-      // Vérifie si l'utilisateur a un profil prestataire
-      // maybeSingle() = pas d'erreur si aucun résultat (remplace snap.exists())
-      supabase
-        .from("providers")
-        .select("verification_status") // verification_status = verificationStatus en snake_case
-        .eq("id", uid)
-        .maybeSingle()
-        .then(({ data: provider }) => {
-          setProviderStatus(provider?.verification_status ?? null);
+      const fetchStatus = () =>
+        supabase
+          .from("providers")
+          .select("verification_status")
+          .eq("id", uid)
+          .maybeSingle()
+          .then(({ data: provider }) => {
+            if (active) setProviderStatus(provider?.verification_status ?? null);
+          })
+          .catch(() => { if (active) setProviderStatus(null); });
+
+      fetchStatus();
+
+      // Realtime : met à jour la carte de rôle dès que l'admin approuve ou rejette
+      channelRef.current = supabase
+        .channel(`role-switch-${uid}`)
+        .on("postgres_changes", {
+          event: "UPDATE",
+          schema: "public",
+          table: "providers",
+          filter: `id=eq.${uid}`,
+        }, (payload) => {
+          const newStatus = payload.new?.verification_status;
+          if (active && newStatus !== undefined) setProviderStatus(newStatus);
         })
-        .catch(() => setProviderStatus(null));
+        .subscribe();
     });
+
+    return () => {
+      active = false;
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
   }, []);
 
   // Met à jour active_role dans la table users.

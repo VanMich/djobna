@@ -69,8 +69,14 @@ export function useProviderOwnProfile() {
           yearsOfExperience: providerData.years_of_experience || 0,
           languages: providerData.languages || [],
           availability: providerData.availability,
-          rating: providerData.rating || { global: 0 },
-          reviewCount: providerData.review_count || 0,             // review_count → reviewCount
+          rating: {
+            global: providerData.rating_global || 0,
+            punctuality: providerData.rating_punctuality || 0,
+            quality: providerData.rating_quality || 0,
+            communication: providerData.rating_communication || 0,
+            valueForMoney: providerData.rating_value_for_money || 0,
+          },
+          reviewCount: providerData.review_count || 0,
           monthRevenue: providerData.month_revenue || 0,           // month_revenue → monthRevenue
           todayCount: providerData.today_count || 0,
           verificationStatus: providerData.verification_status,

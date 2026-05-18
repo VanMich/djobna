@@ -97,9 +97,9 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
           photos.map(async (uri, i) => {
             const blob = await fetch(uri).then((r) => r.blob());
             const path = `${user.id}/${Date.now()}-${i}.jpg`;
-            const { error } = await supabase.storage.from("requests").upload(path, blob);
+            const { error } = await supabase.storage.from("request-photos").upload(path, blob);
             if (error) throw error;
-            return supabase.storage.from("requests").getPublicUrl(path).data.publicUrl;
+            return supabase.storage.from("request-photos").getPublicUrl(path).data.publicUrl;
           })
         );
       } catch (err) {

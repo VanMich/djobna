@@ -32,7 +32,15 @@ function mapProvider(p) {
     yearsOfExperience: p.years_of_experience || 0,
     languages: p.languages || [],
     availability: p.availability,
-    rating: p.rating || { global: 0 },
+    location: p.location || null,
+    subscription: { plan: p.subscription_plan || "classic" },
+    rating: {
+      global: p.rating_global || 0,
+      punctuality: p.rating_punctuality || 0,
+      quality: p.rating_quality || 0,
+      communication: p.rating_communication || 0,
+      valueForMoney: p.rating_value_for_money || 0,
+    },
     reviewCount: p.review_count || 0,
     verificationStatus: p.verification_status,
     portfolio: p.portfolio || [],
@@ -111,10 +119,7 @@ export function useProviders(filters = {}) {
     }
 
     if (minRating > 0) {
-      result = result.filter((p) => {
-        const r = typeof p.rating === "object" ? p.rating?.global ?? 0 : p.rating ?? 0;
-        return r >= minRating;
-      });
+      result = result.filter((p) => (p.rating?.global ?? 0) >= minRating);
     }
 
     if (searchQuery.trim()) {

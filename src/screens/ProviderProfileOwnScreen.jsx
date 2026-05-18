@@ -4,10 +4,11 @@
 // Sections : services, réalisations, compte, notifications, aide.
 // Le badge KYC (§14.4) s'affiche tant que le compte n'est pas vérifié.
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useRef } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   ScrollView,
   StyleSheet,
   Switch,
@@ -15,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { CommonActions } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 
 import EditProfileSheet from "../components/providerOwnProfile/EditProfileSheet";
@@ -31,7 +33,7 @@ import { colors, spacing } from "../theme";
 // Affiché en haut du contenu scrollable tant que le compte n'est pas "verified".
 // 3 états : non soumis (null/undefined) / en cours (pending) / refusé (rejected).
 function KycBanner({ status }) {
-  if (status === "verified") return null;
+  if (status === "approved") return null;
 
   const config = {
     pending: {
@@ -87,13 +89,25 @@ export default function ProviderProfileOwnScreen({ navigation }) {
 
   const { switchRole, loading: roleLoading } = useRoleSwitch();
   const [editVisible, setEditVisible] = useState(false);
+
+  const roleScale = useRef(new Animated.Value(1)).current;
+  const onRolePressIn = useCallback(() => {
+    Animated.spring(roleScale, { toValue: 0.96, useNativeDriver: true, speed: 50, bounciness: 0 }).start();
+  }, [roleScale]);
+  const onRolePressOut = useCallback(() => {
+    Animated.spring(roleScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 8 }).start();
+  }, [roleScale]);
   const [notifMessages, setNotifMessages] = useState(true);
   const [notifRequests, setNotifRequests] = useState(true);
 
   const handleSwitchToClient = useCallback(async () => {
-    await switchRole("client");
-    // AppNavigator écoute en temps réel : la tab bar bascule automatiquement
-  }, [switchRole]);
+    const result = await switchRole("client");
+    if (result?.success) {
+      navigation.dispatch(
+        CommonActions.reset({ index: 0, routes: [{ name: "MainApp" }] })
+      );
+    }
+  }, [switchRole, navigation]);
 
   const handleLogout = useCallback(() => {
     Alert.alert(
@@ -145,19 +159,28 @@ export default function ProviderProfileOwnScreen({ navigation }) {
         <KycBanner status={provider?.verificationStatus} />
 
         {/* ── Bascule vers le mode Client ── */}
-        <TouchableOpacity
-          style={styles.roleCard}
-          onPress={handleSwitchToClient}
-          activeOpacity={0.85}
-          disabled={roleLoading}
-        >
-          <Text style={styles.roleCardIcon}>🙋</Text>
-          <View style={styles.roleCardText}>
-            <Text style={styles.roleCardTitle}>Passer en mode Client</Text>
-            <Text style={styles.roleCardSub}>Chercher des prestataires et faire des demandes</Text>
-          </View>
-          <Text style={styles.roleCardArrow}>›</Text>
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: roleScale }] }}>
+          <TouchableOpacity
+            style={styles.roleCard}
+            onPress={handleSwitchToClient}
+            onPressIn={onRolePressIn}
+            onPressOut={onRolePressOut}
+            activeOpacity={1}
+            disabled={roleLoading}
+          >
+            <Text style={styles.roleCardIcon}>🙋</Text>
+            <View style={styles.roleCardText}>
+              <Text style={styles.roleCardTitle}>Passer en mode Client</Text>
+              <Text style={styles.roleCardSub}>
+                {roleLoading ? "Changement de mode en cours…" : "Chercher des prestataires et faire des demandes"}
+              </Text>
+            </View>
+            {roleLoading
+              ? <ActivityIndicator size="small" color={colors.primary} />
+              : <Text style={styles.roleCardArrow}>›</Text>
+            }
+          </TouchableOpacity>
+        </Animated.View>
 
         <MenuSection title="Mes services">
           <View style={styles.servicesGrid}>

@@ -130,8 +130,14 @@ export default function ProviderProfileScreen({ navigation, route }) {
           yearsOfExperience: data.years_of_experience || 0,
           languages: data.languages || [],
           availability: data.availability,
-          rating: data.rating || { global: 0 },
-          reviewCount: data.review_count || 0,       // review_count → reviewCount
+          rating: {
+            global: data.rating_global || 0,
+            punctuality: data.rating_punctuality || 0,
+            quality: data.rating_quality || 0,
+            communication: data.rating_communication || 0,
+            valueForMoney: data.rating_value_for_money || 0,
+          },
+          reviewCount: data.review_count || 0,
           verificationStatus: data.verification_status,
           portfolio: data.portfolio || [],
         });
@@ -174,8 +180,6 @@ export default function ProviderProfileScreen({ navigation, route }) {
     });
   }, [navigation, providerId, provider]);
 
-  // Vérifie que le client a un profil complet avant d'ouvrir la modale de demande
-  // Remplace auth.currentUser + getDoc(doc(db,'users',uid))
   const handleSolliciter = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -184,13 +188,10 @@ export default function ProviderProfileScreen({ navigation, route }) {
       const { data: userData } = await supabase
         .from("users")
         .select("display_name, quartier")
-        .eq("id", user.id)   // user.id sous Supabase (= user.uid Firebase)
+        .eq("id", user.id)
         .single();
 
-      // display_name remplace userData.displayName
-      const profileComplete = userData?.display_name && userData?.quartier;
-
-      if (!profileComplete) {
+      if (!userData?.display_name || !userData?.quartier) {
         Alert.alert(
           "Profil incomplet",
           "Complétez votre profil (nom et quartier) avant de solliciter un prestataire.",

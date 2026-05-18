@@ -132,7 +132,13 @@ export function useClientProfile() {
           services: p.services,
           ville: p.ville,
           quartier: p.quartier,
-          rating: p.rating,
+          rating: {
+            global: p.rating_global || 0,
+            punctuality: p.rating_punctuality || 0,
+            quality: p.rating_quality || 0,
+            communication: p.rating_communication || 0,
+            valueForMoney: p.rating_value_for_money || 0,
+          },
           verificationStatus: p.verification_status,
         }));
 

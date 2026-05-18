@@ -78,15 +78,18 @@ export function useProviderDashboard() {
           services: data.services || [],
           availability: data.availability,
           verificationStatus: data.verification_status,
-          rating: data.rating || { global: 0 },
+          rating: {
+            global: data.rating_global || 0,
+            punctuality: data.rating_punctuality || 0,
+            quality: data.rating_quality || 0,
+            communication: data.rating_communication || 0,
+            valueForMoney: data.rating_value_for_money || 0,
+          },
           reviewCount: data.review_count || 0,
           walletBalance: data.wallet_balance || 0,
         });
         setIsAvailable(data.availability || false);
-        const rating =
-          typeof data.rating === "object"
-            ? data.rating?.global ?? 0
-            : data.rating ?? 0;
+        const rating = data.rating_global || 0;
         setStats({
           todayCount: data.today_count || 0,       // today_count → todayCount
           rating,
@@ -197,14 +200,10 @@ export function useProviderDashboard() {
             const loc = await Location.getCurrentPositionAsync({
               accuracy: Location.Accuracy.Balanced,
             });
-            // Firebase stockait un objet { latitude, longitude }
-            // Supabase utilise deux colonnes séparées
-            updateData.latitude = loc.coords.latitude;
-            updateData.longitude = loc.coords.longitude;
+            updateData.location = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
           }
         } else {
-          updateData.latitude = null;
-          updateData.longitude = null;
+          updateData.location = { latitude: null, longitude: null };
         }
 
         await supabase.from("providers").update(updateData).eq("id", userId);

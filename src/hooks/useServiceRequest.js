@@ -43,23 +43,23 @@ export function useServiceRequest() {
 
       const now = new Date().toISOString(); // remplace serverTimestamp() / Date.now()
 
-      // Remplace addDoc(collection(db,'requests'), {...})
-      await supabase.from("requests").insert({
-        client_id: user.id,                               // clientId → client_id
-        client_name: userData?.display_name || "Client",  // clientName → client_name
+      const { error: insertError } = await supabase.from("requests").insert({
+        client_id: user.id,
+        client_name: userData?.display_name || "Client",
         quartier: userData?.quartier || "",
-        provider_id: providerId,                          // providerId → provider_id
+        provider_id: providerId,
         service,
         title,
         description,
         location,
-        scheduled_date: scheduledDate || null,            // scheduledDate → scheduled_date
+        scheduled_date: scheduledDate || null,
         budget: budget ? Number(budget) : null,
         photos: photos || [],
         status: "pending",
         created_at: now,
         updated_at: now,
       });
+      if (insertError) throw insertError;
 
       return { success: true };
     } catch (err) {
