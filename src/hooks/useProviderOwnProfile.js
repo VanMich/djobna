@@ -1,93 +1,157 @@
 // src/hooks/useProviderOwnProfile.js
-import { useCallback, useEffect, useState } from "react";
-import { signOut } from "firebase/auth";
-import {
-  arrayRemove,
-  arrayUnion,
-  doc,
-  onSnapshot,
-  serverTimestamp,
-  updateDoc,
-} from "firebase/firestore";
-import * as ImagePicker from "expo-image-picker";
+// Charge et écoute en temps réel le profil du prestataire connecté.
+// Utilisé dans ProviderProfileOwnScreen.jsx.
+//
+// Remplace Firebase :
+//   auth.currentUser                 → supabase.auth.getUser() (async)
+//   onSnapshot(doc(db,'users',uid))  → fetch initial + Realtime channel users
+//   onSnapshot(doc(db,'providers',uid)) → fetch initial + Realtime channel providers
+//   updateDoc(doc(db,'providers',uid)) → supabase.from('providers').update()
+//   arrayUnion(uri)                  → fetch + push + update (PostgreSQL arrays)
+//   arrayRemove(uri)                 → fetch + filter + update
+//   signOut(auth)                    → supabase.auth.signOut()
+//   user.uid                         → user.id
 
-import { auth, db } from "../config/firebase";
+import { useCallback, useEffect, useState } from "react";
+import * as ImagePicker from "expo-image-picker";
+import { supabase } from "../config/supabase";
 
 export function useProviderOwnProfile() {
+  const [userId, setUserId] = useState(null);  // null = encore en chargement
   const [profile, setProfile] = useState(null);
   const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const user = auth.currentUser;
-
+  // Récupère l'uid au montage — remplace auth.currentUser (synchrone Firebase)
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return undefined;
-    }
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data?.user?.id ?? "");  // "" = non connecté, null = chargement en cours
+    });
+  }, []);
+
+  // Charge profil + prestataire et s'abonne aux changements Realtime
+  useEffect(() => {
+    if (userId === null) return; // encore en chargement
+    if (!userId) { setLoading(false); return; }
 
     setLoading(true);
 
-    const unsubUser = onSnapshot(
-      doc(db, "users", user.uid),
-      (snap) => {
-        if (snap.exists()) setProfile({ id: snap.id, ...snap.data() });
-      },
-      (err) => {
-        console.error("Erreur écoute profil utilisateur:", err);
-      },
-    );
+    // Fonction réutilisée à l'init et à chaque notification Realtime
+    const fetchData = async () => {
+      const [{ data: userData }, { data: providerData }] = await Promise.all([
+        supabase.from("users").select("*").eq("id", userId).single(),
+        supabase.from("providers").select("*").eq("id", userId).maybeSingle(),
+      ]);
 
-    const unsubProvider = onSnapshot(
-      doc(db, "providers", user.uid),
-      (snap) => {
-        setProvider(snap.exists() ? { id: snap.id, ...snap.data() } : null);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Erreur écoute profil prestataire:", err);
-        setLoading(false);
-      },
-    );
+      if (userData) {
+        // Mapping snake_case → camelCase pour ne pas casser les composants existants
+        setProfile({
+          id: userId,
+          displayName: userData.display_name,
+          photoURL: userData.photo_url,
+          phoneNumber: userData.phone_number,
+          role: userData.role,
+          activeRole: userData.active_role,
+          ville: userData.ville,
+          quartier: userData.quartier,
+          pays: userData.pays,
+        });
+      }
+
+      if (providerData) {
+        setProvider({
+          id: userId,
+          bio: providerData.bio,
+          services: providerData.services || [],
+          servicePricing: providerData.service_pricing || {},      // service_pricing → servicePricing
+          zones: providerData.intervention_zones || [],            // intervention_zones → zones (nom utilisé dans le screen)
+          interventionZones: providerData.intervention_zones || [],
+          yearsOfExperience: providerData.years_of_experience || 0,
+          languages: providerData.languages || [],
+          availability: providerData.availability,
+          rating: providerData.rating || { global: 0 },
+          reviewCount: providerData.review_count || 0,             // review_count → reviewCount
+          monthRevenue: providerData.month_revenue || 0,           // month_revenue → monthRevenue
+          todayCount: providerData.today_count || 0,
+          verificationStatus: providerData.verification_status,
+          portfolio: providerData.portfolio || [],
+          walletBalance: providerData.wallet_balance || 0,
+        });
+      } else {
+        setProvider(null);
+      }
+
+      setLoading(false);
+    };
+
+    fetchData();
+
+    // Realtime : écoute modifications table users (profil de base)
+    // Remplace onSnapshot(doc(db, 'users', uid), cb)
+    const userChannel = supabase
+      .channel(`own-user-${userId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "users",
+        filter: `id=eq.${userId}`,
+      }, () => fetchData())
+      .subscribe();
+
+    // Realtime : écoute modifications table providers
+    // Remplace onSnapshot(doc(db, 'providers', uid), cb)
+    const providerChannel = supabase
+      .channel(`own-provider-${userId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "providers",
+        filter: `id=eq.${userId}`,
+      }, () => fetchData())
+      .subscribe();
 
     return () => {
-      unsubUser();
-      unsubProvider();
+      supabase.removeChannel(userChannel);
+      supabase.removeChannel(providerChannel);
     };
-  }, [user?.uid]);
+  }, [userId]);
 
-  const updateProfile = useCallback(
-    async (data) => {
-      if (!user) return { success: false };
+  // Met à jour le profil (utilisateur + prestataire)
+  // Remplace updateDoc(doc(db,'users',uid)) + updateDoc(doc(db,'providers',uid))
+  const updateProfile = useCallback(async (data) => {
+    if (!userId) return { success: false };
+    const now = new Date().toISOString();
 
-      try {
-        if (data.displayName || data.quartier || data.bio !== undefined) {
-          await updateDoc(doc(db, "users", user.uid), {
-            ...(data.displayName && { displayName: data.displayName }),
-            ...(data.quartier && { quartier: data.quartier }),
-            updatedAt: serverTimestamp(),
-          });
-        }
-
-        await updateDoc(doc(db, "providers", user.uid), {
-          ...(data.bio !== undefined && { bio: data.bio }),
-          ...(data.services !== undefined && { services: data.services }),
-          ...(data.zones !== undefined && { zones: data.zones }),
-          ...(data.hourlyRate !== undefined && { hourlyRate: data.hourlyRate }),
-          updatedAt: serverTimestamp(),
-        });
-
-        return { success: true };
-      } catch (err) {
-        console.error("Erreur mise à jour profil:", err);
-        return { success: false };
+    try {
+      if (data.displayName || data.quartier) {
+        await supabase.from("users").update({
+          ...(data.displayName && { display_name: data.displayName }),
+          ...(data.quartier && { quartier: data.quartier }),
+          updated_at: now,
+        }).eq("id", userId);
       }
-    },
-    [user],
-  );
 
+      await supabase.from("providers").update({
+        ...(data.bio !== undefined && { bio: data.bio }),
+        ...(data.services !== undefined && { services: data.services }),
+        ...(data.zones !== undefined && { intervention_zones: data.zones }),
+        ...(data.hourlyRate !== undefined && { service_pricing: data.hourlyRate }),
+        // Nouveaux champs §14 — languages + tarifs par service
+        ...(data.languages !== undefined && { languages: data.languages }),
+        ...(data.servicePricing !== undefined && { service_pricing: data.servicePricing }),
+        updated_at: now,
+      }).eq("id", userId);
+
+      return { success: true };
+    } catch (err) {
+      console.error("Erreur mise à jour profil:", err);
+      return { success: false };
+    }
+  }, [userId]);
+
+  // Ajoute une photo au portfolio : sélection galerie → upload Storage → stocke l'URL publique
   const addPortfolioPhoto = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") return;
@@ -99,55 +163,122 @@ export function useProviderOwnProfile() {
       quality: 0.7,
     });
 
-    if (!result.canceled) {
-      const uri = result.assets[0].uri;
+    if (result.canceled) return;
 
-      await updateDoc(doc(db, "providers", user.uid), {
-        portfolio: arrayUnion(uri),
-        updatedAt: serverTimestamp(),
-      });
+    const localUri = result.assets[0].uri;
+
+    // Upload vers Supabase Storage bucket 'portfolio'
+    const filename = `${Date.now()}.jpg`;
+    const storagePath = `${userId}/${filename}`;
+    const blob = await fetch(localUri).then((r) => r.blob());
+    const { error: uploadError } = await supabase.storage
+      .from("portfolio")
+      .upload(storagePath, blob);
+    if (uploadError) {
+      console.error("Erreur upload portfolio:", uploadError);
+      return;
     }
-  }, [user]);
+    const publicUrl = supabase.storage.from("portfolio").getPublicUrl(storagePath).data.publicUrl;
 
-  const removePortfolioPhoto = useCallback(
-    async (uri) => {
-      if (!user) return;
+    const { data } = await supabase
+      .from("providers")
+      .select("portfolio")
+      .eq("id", userId)
+      .single();
 
-      await updateDoc(doc(db, "providers", user.uid), {
-        portfolio: arrayRemove(uri),
-        updatedAt: serverTimestamp(),
-      });
-    },
-    [user],
-  );
+    const newPortfolio = [...(data?.portfolio || []), { uri: publicUrl, caption: "" }];
 
-  const addZone = useCallback(
-    async (zone) => {
-      if (!user || !zone) return;
+    await supabase.from("providers").update({
+      portfolio: newPortfolio,
+      updated_at: new Date().toISOString(),
+    }).eq("id", userId);
+  }, [userId]);
 
-      await updateDoc(doc(db, "providers", user.uid), {
-        zones: arrayUnion(zone),
-        updatedAt: serverTimestamp(),
-      });
-    },
-    [user],
-  );
+  // Supprime une photo du portfolio (DB + Storage)
+  const removePortfolioPhoto = useCallback(async (uri) => {
+    if (!userId) return;
 
-  const removeZone = useCallback(
-    async (zone) => {
-      if (!user) return;
+    // Extrait le chemin storage depuis l'URL publique
+    // Format : https://xxx.supabase.co/storage/v1/object/public/portfolio/userId/filename.jpg
+    const storagePath = uri.split("/portfolio/")[1];
+    if (storagePath) {
+      await supabase.storage.from("portfolio").remove([storagePath]);
+    }
 
-      await updateDoc(doc(db, "providers", user.uid), {
-        zones: arrayRemove(zone),
-        updatedAt: serverTimestamp(),
-      });
-    },
-    [user],
-  );
+    const { data } = await supabase
+      .from("providers")
+      .select("portfolio")
+      .eq("id", userId)
+      .single();
 
+    const newPortfolio = (data?.portfolio || []).filter((p) => p.uri !== uri);
+
+    await supabase.from("providers").update({
+      portfolio: newPortfolio,
+      updated_at: new Date().toISOString(),
+    }).eq("id", userId);
+  }, [userId]);
+
+  // Met à jour la légende d'une photo du portfolio (§14.2)
+  const updatePhotoCaption = useCallback(async (uri, caption) => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("providers")
+      .select("portfolio")
+      .eq("id", userId)
+      .single();
+
+    // Remplace la légende de la photo ciblée, laisse les autres intactes
+    const newPortfolio = (data?.portfolio || []).map((p) =>
+      p.uri === uri ? { ...p, caption } : p,
+    );
+
+    await supabase.from("providers").update({
+      portfolio: newPortfolio,
+      updated_at: new Date().toISOString(),
+    }).eq("id", userId);
+  }, [userId]);
+
+  // Ajoute une zone d'intervention — remplace arrayUnion(zone)
+  const addZone = useCallback(async (zone) => {
+    if (!userId || !zone) return;
+
+    const { data } = await supabase
+      .from("providers")
+      .select("intervention_zones")
+      .eq("id", userId)
+      .single();
+
+    const current = data?.intervention_zones || [];
+    if (current.includes(zone)) return; // déjà présente
+
+    await supabase.from("providers").update({
+      intervention_zones: [...current, zone],
+      updated_at: new Date().toISOString(),
+    }).eq("id", userId);
+  }, [userId]);
+
+  // Supprime une zone d'intervention — remplace arrayRemove(zone)
+  const removeZone = useCallback(async (zone) => {
+    if (!userId) return;
+
+    const { data } = await supabase
+      .from("providers")
+      .select("intervention_zones")
+      .eq("id", userId)
+      .single();
+
+    await supabase.from("providers").update({
+      intervention_zones: (data?.intervention_zones || []).filter((z) => z !== zone),
+      updated_at: new Date().toISOString(),
+    }).eq("id", userId);
+  }, [userId]);
+
+  // Déconnexion — remplace signOut(auth)
   const logout = useCallback(async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
     } catch (err) {
       console.error("Erreur déconnexion:", err);
     }
@@ -160,6 +291,7 @@ export function useProviderOwnProfile() {
     updateProfile,
     addPortfolioPhoto,
     removePortfolioPhoto,
+    updatePhotoCaption,   // modifier la légende d'une photo (§14.2)
     addZone,
     removeZone,
     logout,

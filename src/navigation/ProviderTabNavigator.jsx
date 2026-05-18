@@ -1,15 +1,16 @@
 import { Ionicons } from "@expo/vector-icons";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 
 import ChatListScreen from "../screens/ChatListScreen";
 import HomeProviderScreen from "../screens/HomeProviderScreen";
 import ProviderProfileOwnScreen from "../screens/ProviderProfileOwnScreen";
+import { useUnreadCount } from "../hooks/useUnreadCount";
 import { colors } from "../theme";
 
 const Tab = createBottomTabNavigator();
 
-function TabIcon({ name, focused }) {
+function TabIcon({ name, focused, badge }) {
   return (
     <View style={styles.iconWrap}>
       <View style={[styles.indicator, focused && styles.indicatorActive]} />
@@ -19,12 +20,19 @@ function TabIcon({ name, focused }) {
           size={26}
           color={focused ? colors.primary : "#AAB0B7"}
         />
+        {badge > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{badge > 99 ? "99+" : badge}</Text>
+          </View>
+        )}
       </View>
     </View>
   );
 }
 
 export default function ProviderTabNavigator() {
+  const unreadCount = useUnreadCount();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -37,7 +45,8 @@ export default function ProviderTabNavigator() {
             Messages: "chatbubble",
             Profile: "person",
           };
-          return <TabIcon name={iconMap[route.name]} focused={focused} />;
+          const badge = route.name === "Messages" ? unreadCount : 0;
+          return <TabIcon name={iconMap[route.name]} focused={focused} badge={badge} />;
         },
       })}
     >
@@ -88,4 +97,17 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   iconBubbleActive: { backgroundColor: "#F0FAF6" },
+  badge: {
+    position: "absolute",
+    top: 2,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#E24B4A",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 3,
+  },
+  badgeText: { fontSize: 9, fontWeight: "800", color: "#fff" },
 });

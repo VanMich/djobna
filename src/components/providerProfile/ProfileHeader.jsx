@@ -5,6 +5,11 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { AVATAR_COLORS, SERVICES } from "../../constants/services";
 import { colors } from "../../theme";
 
+function getRating(provider) {
+  if (typeof provider?.rating === "object") return provider.rating?.global ?? 0;
+  return provider?.rating ?? 0;
+}
+
 export default function ProfileHeader({
   provider,
   isFav,
@@ -13,6 +18,7 @@ export default function ProfileHeader({
   onShare,
   onMore,
   onContact,
+  onSolliciter,
 }) {
   const initials = (provider?.displayName || "XX")
     .split(" ")
@@ -20,115 +26,117 @@ export default function ProfileHeader({
     .join("")
     .slice(0, 2)
     .toUpperCase();
+
   const avatarColor = AVATAR_COLORS[provider?.services?.[0]] || colors.primary;
+  const isVerified = provider?.verificationStatus === "approved";
+  const isPremium = provider?.subscription?.plan === "premium";
+
   const serviceLabels = (provider?.services || [])
     .map((id) => SERVICES.find((s) => s.id === id))
     .filter(Boolean)
     .map((s) => `${s.icon} ${s.label}`)
     .join(" · ");
 
+  const rating = getRating(provider);
+
   const stats = [
-    {
-      value: provider?.rating > 0 ? `${provider.rating.toFixed(1)} ⭐` : "-",
-      label: "Note",
-    },
+    { value: rating > 0 ? `${rating.toFixed(1)} ⭐` : "-", label: "Note" },
     { value: provider?.reviewCount || 0, label: "Avis" },
     { value: provider?.completedJobs || 0, label: "Missions" },
-    { value: "2 ans", label: "Expér." },
+    {
+      value: provider?.yearsOfExperience ? `${provider.yearsOfExperience} ans` : "-",
+      label: "Expér.",
+    },
   ];
 
   return (
     <View style={styles.header}>
-      <View style={styles.topFrame}>
-        <View style={styles.topRow}>
+      {/* ── Ligne navigation ── */}
+      <View style={styles.topRow}>
+        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.8}>
+          <Ionicons name="arrow-back" size={18} color="#9FE1CB" />
+        </TouchableOpacity>
+        <View style={styles.topActions}>
           <TouchableOpacity
-            style={styles.backBtn}
-            onPress={onBack}
+            style={[styles.iconBtn, isFav && styles.iconBtnFavActive]}
+            onPress={onToggleFav}
             activeOpacity={0.8}
           >
-            <Ionicons name="arrow-back" size={18} color="#9FE1CB" />
+            <Ionicons
+              name={isFav ? "heart" : "heart-outline"}
+              size={18}
+              color={isFav ? colors.star : "#9FE1CB"}
+            />
           </TouchableOpacity>
-          <View style={styles.topActions}>
-            <TouchableOpacity
-              style={[styles.iconBtn, isFav && styles.iconBtnFavActive]}
-              onPress={onToggleFav}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={isFav ? "heart" : "heart-outline"}
-                size={18}
-                color={isFav ? colors.star : "#9FE1CB"}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={onShare}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="share-social-outline" size={18} color="#9FE1CB" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={onMore}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="ellipsis-vertical" size={18} color="#9FE1CB" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.iconBtn} onPress={onShare} activeOpacity={0.8}>
+            <Ionicons name="share-social-outline" size={18} color="#9FE1CB" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn} onPress={onMore} activeOpacity={0.8}>
+            <Ionicons name="ellipsis-vertical" size={18} color="#9FE1CB" />
+          </TouchableOpacity>
         </View>
       </View>
 
+      {/* ── Avatar + infos ── */}
       <View style={styles.avatarRow}>
-        <View style={styles.avatarWrap}>
+        <View style={{ position: "relative", flexShrink: 0 }}>
           <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          {provider?.isVerified && (
+          {isVerified && (
             <View style={styles.verifiedBadge}>
               <Ionicons name="checkmark" size={10} color="#fff" />
+            </View>
+          )}
+          {isPremium && (
+            <View style={styles.premiumBadge}>
+              <Text style={styles.premiumBadgeText}>★</Text>
             </View>
           )}
         </View>
 
         <View style={styles.infoBlock}>
-          <Text style={styles.name}>{provider?.displayName}</Text>
+          <View style={styles.nameRow}>
+            <Text style={styles.name} numberOfLines={1}>{provider?.displayName}</Text>
+            {isPremium && (
+              <View style={styles.premiumTag}>
+                <Text style={styles.premiumTagText}>Premium</Text>
+              </View>
+            )}
+          </View>
           {serviceLabels ? (
-            <Text style={styles.services} numberOfLines={1}>
-              {serviceLabels}
-            </Text>
+            <Text style={styles.services} numberOfLines={1}>{serviceLabels}</Text>
           ) : null}
-          <Text style={styles.phone}>
-            📍 {provider?.quartier || "Douala"} · Disponible maintenant
+          <Text style={styles.location}>
+            📍 {provider?.quartier || "Douala"}
+            {isVerified ? " · ✓ Vérifié" : ""}
           </Text>
         </View>
       </View>
 
-      <View style={styles.contactFrame}>
+      {/* ── CTA ── */}
+      <View style={styles.ctaRow}>
         <TouchableOpacity
-          style={styles.contactBtn}
-          onPress={onContact}
+          style={styles.ctaBtnPrimary}
+          onPress={onSolliciter}
           activeOpacity={0.85}
         >
-          <Ionicons name="chatbubble" size={16} color="#fff" />
-          <Text style={styles.contactText}>Solliciter un service</Text>
+          <Ionicons name="flash" size={15} color="#fff" />
+          <Text style={styles.ctaBtnPrimaryText}>Solliciter les services</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.statsFrame}>
-        <View style={styles.statsBar}>
-          {stats.map((s, i, arr) => (
-            <View
-              key={s.label}
-              style={[
-                styles.statItem,
-                i < arr.length - 1 && styles.statItemBorder,
-              ]}
-            >
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
-        </View>
+      {/* ── Stats ── */}
+      <View style={styles.statsBar}>
+        {stats.map((s, i, arr) => (
+          <View
+            key={s.label}
+            style={[styles.statItem, i < arr.length - 1 && styles.statItemBorder]}
+          >
+            <Text style={styles.statValue}>{s.value}</Text>
+            <Text style={styles.statLabel}>{s.label}</Text>
+          </View>
+        ))}
       </View>
     </View>
   );
@@ -140,10 +148,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 6,
     paddingBottom: 12,
-    zIndex: 10,
-  },
-  topFrame: {
-    marginBottom: 14,
+    gap: 14,
   },
   topRow: {
     height: 40,
@@ -176,8 +181,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(245,166,35,.15)",
     borderColor: "rgba(245,166,35,.3)",
   },
+
   avatarRow: { flexDirection: "row", alignItems: "center", gap: 14 },
-  avatarWrap: { position: "relative", flexShrink: 0 },
   avatar: {
     width: 64,
     height: 64,
@@ -199,26 +204,52 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  infoBlock: { flex: 1, gap: 4 },
-  name: { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
-  services: { fontSize: 11, color: "#5DCAA5", fontWeight: "600" },
-  phone: { fontSize: 11, color: "rgba(255,255,255,.4)" },
-  contactFrame: {
-    marginTop: 14,
+  premiumBadge: {
+    position: "absolute",
+    top: -4,
+    left: -4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: "#F59E0B",
+    borderWidth: 2,
+    borderColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  contactBtn: {
-    height: 42,
-    borderRadius: 12,
+  premiumBadgeText: { fontSize: 9, color: "#fff", fontWeight: "800" },
+
+  infoBlock: { flex: 1, gap: 4 },
+  nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  name: { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.3, flex: 1 },
+  premiumTag: {
+    backgroundColor: "#F59E0B",
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  premiumTagText: { fontSize: 9, fontWeight: "800", color: "#fff" },
+  services: { fontSize: 11, color: "#5DCAA5", fontWeight: "600" },
+  location: { fontSize: 11, color: "rgba(255,255,255,.4)" },
+
+  ctaRow: { flexDirection: "row" },
+  ctaBtnPrimary: {
+    flex: 1,
+    height: 44,
+    borderRadius: 13,
     backgroundColor: colors.primary,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 7,
+    shadowColor: colors.primary,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 5,
   },
-  contactText: { color: "#fff", fontSize: 13, fontWeight: "800" },
-  statsFrame: {
-    marginTop: 14,
-  },
+  ctaBtnPrimaryText: { color: "#fff", fontSize: 13, fontWeight: "800" },
+
   statsBar: {
     height: 46,
     flexDirection: "row",

@@ -1,4 +1,13 @@
-// src/screens/OTPScreen.js
+// src/screens/OTPScreen.jsx
+// Écran de saisie du code OTP reçu par SMS
+//
+// Différences avec la version Firebase :
+//   - Plus de <FirebaseRecaptchaVerifierModal> ni de ref recaptcha
+//   - Plus de verificationId dans route.params (on utilise phone directement)
+//   - verifyOTP(phone, code) au lieu de verifyOTP(code, verificationId)
+//   - isNewUser est détecté dans useAuth.verifyOTP (vérification table users)
+//   - getAuthenticatedRoute() supprimé — rendu inutile car isNewUser couvre ce cas
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
@@ -10,39 +19,23 @@ import {
   Alert,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../config/firebase";
 import { useAuth } from "../hooks/useAuth";
 import { colors, spacing } from "../theme";
 
-const OTP_LENGTH = 6; // Firebase impose 6 chiffres
+const OTP_LENGTH = 6;
 
 export default function OTPScreen({ navigation, route }) {
-  const { phone, verificationId } = route.params;
+  // phone vient de PhoneScreen — plus de verificationId avec Supabase
+  const { phone } = route.params;
+
   const [code, setCode] = useState(Array(OTP_LENGTH).fill(""));
   const [activeIdx, setActiveIdx] = useState(0);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
 
   const { sendOTP, verifyOTP, loading, error } = useAuth();
-  const recaptchaVerifier = useRef(null);
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  const getAuthenticatedRoute = useCallback(async (user) => {
-    if (!user) return "ProfileSetup";
-
-    try {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      if (!snap.exists()) return "ProfileSetup";
-
-      return "MainApp";
-    } catch (err) {
-      console.error("Erreur chargement role utilisateur:", err);
-      return "MainApp";
-    }
-  }, []);
 
   // Animation d'entrée
   useEffect(() => {
@@ -53,7 +46,7 @@ export default function OTPScreen({ navigation, route }) {
     }).start();
   }, []);
 
-  // Compte à rebours
+  // Compte à rebours avant de pouvoir renvoyer le code
   useEffect(() => {
     if (countdown <= 0) {
       setCanResend(true);
@@ -63,37 +56,22 @@ export default function OTPScreen({ navigation, route }) {
     return () => clearTimeout(t);
   }, [countdown]);
 
-  // Animation secousse (code incorrect)
+  // Animation secousse sur code incorrect
   const shakeBoxes = useCallback(() => {
     Vibration.vibrate(200);
     Animated.sequence([
-      Animated.timing(shakeAnim, {
-        toValue: 10,
-        duration: 60,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: -10,
-        duration: 60,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: 8,
-        duration: 60,
-        useNativeDriver: true,
-      }),
-      Animated.timing(shakeAnim, {
-        toValue: 0,
-        duration: 60,
-        useNativeDriver: true,
-      }),
+      Animated.timing(shakeAnim, { toValue: 10,  duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8,   duration: 60, useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0,   duration: 60, useNativeDriver: true }),
     ]).start();
   }, [shakeAnim]);
 
-  // Saisie d'un chiffre
+  // Saisie d'un chiffre sur le clavier virtuel
   const handleKey = useCallback(
     async (digit) => {
       if (activeIdx >= OTP_LENGTH || loading) return;
+
       const newCode = [...code];
       newCode[activeIdx] = digit;
       setCode(newCode);
@@ -102,12 +80,14 @@ export default function OTPScreen({ navigation, route }) {
 
       if (nextIdx === OTP_LENGTH) {
         const fullCode = newCode.join("");
-        const result = await verifyOTP(fullCode, verificationId);
+
+        // verifyOTP prend (phone, code) — plus de verificationId
+        // isNewUser = true si c'est le premier login (pas encore de profil dans users)
+        const result = await verifyOTP(phone, fullCode);
+
         if (result.success) {
-          const nextRoute = result.isNewUser
-            ? "ProfileSetup"
-            : await getAuthenticatedRoute(result.user);
-          navigation.replace(nextRoute);
+          // Redirection directe selon isNewUser — getAuthenticatedRoute n'est plus nécessaire
+          navigation.replace(result.isNewUser ? "ProfileSetup" : "MainApp");
         } else {
           shakeBoxes();
           setTimeout(() => {
@@ -117,19 +97,10 @@ export default function OTPScreen({ navigation, route }) {
         }
       }
     },
-    [
-      activeIdx,
-      code,
-      loading,
-      verifyOTP,
-      verificationId,
-      shakeBoxes,
-      getAuthenticatedRoute,
-      navigation,
-    ],
+    [activeIdx, code, loading, verifyOTP, phone, shakeBoxes, navigation],
   );
 
-  // Effacement
+  // Effacement du dernier chiffre
   const handleDelete = useCallback(() => {
     if (activeIdx <= 0) return;
     const newCode = [...code];
@@ -138,21 +109,21 @@ export default function OTPScreen({ navigation, route }) {
     setActiveIdx(activeIdx - 1);
   }, [activeIdx, code]);
 
-  // Renvoyer le code
+  // Renvoyer un nouveau code SMS
   const handleResend = async () => {
     setCode(Array(OTP_LENGTH).fill(""));
     setActiveIdx(0);
     setCountdown(60);
     setCanResend(false);
-    const result = await sendOTP(phone, recaptchaVerifier.current);
-    if (result.verificationId) {
-      navigation.setParams({ verificationId: result.verificationId });
-    } else {
+
+    // Plus besoin de recaptchaVerifier, plus besoin de mettre à jour verificationId
+    const result = await sendOTP(phone);
+    if (!result.success) {
       Alert.alert("Erreur", result.message || "Impossible de renvoyer le code.");
     }
   };
 
-  // Rendu d'une case
+  // Rendu d'une case du code OTP
   const renderBox = (idx) => {
     const isFilled = code[idx] !== "";
     const isActive = idx === activeIdx;
@@ -179,11 +150,9 @@ export default function OTPScreen({ navigation, route }) {
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <StatusBar style="light" />
-      <FirebaseRecaptchaVerifierModal
-        ref={recaptchaVerifier}
-        firebaseConfig={auth.app.options}
-        attemptInvisibleVerification
-      />
+
+      {/* Plus de <FirebaseRecaptchaVerifierModal> — supprimé avec Supabase */}
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.back}>← Retour</Text>
@@ -191,13 +160,16 @@ export default function OTPScreen({ navigation, route }) {
         <Text style={styles.title}>Code de{"\n"}vérification</Text>
         <Text style={styles.subtitle}>Code envoyé au {phone}</Text>
       </View>
+
       <View style={styles.body}>
         <Animated.View
           style={[styles.boxes, { transform: [{ translateX: shakeAnim }] }]}
         >
           {Array.from({ length: OTP_LENGTH }, (_, i) => renderBox(i))}
         </Animated.View>
+
         {error && <Text style={styles.errorText}>{error}</Text>}
+
         <View style={styles.timerRow}>
           {canResend ? (
             <TouchableOpacity onPress={handleResend}>
@@ -209,25 +181,18 @@ export default function OTPScreen({ navigation, route }) {
             </Text>
           )}
         </View>
+
         <View style={styles.keypad}>
           {keypad.map((k, i) => (
             <React.Fragment key={i}>
               {k === null ? (
                 <View style={styles.keyEmpty} />
               ) : k === "⌫" ? (
-                <TouchableOpacity
-                  style={styles.key}
-                  onPress={handleDelete}
-                  activeOpacity={0.7}
-                >
+                <TouchableOpacity style={styles.key} onPress={handleDelete} activeOpacity={0.7}>
                   <Text style={styles.keyText}>⌫</Text>
                 </TouchableOpacity>
               ) : (
-                <TouchableOpacity
-                  style={styles.key}
-                  onPress={() => handleKey(k)}
-                  activeOpacity={0.7}
-                >
+                <TouchableOpacity style={styles.key} onPress={() => handleKey(k)} activeOpacity={0.7}>
                   <Text style={styles.keyText}>{k}</Text>
                 </TouchableOpacity>
               )}
@@ -247,12 +212,7 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     gap: spacing.sm,
   },
-  back: {
-    color: colors.primary,
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 8,
-  },
+  back: { color: colors.primary, fontSize: 14, fontWeight: "500", marginBottom: 8 },
   title: { fontSize: 26, fontWeight: "700", color: "#fff", lineHeight: 34 },
   subtitle: { fontSize: 13, color: colors.textLight },
   body: { flex: 1, padding: spacing.lg, alignItems: "center", gap: 20 },
@@ -268,11 +228,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   boxFilled: { backgroundColor: "#F0FAF6", borderColor: colors.primary },
-  boxActive: {
-    borderColor: colors.primary,
-    backgroundColor: "#fff",
-    elevation: 3,
-  },
+  boxActive: { borderColor: colors.primary, backgroundColor: "#fff", elevation: 3 },
   boxError: { borderColor: "#E24B4A", backgroundColor: "#FCEBEB" },
   boxText: { fontSize: 26, fontWeight: "700", color: colors.textGray },
   boxTextFilled: { color: colors.primaryDark },

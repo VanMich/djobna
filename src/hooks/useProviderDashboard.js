@@ -1,152 +1,251 @@
 // src/hooks/useProviderDashboard.js
-// Hook central du dashboard prestataire
-// Gère : disponibilité, demandes, missions en cours, stats
+//
+// Remplace Firebase :
+//   auth.currentUser                        → supabase.auth.getUser() (async)
+//   onSnapshot(doc(db,'providers',uid))     → fetch + Realtime channel providers
+//   onSnapshot(query(collection(db,'requests'),
+//     where('providerId','==',uid),
+//     where('status','==','pending')))       → fetch + Realtime channel requests
+//   idem pour 'in_progress' (missions)
+//   updateDoc(doc(db,'providers',uid))      → supabase.from('providers').update()
+//   serverTimestamp()                       → new Date().toISOString()
+//   getDatabase() + ref() + set() (RTDB)   → supabase.from('chats').upsert()
+//   location: { latitude, longitude }      → colonnes séparées latitude / longitude
+//   todayCount → today_count | monthRevenue → month_revenue | providerId → provider_id
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  doc,
-  updateDoc,
-  collection,
-  query,
-  where,
-  onSnapshot,
-  serverTimestamp,
-  getDoc,
-} from "firebase/firestore";
+import { useCallback, useEffect, useState } from "react";
 import * as Location from "expo-location";
-import { db, auth } from "../config/firebase";
+import { supabase } from "../config/supabase";
+
+// Mapping snake_case DB → camelCase pour les composants UI
+function mapRequest(r) {
+  return {
+    id: r.id,
+    clientId: r.client_id,
+    clientName: r.client_name,
+    providerId: r.provider_id,
+    service: r.service,
+    title: r.title,
+    description: r.description,
+    location: r.location,
+    scheduledDate: r.scheduled_date,
+    budget: r.budget,
+    photos: r.photos || [],
+    status: r.status,
+    quartier: r.quartier,
+    // Convertit l'ISO string en millisecondes pour la fonction timeAgo de RequestCard
+    createdAt: r.created_at ? new Date(r.created_at).getTime() : null,
+  };
+}
 
 export function useProviderDashboard() {
+  const [userId, setUserId] = useState(null); // null = chargement en cours
   const [provider, setProvider] = useState(null);
   const [isAvailable, setIsAvailable] = useState(false);
-  const [requests, setRequests] = useState([]);
-  const [missions, setMissions] = useState([]);
-  const [stats, setStats] = useState({
-    todayCount: 0,
-    rating: 0,
-    monthRevenue: 0,
-  });
+  const [requests, setRequests] = useState([]);       // requêtes en attente (pending)
+  const [missions, setMissions] = useState([]);       // missions en cours (in_progress)
+  const [completedMissions, setCompletedMissions] = useState([]); // missions terminées aujourd'hui
+  const [stats, setStats] = useState({ todayCount: 0, rating: 0, monthRevenue: 0, walletBalance: 0 });
   const [loading, setLoading] = useState(true);
 
-  const user = auth.currentUser;
-
-  // ── Charger le profil prestataire ─────────
+  // Récupère l'uid au montage — remplace auth.currentUser (synchrone Firebase)
   useEffect(() => {
-    if (!user) return;
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data?.user?.id ?? ""); // "" = non connecté
+    });
+  }, []);
 
-    const provRef = doc(db, "providers", user.uid);
-    const unsubscribe = onSnapshot(provRef, (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setProvider({ id: snap.id, ...data });
-        setIsAvailable(data.isAvailable || false);
+  // ── Profil prestataire ─────────────────────────────────────────────────────
+  // Remplace onSnapshot(doc(db, 'providers', uid))
+  useEffect(() => {
+    if (userId === null) return; // encore en chargement
+    if (!userId) { setLoading(false); return; }
+
+    const fetchProvider = async () => {
+      const { data } = await supabase
+        .from("providers")
+        .select("*")
+        .eq("id", userId)
+        .single();
+
+      if (data) {
+        // Mapping snake_case → camelCase
+        setProvider({
+          id: userId,
+          displayName: data.display_name,
+          photoURL: data.photo_url,
+          bio: data.bio,
+          services: data.services || [],
+          availability: data.availability,
+          verificationStatus: data.verification_status,
+          rating: data.rating || { global: 0 },
+          reviewCount: data.review_count || 0,
+          walletBalance: data.wallet_balance || 0,
+        });
+        setIsAvailable(data.availability || false);
+        const rating =
+          typeof data.rating === "object"
+            ? data.rating?.global ?? 0
+            : data.rating ?? 0;
         setStats({
-          todayCount: data.todayCount || 0,
-          rating: data.rating || 0,
-          monthRevenue: data.monthRevenue || 0,
+          todayCount: data.today_count || 0,       // today_count → todayCount
+          rating,
+          monthRevenue: data.month_revenue || 0,   // month_revenue → monthRevenue
+          walletBalance: data.wallet_balance || 0, // wallet_balance → walletBalance (solde dispo §13.1)
         });
       }
       setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
-  }, [user?.uid]);
+    fetchProvider();
 
-  // ── Écouter les demandes entrantes ─────────
-  // Une "demande" = un document dans la collection 'requests'
-  // avec status: 'pending' et providerId: user.uid
+    // Realtime : écoute les modifications du profil prestataire
+    const providerChannel = supabase
+      .channel(`dashboard-provider-${userId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "providers",
+        filter: `id=eq.${userId}`,
+      }, fetchProvider)
+      .subscribe();
+
+    return () => supabase.removeChannel(providerChannel);
+  }, [userId]);
+
+  // ── Demandes + missions ────────────────────────────────────────────────────
+  // Remplace les deux onSnapshot sur les queries Firestore (pending + in_progress)
+  // Un seul canal Realtime suffit (filtré sur provider_id) — les deux fetches sont
+  // déclenchés à chaque changement car on ne peut pas filtrer par status dans
+  // postgres_changes.
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
-    const q = query(
-      collection(db, "requests"),
-      where("providerId", "==", user.uid),
-      where("status", "==", "pending"),
-    );
+    // ── Nouvelles demandes à traiter (statut "pending") ──
+    const fetchRequests = async () => {
+      const { data } = await supabase
+        .from("requests")
+        .select("*")
+        .eq("provider_id", userId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+      setRequests((data || []).map(mapRequest));
+    };
 
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      // Trier par date décroissante (plus récent en premier)
-      data.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      setRequests(data);
-    });
+    // ── Missions acceptées, travaux en cours (statut "in_progress") ──
+    const fetchMissions = async () => {
+      const { data } = await supabase
+        .from("requests")
+        .select("*")
+        .eq("provider_id", userId)
+        .eq("status", "in_progress");
+      setMissions((data || []).map(mapRequest));
+    };
 
-    return () => unsubscribe();
-  }, [user?.uid]);
+    // ── Missions terminées aujourd'hui (statut "completed", §13.1) ──
+    // On filtre par updated_at >= début de la journée courante
+    const fetchCompletedToday = async () => {
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const { data } = await supabase
+        .from("requests")
+        .select("*")
+        .eq("provider_id", userId)
+        .eq("status", "completed")
+        .gte("updated_at", startOfDay.toISOString());
+      setCompletedMissions((data || []).map(mapRequest));
+    };
 
-  // ── Écouter les missions en cours ──────────
-  useEffect(() => {
-    if (!user) return;
+    fetchRequests();
+    fetchMissions();
+    fetchCompletedToday();
 
-    const q = query(
-      collection(db, "requests"),
-      where("providerId", "==", user.uid),
-      where("status", "in", ["accepted", "in_progress"]),
-    );
+    // Un seul canal Realtime suffit — toute modification sur requests du prestataire
+    // déclenche le rechargement des 3 listes
+    const requestsChannel = supabase
+      .channel(`dashboard-requests-${userId}`)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "requests",
+        filter: `provider_id=eq.${userId}`,
+      }, () => {
+        fetchRequests();
+        fetchMissions();
+        fetchCompletedToday();
+      })
+      .subscribe();
 
-    const unsubscribe = onSnapshot(q, (snap) => {
-      const data = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      setMissions(data);
-    });
+    return () => supabase.removeChannel(requestsChannel);
+  }, [userId]);
 
-    return () => unsubscribe();
-  }, [user?.uid]);
-
-  // ── Toggle disponibilité ───────────────────
+  // ── Toggle disponibilité ───────────────────────────────────────────────────
+  // Remplace updateDoc(doc(db,'providers',uid), { availability, location })
+  // location: { latitude, longitude } (Firebase) → colonnes séparées (PostgreSQL)
   const toggleAvailability = useCallback(
     async (newValue) => {
-      if (!user) return;
-
+      if (!userId) return;
       try {
         const updateData = {
-          isAvailable: newValue,
-          updatedAt: serverTimestamp(),
+          availability: newValue,
+          updated_at: new Date().toISOString(), // serverTimestamp() → ISO string
         };
 
-        // Si le prestataire se rend disponible → récupérer sa position GPS
         if (newValue) {
           const { status } = await Location.requestForegroundPermissionsAsync();
           if (status === "granted") {
             const loc = await Location.getCurrentPositionAsync({
               accuracy: Location.Accuracy.Balanced,
             });
-            // Stocker la position dans Firestore
-            // GeoPoint n'existe pas directement en JS Firebase SDK
-            // On stocke latitude/longitude séparément
-            updateData.location = {
-              latitude: loc.coords.latitude,
-              longitude: loc.coords.longitude,
-            };
+            // Firebase stockait un objet { latitude, longitude }
+            // Supabase utilise deux colonnes séparées
+            updateData.latitude = loc.coords.latitude;
+            updateData.longitude = loc.coords.longitude;
           }
         } else {
-          // Si hors ligne → effacer la position
-          updateData.location = null;
+          updateData.latitude = null;
+          updateData.longitude = null;
         }
 
-        await updateDoc(doc(db, "providers", user.uid), updateData);
+        await supabase.from("providers").update(updateData).eq("id", userId);
         setIsAvailable(newValue);
       } catch (err) {
         console.error("Erreur toggle disponibilité:", err);
       }
     },
-    [user?.uid],
+    [userId],
   );
 
-  // ── Accepter une demande ───────────────────
+  // ── Accepter une demande ───────────────────────────────────────────────────
+  // Remplace :
+  //   updateDoc(doc(db,'requests',id))  → supabase.from('requests').update()
+  //   updateDoc(doc(db,'providers',id)) → supabase.from('providers').update()
+  //   set(ref(database,'chats/.../meta'), ...) [RTDB] → supabase.from('chats').upsert()
   const acceptRequest = useCallback(
     async (requestId, clientId) => {
-      if (!user) return;
-
+      if (!userId) return { success: false };
       try {
-        await updateDoc(doc(db, "requests", requestId), {
-          status: "accepted",
-          updatedAt: serverTimestamp(),
-        });
+        const now = new Date().toISOString();
 
-        // Incrémenter le compteur du jour
-        await updateDoc(doc(db, "providers", user.uid), {
-          todayCount: (stats.todayCount || 0) + 1,
-          updatedAt: serverTimestamp(),
+        await supabase
+          .from("requests")
+          .update({ status: "in_progress", updated_at: now })
+          .eq("id", requestId);
+
+        await supabase
+          .from("providers")
+          .update({ today_count: (stats.todayCount || 0) + 1, updated_at: now })
+          .eq("id", userId);
+
+        // Initialise la conversation dans Supabase
+        // Remplace : set(ref(database, `chats/${chatId}/meta`), {...})
+        await supabase.from("chats").upsert({
+          provider_id: userId,
+          client_id: clientId,
+          request_id: requestId,
+          last_message: "Demande acceptée",
+          last_message_at: now,
+          created_at: now,
         });
 
         return { success: true, clientId };
@@ -155,26 +254,52 @@ export function useProviderDashboard() {
         return { success: false };
       }
     },
-    [user?.uid, stats.todayCount],
+    [userId, stats.todayCount],
   );
 
-  // ── Décliner une demande ───────────────────
+  // ── Décliner une demande ───────────────────────────────────────────────────
   const declineRequest = useCallback(
     async (requestId) => {
-      if (!user) return;
-
+      if (!userId) return { success: false };
       try {
-        await updateDoc(doc(db, "requests", requestId), {
-          status: "declined",
-          updatedAt: serverTimestamp(),
-        });
+        await supabase
+          .from("requests")
+          .update({ status: "declined", updated_at: new Date().toISOString() })
+          .eq("id", requestId);
         return { success: true };
       } catch (err) {
         console.error("Erreur déclin demande:", err);
         return { success: false };
       }
     },
-    [user?.uid],
+    [userId],
+  );
+
+  // ── Marquer une mission comme terminée (§13.1) ─────────────────────────────
+  // Le prestataire appuie sur "Marquer comme terminée" → status passe à "completed".
+  // Note : selon le flux §11.4, c'est normalement le CLIENT qui confirme la fin.
+  // Ici on permet au prestataire de le signaler ; la confirmation client peut
+  // être ajoutée ultérieurement via un message système dans le chat.
+  const completeRequest = useCallback(
+    async (requestId) => {
+      if (!userId) return { success: false };
+      try {
+        const now = new Date().toISOString();
+        await supabase
+          .from("requests")
+          .update({
+            status: "completed",
+            completed_at: now,   // horodatage de fin (utilisé pour filtrer "aujourd'hui")
+            updated_at: now,
+          })
+          .eq("id", requestId);
+        return { success: true };
+      } catch (err) {
+        console.error("Erreur complétion mission:", err);
+        return { success: false };
+      }
+    },
+    [userId],
   );
 
   return {
@@ -182,10 +307,12 @@ export function useProviderDashboard() {
     isAvailable,
     requests,
     missions,
+    completedMissions,   // missions terminées aujourd'hui (§13.1 Bloc terminées)
     stats,
     loading,
     toggleAvailability,
     acceptRequest,
     declineRequest,
+    completeRequest,     // nouveau — "Marquer comme terminée" (§13.1)
   };
 }

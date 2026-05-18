@@ -1,139 +1,134 @@
 // src/hooks/useProviders.js
-// Hook pour récupérer les prestataires disponibles en temps réel
-// Utilisé dans HomeScreen.js et MapScreen.js
+// Charge la liste des prestataires disponibles et approuvés avec écoute en temps réel.
+// filters: { service, quartier, minRating, searchQuery }
+//
+// Remplace Firebase :
+//   onSnapshot(query(collection(db,'providers'), where('availability','==',true)))
+//   → fetch initial + Supabase Realtime channel sur la table providers
+//
+// Avantage Supabase :
+//   - Le filtre verificationStatus === "approved" est maintenant côté serveur (.eq)
+//   - Les données users (displayName, photoURL) récupérées en JOIN en une seule requête
+//   - Les données sont mappées en camelCase pour ne pas casser les screens existants
 
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { useEffect, useState } from "react";
-import { db } from "../config/firebase";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "../config/supabase";
 
-export function useProviders(filterService = null) {
-  const [providers, setProviders] = useState([]);
+// Mappe une ligne provider (snake_case PostgreSQL) vers camelCase pour les screens
+function mapProvider(p) {
+  return {
+    id: p.id,
+    // Champs venus du JOIN avec la table users
+    displayName: p.users?.display_name || "",
+    photoURL: p.users?.photo_url || null,
+    // Champs de la table providers
+    bio: p.bio,
+    services: p.services || [],
+    servicePricing: p.service_pricing || {},   // service_pricing → servicePricing
+    ville: p.ville,
+    quartier: p.quartier,
+    pays: p.pays,
+    interventionZones: p.intervention_zones || [], // intervention_zones → interventionZones
+    yearsOfExperience: p.years_of_experience || 0,
+    languages: p.languages || [],
+    availability: p.availability,
+    rating: p.rating || { global: 0 },
+    reviewCount: p.review_count || 0,
+    verificationStatus: p.verification_status,
+    portfolio: p.portfolio || [],
+    walletBalance: p.wallet_balance || 0,
+  };
+}
+
+export function useProviders(filters = {}) {
+  const { service, quartier, minRating = 0, searchQuery = "" } = filters;
+  const [rawProviders, setRawProviders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Compteur pour générer un nom de canal unique à chaque montage et éviter la
+  // collision "cannot add callbacks after subscribe()" lors des navigations tab.
+  const mountCount = useRef(0);
 
   useEffect(() => {
     setLoading(true);
+    let active = true;
 
-    // Construire la requête Firestore
-    // onSnapshot = écoute les changements en TEMPS RÉEL
-    // → la liste se met à jour automatiquement sans recharger
-    let q;
+    const fetchProviders = async () => {
+      const { data, error } = await supabase
+        .from("providers")
+        .select(`
+          *,
+          users!inner ( display_name, photo_url )
+        `)
+        .eq("availability", true)
+        .eq("verification_status", "approved");
 
-    if (filterService) {
-      // Filtre par service
-      q = query(
-        collection(db, "providers"),
-        where("isAvailable", "==", true),
-        where("services", "array-contains", filterService),
-      );
-    } else {
-      // Tous les prestataires disponibles
-      q = query(collection(db, "providers"), where("isAvailable", "==", true));
+      if (!active) return;
+      if (error) {
+        console.error("Erreur chargement prestataires:", error);
+        setLoading(false);
+        return;
+      }
+
+      setRawProviders((data || []).map(mapProvider));
+      setLoading(false);
+    };
+
+    fetchProviders();
+
+    // Nom unique par montage : évite que removeChannel (async) laisse le canal
+    // en état "subscribed" quand l'effet se réexécute (tab navigation ou Strict Mode).
+    const channelName = `providers-available-${++mountCount.current}`;
+    const channel = supabase
+      .channel(channelName)
+      .on("postgres_changes", {
+        event: "*",
+        schema: "public",
+        table: "providers",
+      }, () => {
+        if (active) fetchProviders();
+      })
+      .subscribe();
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Filtrage côté client : service, quartier, note, recherche textuelle
+  // Logique identique à l'original — les noms de champs sont déjà en camelCase via mapProvider
+  const providers = useMemo(() => {
+    let result = rawProviders;
+
+    if (service) {
+      result = result.filter((p) => p.services?.includes(service));
     }
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setProviders(data);
-        setLoading(false);
-      },
-      (err) => {
-        console.error("Erreur chargement prestataires:", err);
-        setError(err.message);
-        setLoading(false);
-      },
-    );
+    if (quartier) {
+      result = result.filter(
+        (p) => p.quartier === quartier || p.interventionZones?.includes(quartier)
+      );
+    }
 
-    // Nettoyer l'écoute quand le composant est démonté
-    return () => unsubscribe();
-  }, [filterService]);
+    if (minRating > 0) {
+      result = result.filter((p) => {
+        const r = typeof p.rating === "object" ? p.rating?.global ?? 0 : p.rating ?? 0;
+        return r >= minRating;
+      });
+    }
 
-  return { providers, loading, error };
+    if (searchQuery.trim()) {
+      const term = searchQuery.toLowerCase().trim();
+      result = result.filter((p) => {
+        const name = (p.displayName || "").toLowerCase();
+        const bio = (p.bio || "").toLowerCase();
+        const services = (p.services || []).join(" ").toLowerCase();
+        return name.includes(term) || bio.includes(term) || services.includes(term);
+      });
+    }
+
+    return result;
+  }, [rawProviders, service, quartier, minRating, searchQuery]);
+
+  return { providers, loading };
 }
-
-/**
- * // src/hooks/useProviders.js — VERSION TEST
-// Remplacer par cette version temporaire
-// ⚠️ Remettre la vraie version quand Firebase est prêt
-
-export function useProviders(filterService = null) {
-
-  const MOCK_PROVIDERS = [
-    {
-      id: 'mock1',
-      displayName: 'Paul Nguema',
-      quartier: 'Akwa',
-      services: ['mechanic'],
-      isAvailable: true,
-      rating: 4.8,
-      reviewCount: 32,
-      completedJobs: 87,
-      isVerified: true,
-      bio: 'Mécanicien professionnel à Douala.',
-      portfolio: [],
-      zones: ['Akwa', 'Bonanjo', 'Deido'],
-      location: { latitude: 4.0511, longitude: 9.7679 },
-    },
-    {
-      id: 'mock2',
-      displayName: 'Fatima Kamga',
-      quartier: 'Bonapriso',
-      services: ['barber'],
-      isAvailable: true,
-      rating: 4.9,
-      reviewCount: 58,
-      completedJobs: 124,
-      isVerified: true,
-      bio: 'Coiffeuse professionnelle, déplacement possible.',
-      portfolio: [],
-      zones: ['Bonapriso', 'Bali', 'Makepe'],
-      location: { latitude: 4.0620, longitude: 9.7750 },
-    },
-    {
-      id: 'mock3',
-      displayName: 'André Mbock',
-      quartier: 'Deido',
-      services: ['electrician'],
-      isAvailable: true,
-      rating: 4.6,
-      reviewCount: 19,
-      completedJobs: 45,
-      isVerified: false,
-      bio: 'Électricien certifié, 5 ans d\'expérience.',
-      portfolio: [],
-      zones: ['Deido', 'Ndokoti', 'Bepanda'],
-      location: { latitude: 4.0450, longitude: 9.7600 },
-    },
-    {
-      id: 'mock4',
-      displayName: 'Jean Fotso',
-      quartier: 'Bali',
-      services: ['plumber'],
-      isAvailable: true,
-      rating: 4.5,
-      reviewCount: 24,
-      completedJobs: 61,
-      isVerified: true,
-      bio: 'Plombier qualifié, intervention en 1h.',
-      portfolio: [],
-      zones: ['Bali', 'Akwa', 'Bonanjo'],
-      location: { latitude: 4.0580, longitude: 9.7820 },
-    },
-  ];
-
-  // Appliquer le filtre si nécessaire
-  const filtered = filterService
-    ? MOCK_PROVIDERS.filter(p => p.services.includes(filterService))
-    : MOCK_PROVIDERS;
-
-  return {
-    providers: filtered,
-    loading: false,
-    error: null,
-  };
-}
- */

@@ -1,47 +1,88 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+// src/navigation/AppNavigator.jsx
+//
+// Remplace Firebase :
+//   onAuthStateChanged(auth, user => {...})  → supabase.auth.onAuthStateChange()
+//   onSnapshot(doc(db,'users',user.uid))    → fetch initial + Realtime channel UPDATE
+//   unsubscribeAuth()                       → subscription.unsubscribe()
+//   unsubscribeDocRef.current()             → supabase.removeChannel(roleChannelRef.current)
+//   snap.data().activeRole                  → payload.new.active_role
 
-import { auth, db } from "../config/firebase";
+import { useEffect, useRef, useState } from "react";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { supabase } from "../config/supabase";
 import { colors } from "../theme";
 import ClientTabNavigator from "./ClientTabNavigator";
 import ProviderTabNavigator from "./ProviderTabNavigator";
 
-function isProviderRole(role) {
-  return role === "provider" || role === "both";
-}
-
 export default function AppNavigator({ navigation }) {
-  const [role, setRole] = useState(null);
+  const [activeRole, setActiveRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const roleChannelRef = useRef(null); // remplace unsubscribeDocRef
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setLoading(false);
-        navigation.replace("Phone");
-        return;
-      }
+    // Remplace onAuthStateChanged(auth, user => {...})
+    // Supabase donne session?.user au lieu de user directement
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        // Nettoie l'abonnement Realtime précédent si l'utilisateur change
+        // Remplace unsubscribeDocRef.current()
+        if (roleChannelRef.current) {
+          supabase.removeChannel(roleChannelRef.current);
+          roleChannelRef.current = null;
+        }
 
-      try {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        if (!snap.exists()) {
+        const user = session?.user; // session?.user remplace user directement
+
+        if (!user) {
+          setLoading(false);
+          navigation.replace("Phone");
+          return;
+        }
+
+        // Lecture initiale de active_role — remplace snap.data().activeRole
+        // maybeSingle() : pas d'erreur si le profil n'existe pas encore
+        const { data } = await supabase
+          .from("users")
+          .select("active_role")
+          .eq("id", user.id) // user.id = user.uid Firebase
+          .maybeSingle();
+
+        if (!data) {
+          // Pas de profil → l'utilisateur doit compléter son inscription
           setLoading(false);
           navigation.replace("ProfileSetup");
           return;
         }
 
-        setRole(snap.data().role || "client");
-      } catch (err) {
-        console.error("Erreur chargement role navigation:", err);
-        setRole("client");
-      } finally {
+        // active_role remplace activeRole (camelCase Firestore → snake_case PostgreSQL)
+        setActiveRole(data.active_role || "client");
         setLoading(false);
-      }
-    });
 
-    return unsubscribe;
+        // Realtime : écoute les changements de rôle pour basculer l'UI sans redémarrer
+        // Remplace onSnapshot(doc(db,'users',user.uid), snap => setActiveRole(snap.data().activeRole))
+        const channel = supabase
+          .channel(`nav-role-${user.id}`)
+          .on("postgres_changes", {
+            event: "UPDATE",
+            schema: "public",
+            table: "users",
+            filter: `id=eq.${user.id}`,
+          }, (payload) => {
+            const newRole = payload.new?.active_role;
+            if (newRole) setActiveRole(newRole);
+          })
+          .subscribe();
+
+        roleChannelRef.current = channel;
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe(); // remplace unsubscribeAuth()
+      if (roleChannelRef.current) {
+        supabase.removeChannel(roleChannelRef.current);
+      }
+    };
   }, [navigation]);
 
   if (loading) {
@@ -53,7 +94,7 @@ export default function AppNavigator({ navigation }) {
     );
   }
 
-  return isProviderRole(role) ? <ProviderTabNavigator /> : <ClientTabNavigator />;
+  return activeRole === "provider" ? <ProviderTabNavigator /> : <ClientTabNavigator />;
 }
 
 const styles = StyleSheet.create({

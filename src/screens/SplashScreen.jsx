@@ -1,22 +1,38 @@
 // src/screens/SplashScreen.jsx
+// Écran de démarrage — vérifie si l'utilisateur est déjà connecté
+// et redirige vers le bon écran sans action de l'utilisateur.
+//
+// Logique de navigation :
+//   - Pas de session active   → "Phone"        (écran de connexion)
+//   - Session + pas de profil → "ProfileSetup" (premier lancement)
+//   - Session + profil ok     → "MainApp"       (app principale)
+//
+// Remplace Firebase :
+//   onAuthStateChanged(auth, cb)  →  supabase.auth.onAuthStateChange(cb)
+//   getDoc(doc(db, 'users', uid)) →  supabase.from('users').select().eq('id', uid)
+
 import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { onAuthStateChanged } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "../config/firebase";
+import { supabase } from "../config/supabase";
 import { colors } from "../theme";
 
+// Détermine vers quel écran rediriger selon l'état de l'utilisateur
 async function getAuthenticatedRoute(user) {
   if (!user) return "Phone";
 
   try {
-    const snap = await getDoc(doc(db, "users", user.uid));
-    if (!snap.exists()) return "ProfileSetup";
+    // maybeSingle() : retourne null sans erreur si aucun profil trouvé
+    // (remplace getDoc + snap.exists() de Firestore)
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id")
+      .eq("id", user.id) // user.id sous Supabase (= user.uid sous Firebase)
+      .maybeSingle();
 
-    return "MainApp";
+    return profile ? "MainApp" : "ProfileSetup";
   } catch (err) {
-    console.error("Erreur chargement role utilisateur:", err);
+    console.error("Erreur chargement profil utilisateur:", err);
     return "MainApp";
   }
 }
@@ -36,56 +52,34 @@ export default function SplashScreen({ navigation }) {
       useNativeDriver: true,
     }).start();
 
-    // Animate dots in sequence
+    // Animation des points de chargement
     Animated.loop(
       Animated.sequence([
-        Animated.timing(dotScales[0], {
-          toValue: 1.5,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(dotScales[0], {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(dotScales[1], {
-          toValue: 1.5,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(dotScales[1], {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(dotScales[2], {
-          toValue: 1.5,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(dotScales[2], {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
+        Animated.timing(dotScales[0], { toValue: 1.5, duration: 300, useNativeDriver: true }),
+        Animated.timing(dotScales[0], { toValue: 1,   duration: 300, useNativeDriver: true }),
+        Animated.timing(dotScales[1], { toValue: 1.5, duration: 300, useNativeDriver: true }),
+        Animated.timing(dotScales[1], { toValue: 1,   duration: 300, useNativeDriver: true }),
+        Animated.timing(dotScales[2], { toValue: 1.5, duration: 300, useNativeDriver: true }),
+        Animated.timing(dotScales[2], { toValue: 1,   duration: 300, useNativeDriver: true }),
       ]),
     ).start();
 
     let timer;
-    let unsubscribe = () => {};
-    unsubscribe = onAuthStateChanged(auth, async (user) => {
-      unsubscribe();
-      const nextRoute = await getAuthenticatedRoute(user);
-      timer = setTimeout(() => {
-        navigation.replace(nextRoute);
-      }, 1200);
-    });
 
-    return () => {
-      clearTimeout(timer);
-      unsubscribe();
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const nextRoute = await getAuthenticatedRoute(session?.user ?? null);
+        timer = setTimeout(() => navigation.replace(nextRoute), 1200);
+      } catch (err) {
+        console.error("Erreur vérification session:", err);
+        timer = setTimeout(() => navigation.replace("Phone"), 1200);
+      }
     };
+
+    checkSession();
+
+    return () => clearTimeout(timer);
   }, [fadeAnim, navigation, dotScales]);
 
   return (

@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { supabase } from "../../config/supabase";
 import { colors } from "../../theme";
 
 export default function ChatInput({
@@ -19,6 +20,7 @@ export default function ChatInput({
   userRole,
 }) {
   const [text, setText] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const handleSend = () => {
     if (!text.trim()) return;
@@ -48,7 +50,7 @@ export default function ChatInput({
     Alert.alert("Envoyer", "", options);
   };
 
-  // Choisir une image
+  // Choisir une image, l'uploader dans Supabase Storage puis appeler onSendImage avec l'URL publique
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") return;
@@ -58,8 +60,23 @@ export default function ChatInput({
       quality: 0.7,
     });
 
-    if (!result.canceled && onSendImage) {
-      onSendImage(result.assets[0].uri);
+    if (result.canceled || !onSendImage) return;
+
+    setUploading(true);
+    try {
+      const uri = result.assets[0].uri;
+      const { data: { user } } = await supabase.auth.getUser();
+      const blob = await fetch(uri).then((r) => r.blob());
+      const path = `${user.id}/${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from("chat-images").upload(path, blob);
+      if (error) throw error;
+      const publicUrl = supabase.storage.from("chat-images").getPublicUrl(path).data.publicUrl;
+      onSendImage(publicUrl);
+    } catch (err) {
+      console.error("Erreur upload image chat:", err);
+      Alert.alert("Erreur", "Impossible d'envoyer l'image. Réessayez.");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -104,13 +121,14 @@ export default function ChatInput({
 
   return (
     <View style={styles.container}>
-      {/* Bouton pièce jointe */}
+      {/* Bouton pièce jointe — désactivé pendant l'upload */}
       <TouchableOpacity
-        style={styles.attachBtn}
+        style={[styles.attachBtn, uploading && { opacity: 0.5 }]}
         onPress={handleAttach}
         activeOpacity={0.8}
+        disabled={uploading}
       >
-        <Ionicons name="attach" size={20} color={colors.primary} />
+        <Ionicons name={uploading ? "cloud-upload-outline" : "attach"} size={20} color={colors.primary} />
       </TouchableOpacity>
 
       {/* Champ de texte */}

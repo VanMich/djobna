@@ -1,7 +1,13 @@
-// src/screens/ProfileSetupScreen.js
+// src/screens/ProfileSetupScreen.jsx
+// Formulaire de création du profil — affiché une seule fois après la première connexion.
+//
+// Remplace Firebase :
+//   auth.currentUser?.phoneNumber → supabase.auth.getUser() (async, user.phone)
+//   Le reste est délégué à useProfile.js
+
 import * as ImagePicker from "expo-image-picker";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,47 +20,35 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { QUARTIERS_DOUALA, SERVICES } from "../constants/services";
+import { supabase } from "../config/supabase";
+import { QUARTIERS_DOUALA } from "../constants/services";
 import { useProfile } from "../hooks/useProfile";
 import { colors, radius, spacing } from "../theme";
 
 export default function ProfileSetupScreen({ navigation }) {
-  const [step, setStep] = useState(0);
-  const [role, setRole] = useState("client");
   const [displayName, setDisplayName] = useState("");
+  const [ville, setVille] = useState("");
   const [quartier, setQuartier] = useState("");
+  const [pays, setPays] = useState("Cameroun");
   const [photoUri, setPhotoUri] = useState(null);
-  const [selectedServices, setSelectedServices] = useState([]);
   const [showQuartierPicker, setShowQuartierPicker] = useState(false);
+  const [phone, setPhone] = useState("");
 
   const { createProfile, loading } = useProfile();
 
-  const steps = [
-    {
-      label: "ÉTAPE 1 / 3",
-      title: "Vous êtes…",
-      subtitle: "Choisissez votre rôle sur Djobna",
-    },
-    {
-      label: "ÉTAPE 2 / 3",
-      title: "Vos informations",
-      subtitle: "Visibles sur votre profil",
-    },
-    {
-      label: "ÉTAPE 3 / 3",
-      title: "Vos spécialités",
-      subtitle: "Sélectionnez tout ce que vous proposez",
-    },
-  ];
-  const progressWidth = ["33%", "66%", "100%"][step];
+  // Récupérer le numéro de téléphone de l'utilisateur connecté
+  // Remplace auth.currentUser?.phoneNumber (synchrone Firebase)
+  // Supabase : user.phone (= numéro E.164 utilisé lors du signInWithOtp)
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setPhone(data?.user?.phone || "");
+    });
+  }, []);
 
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert(
-        "Permission refusée",
-        "Nous avons besoin d'accéder à vos photos.",
-      );
+      Alert.alert("Permission refusée", "Nous avons besoin d'accéder à vos photos.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -66,38 +60,36 @@ export default function ProfileSetupScreen({ navigation }) {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
 
-  const toggleService = (id) => {
-    setSelectedServices((prev) =>
-      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
-    );
-  };
-
-  const handleContinueInfos = () => {
+  const handleSubmit = async () => {
     if (!displayName.trim()) {
       Alert.alert("Erreur", "Entrez votre nom complet");
+      return;
+    }
+    if (!ville.trim()) {
+      Alert.alert("Erreur", "Entrez votre ville");
       return;
     }
     if (!quartier) {
       Alert.alert("Erreur", "Choisissez votre quartier");
       return;
     }
-    role === "client" ? handleCreateProfile() : setStep(2);
-  };
-
-  const handleCreateProfile = async () => {
-    if (role === "provider" && selectedServices.length === 0) {
-      Alert.alert("Erreur", "Sélectionnez au moins une spécialité");
+    if (!pays.trim()) {
+      Alert.alert("Erreur", "Entrez votre pays");
       return;
     }
+
     const result = await createProfile({
       displayName: displayName.trim(),
+      ville: ville.trim(),
       quartier,
-      photoURL: null,
-      role,
-      services: role === "provider" ? selectedServices : undefined,
+      pays: pays.trim(),
+      photoUri,
     });
+
     if (result.success) {
       navigation.replace("MainApp");
+    } else {
+      Alert.alert("Erreur", "Impossible de créer le profil. Réessayez.");
     }
   };
 
@@ -113,22 +105,11 @@ export default function ProfileSetupScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
-      {/* Header fixe */}
+
       <View style={styles.header}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: progressWidth }]} />
-        </View>
-        {step > 0 && (
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => setStep(step - 1)}
-          >
-            <Text style={styles.backText}>← Retour</Text>
-          </TouchableOpacity>
-        )}
-        <Text style={styles.stepLabel}>{steps[step].label}</Text>
-        <Text style={styles.title}>{steps[step].title}</Text>
-        <Text style={styles.subtitle}>{steps[step].subtitle}</Text>
+        <Text style={styles.brand}>Djobna</Text>
+        <Text style={styles.title}>Créez votre profil</Text>
+        <Text style={styles.subtitle}>Ces informations seront visibles sur votre compte</Text>
       </View>
 
       <ScrollView
@@ -137,204 +118,117 @@ export default function ProfileSetupScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* ÉTAPE 0 : Rôle */}
-        {step === 0 && (
-          <View style={styles.stepContent}>
-            <View style={styles.roleGrid}>
-              {[
-                {
-                  id: "client",
-                  icon: "🙋",
-                  name: "Client",
-                  desc: "Je cherche des prestataires",
-                },
-                {
-                  id: "provider",
-                  icon: "🔧",
-                  name: "Prestataire",
-                  desc: "Je propose mes services",
-                },
-              ].map((r) => (
-                <TouchableOpacity
-                  key={r.id}
-                  style={[
-                    styles.roleCard,
-                    role === r.id && styles.roleCardSelected,
-                  ]}
-                  onPress={() => setRole(r.id)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.roleIcon}>{r.icon}</Text>
-                  <Text
-                    style={[
-                      styles.roleName,
-                      role === r.id && styles.roleNameSelected,
-                    ]}
-                  >
-                    {r.name}
-                  </Text>
-                  <Text style={styles.roleDesc}>{r.desc}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <View style={styles.infoBox}>
-              <Text style={styles.infoText}>
-                💡 Vous pourrez changer de rôle plus tard depuis votre profil.
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.btnPrimary}
-              onPress={() => setStep(1)}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.btnText}>Continuer →</Text>
-            </TouchableOpacity>
+        {/* Téléphone pré-rempli — non modifiable */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>NUMÉRO DE TÉLÉPHONE</Text>
+          <View style={styles.inputReadOnly}>
+            <Text style={styles.inputReadOnlyText}>{phone}</Text>
+            <Text style={styles.lockIcon}>🔒</Text>
           </View>
-        )}
+        </View>
 
-        {/* ÉTAPE 1 : Infos */}
-        {step === 1 && (
-          <View style={styles.stepContent}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>NOM COMPLET</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Ex : Jean-Baptiste Mbarga"
-                placeholderTextColor={colors.textGray}
-                value={displayName}
-                onChangeText={setDisplayName}
-                autoCapitalize="words"
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>QUARTIER À DOUALA</Text>
-              <TouchableOpacity
-                style={[styles.picker, quartier && styles.pickerSelected]}
-                onPress={() => setShowQuartierPicker(!showQuartierPicker)}
-              >
-                <Text
-                  style={[
-                    styles.pickerText,
-                    !quartier && styles.pickerPlaceholder,
-                  ]}
-                >
-                  {quartier || "Choisissez votre quartier"}
-                </Text>
-                <Text style={styles.pickerArrow}>
-                  {showQuartierPicker ? "▴" : "▾"}
-                </Text>
-              </TouchableOpacity>
-              {showQuartierPicker && (
-                <View style={styles.pickerDropdown}>
-                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                    {QUARTIERS_DOUALA.map((q) => (
-                      <TouchableOpacity
-                        key={q}
-                        style={[
-                          styles.pickerItem,
-                          quartier === q && styles.pickerItemSelected,
-                        ]}
-                        onPress={() => {
-                          setQuartier(q);
-                          setShowQuartierPicker(false);
-                        }}
-                      >
-                        <Text
-                          style={[
-                            styles.pickerItemText,
-                            quartier === q && styles.pickerItemTextSelected,
-                          ]}
-                        >
-                          {q}
-                        </Text>
-                        {quartier === q && (
-                          <Text style={styles.checkMark}>✓</Text>
-                        )}
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
+        {/* Nom complet */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>NOM COMPLET *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ex : Jean-Baptiste Mbarga"
+            placeholderTextColor={colors.textGray}
+            value={displayName}
+            onChangeText={setDisplayName}
+            autoCapitalize="words"
+          />
+        </View>
+
+        {/* Photo de profil */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>PHOTO DE PROFIL (OPTIONNEL)</Text>
+          <View style={styles.photoRow}>
+            <TouchableOpacity style={styles.photoPreview} onPress={pickImage} activeOpacity={0.8}>
+              {photoUri ? (
+                <Image source={{ uri: photoUri }} style={styles.photoImage} />
+              ) : (
+                <Text style={styles.photoPlaceholder}>👤</Text>
               )}
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>PHOTO DE PROFIL (OPTIONNEL)</Text>
-              <View style={styles.photoRow}>
-                <View style={styles.photoPreview}>
-                  {photoUri ? (
-                    <Image
-                      source={{ uri: photoUri }}
-                      style={styles.photoImage}
-                    />
-                  ) : (
-                    <Text style={styles.photoPlaceholder}>👤</Text>
-                  )}
-                </View>
-                <TouchableOpacity
-                  style={styles.photoBtn}
-                  onPress={pickImage}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.photoBtnText}>
-                    {photoUri ? "Changer la photo" : "Choisir une photo"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.btnPrimary}
-              onPress={handleContinueInfos}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.btnText}>
-                {role === "client" ? "Créer mon profil →" : "Continuer →"}
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.photoBtn} onPress={pickImage} activeOpacity={0.8}>
+              <Text style={styles.photoBtnText}>
+                {photoUri ? "Changer la photo" : "Choisir une photo"}
               </Text>
+              <Text style={styles.photoBtnSub}>Depuis votre galerie</Text>
             </TouchableOpacity>
           </View>
-        )}
+        </View>
 
-        {/* ÉTAPE 2 : Services */}
-        {step === 2 && (
-          <View style={styles.stepContent}>
-            <View style={styles.servicesGrid}>
-              {SERVICES.map((service) => {
-                const isSelected = selectedServices.includes(service.id);
-                return (
+        {/* Ville */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>VILLE *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ex : Douala"
+            placeholderTextColor={colors.textGray}
+            value={ville}
+            onChangeText={setVille}
+            autoCapitalize="words"
+          />
+        </View>
+
+        {/* Quartier */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>QUARTIER *</Text>
+          <TouchableOpacity
+            style={[styles.picker, quartier && styles.pickerSelected]}
+            onPress={() => setShowQuartierPicker(!showQuartierPicker)}
+          >
+            <Text style={[styles.pickerText, !quartier && styles.pickerPlaceholder]}>
+              {quartier || "Choisissez votre quartier"}
+            </Text>
+            <Text style={styles.pickerArrow}>{showQuartierPicker ? "▴" : "▾"}</Text>
+          </TouchableOpacity>
+          {showQuartierPicker && (
+            <View style={styles.pickerDropdown}>
+              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                {QUARTIERS_DOUALA.map((q) => (
                   <TouchableOpacity
-                    key={service.id}
-                    style={[
-                      styles.serviceChip,
-                      isSelected && styles.serviceChipSelected,
-                    ]}
-                    onPress={() => toggleService(service.id)}
-                    activeOpacity={0.8}
+                    key={q}
+                    style={[styles.pickerItem, quartier === q && styles.pickerItemSelected]}
+                    onPress={() => {
+                      setQuartier(q);
+                      setShowQuartierPicker(false);
+                    }}
                   >
-                    <Text style={styles.serviceIcon}>{service.icon}</Text>
                     <Text
                       style={[
-                        styles.serviceLabel,
-                        isSelected && styles.serviceLabelSelected,
+                        styles.pickerItemText,
+                        quartier === q && styles.pickerItemTextSelected,
                       ]}
                     >
-                      {service.label}
+                      {q}
                     </Text>
+                    {quartier === q && <Text style={styles.checkMark}>✓</Text>}
                   </TouchableOpacity>
-                );
-              })}
+                ))}
+              </ScrollView>
             </View>
-            <Text style={styles.serviceCount}>
-              {selectedServices.length} spécialité
-              {selectedServices.length > 1 ? "s" : ""} sélectionnée
-              {selectedServices.length > 1 ? "s" : ""}
-            </Text>
-            <TouchableOpacity
-              style={styles.btnPrimary}
-              onPress={handleCreateProfile}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.btnText}>Créer mon profil →</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+          )}
+        </View>
+
+        {/* Pays */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>PAYS *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ex : Cameroun"
+            placeholderTextColor={colors.textGray}
+            value={pays}
+            onChangeText={setPays}
+            autoCapitalize="words"
+          />
+        </View>
+
+        <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit} activeOpacity={0.85}>
+          <Text style={styles.btnText}>Créer mon profil →</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -356,55 +250,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     gap: 6,
   },
-  progressBar: {
-    height: 3,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    borderRadius: 2,
-    marginBottom: spacing.md,
-  },
-  progressFill: { height: 3, backgroundColor: colors.primary, borderRadius: 2 },
-  backBtn: { marginBottom: 6 },
-  backText: { color: colors.primary, fontSize: 14, fontWeight: "500" },
-  stepLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.primary,
-    letterSpacing: 0.5,
-  },
+  brand: { fontSize: 18, fontWeight: "800", color: colors.primary },
   title: { fontSize: 26, fontWeight: "700", color: "#fff", lineHeight: 34 },
   subtitle: { fontSize: 13, color: colors.textLight },
   scroll: { flex: 1, backgroundColor: "#fff" },
-  scrollContent: { padding: spacing.lg, paddingBottom: 40, gap: spacing.lg },
-  stepContent: { gap: spacing.md },
-  roleGrid: { flexDirection: "row", gap: 12 },
-  roleCard: {
-    flex: 1,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: colors.border,
-    padding: spacing.md,
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "#fff",
-  },
-  roleCardSelected: { borderColor: colors.primary, backgroundColor: "#F0FAF6" },
-  roleIcon: { fontSize: 32 },
-  roleName: { fontSize: 15, fontWeight: "700", color: colors.textDark },
-  roleNameSelected: { color: colors.primary },
-  roleDesc: {
-    fontSize: 11,
-    color: colors.textGray,
-    textAlign: "center",
-    lineHeight: 16,
-  },
-  infoBox: {
-    backgroundColor: "#F0FAF6",
-    borderRadius: radius.md,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#9FE1CB",
-  },
-  infoText: { fontSize: 12, color: "#0F6E56", lineHeight: 18 },
+  scrollContent: { padding: spacing.lg, paddingBottom: 40, gap: spacing.md },
   inputGroup: { gap: 6 },
   label: {
     fontSize: 10,
@@ -421,6 +271,43 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: colors.border,
   },
+  inputReadOnly: {
+    backgroundColor: "#F4F4F4",
+    borderRadius: radius.md,
+    padding: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+  inputReadOnlyText: { fontSize: 15, color: colors.textGray, fontWeight: "500" },
+  lockIcon: { fontSize: 14 },
+  photoRow: { flexDirection: "row", alignItems: "center", gap: 12 },
+  photoPreview: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    backgroundColor: "#E8E8E8",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    overflow: "hidden",
+  },
+  photoImage: { width: 64, height: 64 },
+  photoPlaceholder: { fontSize: 28 },
+  photoBtn: {
+    flex: 1,
+    backgroundColor: colors.lightGray,
+    borderRadius: radius.md,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    gap: 2,
+  },
+  photoBtnText: { fontSize: 13, color: colors.textDark, fontWeight: "600" },
+  photoBtnSub: { fontSize: 11, color: colors.textGray },
   picker: {
     backgroundColor: colors.lightGray,
     borderRadius: radius.md,
@@ -459,54 +346,6 @@ const styles = StyleSheet.create({
   pickerItemText: { fontSize: 14, color: colors.textDark },
   pickerItemTextSelected: { color: colors.primary, fontWeight: "600" },
   checkMark: { fontSize: 14, color: colors.primary, fontWeight: "700" },
-  photoRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  photoPreview: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
-    backgroundColor: "#E8E8E8",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  photoImage: { width: 60, height: 60, borderRadius: 16 },
-  photoPlaceholder: { fontSize: 26 },
-  photoBtn: {
-    flex: 1,
-    backgroundColor: colors.lightGray,
-    borderRadius: radius.md,
-    padding: 14,
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  photoBtnText: { fontSize: 13, color: colors.textGray, fontWeight: "600" },
-  servicesGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  serviceChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 24,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: "#fff",
-  },
-  serviceChipSelected: {
-    borderColor: colors.primary,
-    backgroundColor: "#F0FAF6",
-  },
-  serviceIcon: { fontSize: 16 },
-  serviceLabel: { fontSize: 12, fontWeight: "600", color: colors.textDark },
-  serviceLabelSelected: { color: colors.primary },
-  serviceCount: {
-    fontSize: 12,
-    color: colors.textGray,
-    textAlign: "center",
-    marginTop: 4,
-  },
   btnPrimary: {
     backgroundColor: colors.primary,
     borderRadius: 14,

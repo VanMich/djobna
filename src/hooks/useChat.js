@@ -1,107 +1,193 @@
 // src/hooks/useChat.js
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { getDatabase, off, onValue, push, ref, update } from "firebase/database";
-import { auth } from "../config/firebase";
+//
+// Remplace Firebase RTDB :
+//   auth.currentUser                       → supabase.auth.getUser() (async)
+//   getChatId(uid1,uid2)                   → query SQL sur chats (provider_id,client_id)
+//   onValue(ref(db,'chats/id/messages'))   → Realtime channel sur table messages
+//   push(messagesRef, message)             → supabase.from('messages').insert()
+//   update(ref(db,'chats/id/meta'),{...})  → supabase.from('chats').update()
+//   update unreadCount                     → update messages.read = true
+//   off(messagesRef)                       → supabase.removeChannel()
+//   message.senderId                       → sender_id → senderId (mapMessage)
 
-// Genere un ID stable pour une conversation entre deux utilisateurs.
-export function getChatId(uid1, uid2) {
-  if (!uid1 || !uid2) return null;
-  return [uid1, uid2].sort().join("_");
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "../config/supabase";
+
+// Mapping snake_case DB → camelCase pour les composants UI
+function mapMessage(m) {
+  return {
+    id: m.id,
+    text: m.text || null,
+    senderId: m.sender_id,             // sender_id → senderId
+    type: m.type || "text",
+    // Convertit ISO string → millisecondes (compatibilité showDate dans ChatScreen)
+    createdAt: m.created_at ? new Date(m.created_at).getTime() : Date.now(),
+    read: m.read,
+    devis: m.devis || null,
+  };
 }
 
 export function useChat(otherUserId) {
+  const [userId, setUserId] = useState(null); // null = chargement
+  const [chatId, setChatId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
-  const currentUser = auth.currentUser;
-  const database = useMemo(() => getDatabase(), []);
-  const chatId = getChatId(currentUser?.uid, otherUserId);
-  const messagesRef = useMemo(
-    () => (chatId ? ref(database, `chats/${chatId}/messages`) : null),
-    [chatId, database],
-  );
 
-  const markAsRead = useCallback(async () => {
-    if (!currentUser || !chatId) return;
-
-    try {
-      await update(ref(database, `chats/${chatId}/meta/unreadCount`), {
-        [currentUser.uid]: 0,
-      });
-    } catch (err) {
-      console.error("Erreur mark as read:", err);
-    }
-  }, [chatId, currentUser, database]);
-
+  // ── 1. Récupère l'uid courant ─────────────────────────────────────────────
+  // Remplace auth.currentUser (synchrone Firebase)
   useEffect(() => {
-    if (!currentUser || !messagesRef) {
-      setMessages([]);
-      setLoading(false);
+    supabase.auth.getUser().then(({ data }) => {
+      setUserId(data?.user?.id ?? "");
+    });
+  }, []);
+
+  // ── 2. Trouve ou crée la conversation ────────────────────────────────────
+  // Remplace getChatId(uid1, uid2) — Supabase utilise un UUID dans la table chats
+  useEffect(() => {
+    if (!userId || !otherUserId) return;
+
+    (async () => {
+      // Cherche une conversation existante dans les deux sens (provider↔client)
+      const { data: existing } = await supabase
+        .from("chats")
+        .select("id")
+        .or(
+          `and(provider_id.eq.${userId},client_id.eq.${otherUserId}),` +
+          `and(provider_id.eq.${otherUserId},client_id.eq.${userId})`
+        )
+        .maybeSingle();
+
+      if (existing) {
+        setChatId(existing.id);
+        return;
+      }
+
+      // Aucune conversation existante — en crée une
+      // On détermine qui est prestataire à partir de active_role
+      const { data: myData } = await supabase
+        .from("users")
+        .select("active_role, role")
+        .eq("id", userId)
+        .single();
+
+      const activeRole = myData?.active_role || myData?.role || "client";
+      const iAmProvider = activeRole === "provider" || activeRole === "both";
+      const now = new Date().toISOString();
+
+      const { data: newChat } = await supabase
+        .from("chats")
+        .insert({
+          provider_id: iAmProvider ? userId : otherUserId,
+          client_id: iAmProvider ? otherUserId : userId,
+          last_message: "",
+          last_message_at: now,
+          created_at: now,
+        })
+        .select("id")
+        .single();
+
+      if (newChat) setChatId(newChat.id);
+    })();
+  }, [userId, otherUserId]);
+
+  // ── 3. Charge les messages et s'abonne aux changements Realtime ──────────
+  // Remplace onValue(messagesRef, callback) + off(messagesRef)
+  useEffect(() => {
+    if (!chatId || !userId) {
+      // userId chargé mais pas encore de chatId → pas de loader infini
+      if (userId !== null && !otherUserId) setLoading(false);
       return;
     }
 
-    const unsubscribe = onValue(messagesRef, (snapshot) => {
-      const data = snapshot.val();
-
-      if (data) {
-        const msgs = Object.entries(data)
-          .map(([id, msg]) => ({ id, ...msg }))
-          .sort((a, b) => a.createdAt - b.createdAt);
-        setMessages(msgs);
-      } else {
-        setMessages([]);
-      }
-
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .eq("chat_id", chatId)
+        .order("created_at", { ascending: true });
+      setMessages((data || []).map(mapMessage));
       setLoading(false);
-    });
+    };
 
-    markAsRead();
+    // Marque comme lu les messages de l'interlocuteur
+    // Remplace update(ref(db,'chats/id/meta/unreadCount'), { [uid]: 0 })
+    const markRead = async () => {
+      await supabase
+        .from("messages")
+        .update({ read: true })
+        .eq("chat_id", chatId)
+        .eq("read", false)
+        .neq("sender_id", userId);
+    };
 
-    return () => off(messagesRef);
-  }, [currentUser, markAsRead, messagesRef]);
+    fetchMessages();
+    markRead();
 
-  const updateChatMeta = useCallback(
-    async (lastMessage) => {
-      if (!currentUser || !chatId || !otherUserId) return;
+    const channel = supabase
+      .channel(`chat-${chatId}`)
+      // Nouveau message reçu
+      .on("postgres_changes", {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: `chat_id=eq.${chatId}`,
+      }, (payload) => {
+        setMessages((prev) => [...prev, mapMessage(payload.new)]);
+        markRead();
+      })
+      // Mise à jour d'un message (ex : statut devis accepté/refusé)
+      .on("postgres_changes", {
+        event: "UPDATE",
+        schema: "public",
+        table: "messages",
+        filter: `chat_id=eq.${chatId}`,
+      }, (payload) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === payload.new.id ? mapMessage(payload.new) : m))
+        );
+      })
+      .subscribe();
 
-      await update(ref(database, `chats/${chatId}/meta`), {
-        lastMessage,
-        lastMessageAt: Date.now(),
-        participants: [currentUser.uid, otherUserId],
-      });
-    },
-    [chatId, currentUser, database, otherUserId],
-  );
+    return () => supabase.removeChannel(channel); // remplace off(messagesRef)
+  }, [chatId, userId, otherUserId]);
 
+  // ── Envoyer un message texte ──────────────────────────────────────────────
+  // Remplace push(messagesRef, message) + update(meta)
   const sendMessage = useCallback(
     async (text) => {
-      if (!text.trim() || !currentUser || !messagesRef) return;
+      if (!text.trim() || !userId || !chatId) return;
+      const now = new Date().toISOString();
 
-      const message = {
+      await supabase.from("messages").insert({
+        chat_id: chatId,
+        sender_id: userId,           // senderId → sender_id
         text: text.trim(),
-        senderId: currentUser.uid,
         type: "text",
-        createdAt: Date.now(),
         read: false,
-      };
+        created_at: now,
+      });
 
-      try {
-        await push(messagesRef, message);
-        await updateChatMeta(text.trim());
-      } catch (err) {
-        console.error("Erreur envoi message:", err);
-      }
+      // Met à jour le résumé de la conversation
+      await supabase.from("chats").update({
+        last_message: text.trim(),   // lastMessage → last_message
+        last_message_at: now,        // lastMessageAt → last_message_at
+      }).eq("id", chatId);
     },
-    [currentUser, messagesRef, updateChatMeta],
+    [userId, chatId],
   );
 
+  // ── Envoyer un devis ──────────────────────────────────────────────────────
+  // Remplace push(messagesRef, { type:'devis', devis:{...} })
+  // devis stocké en colonne JSONB dans la table messages
   const sendDevis = useCallback(
     async (devisData) => {
-      if (!currentUser || !messagesRef) return;
+      if (!userId || !chatId) return;
+      const now = new Date().toISOString();
 
-      const message = {
+      await supabase.from("messages").insert({
+        chat_id: chatId,
+        sender_id: userId,
         type: "devis",
-        senderId: currentUser.uid,
-        createdAt: Date.now(),
         read: false,
         devis: {
           title: devisData.title,
@@ -109,32 +195,35 @@ export function useChat(otherUserId) {
           description: devisData.description,
           status: "pending",
         },
-      };
+        created_at: now,
+      });
 
-      try {
-        await push(messagesRef, message);
-        await updateChatMeta(`Devis : ${devisData.price} FCFA`);
-      } catch (err) {
-        console.error("Erreur envoi devis:", err);
-      }
+      await supabase.from("chats").update({
+        last_message: `Devis : ${devisData.price} FCFA`,
+        last_message_at: now,
+      }).eq("id", chatId);
     },
-    [currentUser, messagesRef, updateChatMeta],
+    [userId, chatId],
   );
 
+  // ── Répondre à un devis ───────────────────────────────────────────────────
+  // Remplace update(ref(db,'chats/id/messages/msgId/devis'), { status })
+  // JSONB : fetch + merge + update (PostgreSQL n'a pas d'équivalent de set nested)
   const respondToDevis = useCallback(
     async (messageId, response) => {
       if (!chatId) return;
 
-      try {
-        await update(
-          ref(database, `chats/${chatId}/messages/${messageId}/devis`),
-          { status: response },
-        );
-      } catch (err) {
-        console.error("Erreur reponse devis:", err);
-      }
+      const { data } = await supabase
+        .from("messages")
+        .select("devis")
+        .eq("id", messageId)
+        .single();
+
+      await supabase.from("messages").update({
+        devis: { ...data?.devis, status: response },
+      }).eq("id", messageId);
     },
-    [chatId, database],
+    [chatId],
   );
 
   return {
@@ -144,6 +233,6 @@ export function useChat(otherUserId) {
     sendDevis,
     respondToDevis,
     chatId,
-    currentUserId: currentUser?.uid,
+    currentUserId: userId, // user.uid Firebase → user.id Supabase
   };
 }

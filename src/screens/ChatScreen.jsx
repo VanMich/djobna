@@ -9,13 +9,12 @@ import {
   Alert,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { doc, getDoc } from "firebase/firestore";
 import { useChat } from "../hooks/useChat";
 import ChatHeader from "../components/chat/ChatHeader";
 import MessageBubble from "../components/chat/MessageBubble";
 import DevisCard from "../components/chat/DevisCard";
 import ChatInput from "../components/chat/ChatInput";
-import { auth, db } from "../config/firebase";
+import { supabase } from "../config/supabase";
 import { colors } from "../theme";
 
 export default function ChatScreen({ navigation, route }) {
@@ -31,21 +30,34 @@ export default function ChatScreen({ navigation, route }) {
   const [otherUser, setOtherUser] = useState(null);
   const flatListRef = useRef(null);
 
-  // pour determiner le role du user courant et charger l'interlocuteur
+  // Détermine le rôle de l'utilisateur courant et charge le profil de l'interlocuteur
+  // Remplace auth.currentUser + 2× getDoc(doc(db,'users',id))
   useEffect(() => {
     const fetchChatContext = async () => {
-      const user = auth.currentUser;
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        if (snap.exists()) {
-          setUserRole(snap.data().role);
-          // role = 'client' | 'provider' | 'both'
-        }
+        const { data: myData } = await supabase
+          .from("users")
+          .select("role")
+          .eq("id", user.id)   // user.id = user.uid Firebase
+          .single();
+        if (myData) setUserRole(myData.role);
       }
 
       if (!otherUserId) return;
-      const otherSnap = await getDoc(doc(db, "users", otherUserId));
-      if (otherSnap.exists()) setOtherUser(otherSnap.data());
+      const { data: otherData } = await supabase
+        .from("users")
+        .select("display_name, photo_url, services, role")
+        .eq("id", otherUserId)
+        .single();
+      if (otherData) {
+        setOtherUser({
+          displayName: otherData.display_name, // display_name → displayName
+          photoURL: otherData.photo_url,
+          services: otherData.services,
+          role: otherData.role,
+        });
+      }
     };
     fetchChatContext();
   }, [otherUserId]);

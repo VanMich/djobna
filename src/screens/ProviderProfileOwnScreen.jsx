@@ -1,4 +1,9 @@
 // src/screens/ProviderProfileOwnScreen.jsx
+//
+// Profil propre du prestataire (§14).
+// Sections : services, réalisations, compte, notifications, aide.
+// Le badge KYC (§14.4) s'affiche tant que le compte n'est pas vérifié.
+
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
@@ -6,6 +11,8 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
+  Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
@@ -17,7 +24,54 @@ import MenuItem from "../components/clientProfile/MenuItem";
 import MenuSection from "../components/clientProfile/MenuSection";
 import { SERVICES } from "../constants/services";
 import { useProviderOwnProfile } from "../hooks/useProviderOwnProfile";
-import { colors } from "../theme";
+import { useRoleSwitch } from "../hooks/useRoleSwitch";
+import { colors, spacing } from "../theme";
+
+// ─── Badge de statut de vérification KYC (§14.4) ─────────────────────────────
+// Affiché en haut du contenu scrollable tant que le compte n'est pas "verified".
+// 3 états : non soumis (null/undefined) / en cours (pending) / refusé (rejected).
+function KycBanner({ status }) {
+  if (status === "verified") return null;
+
+  const config = {
+    pending: {
+      icon: "⏳", label: "Vérification en cours…",
+      sub: "Vos documents sont en cours d'examen par notre équipe.",
+      color: "#BA7517", bg: "#FFF8E8", border: "#F0D49A",
+    },
+    rejected: {
+      icon: "❌", label: "Documents refusés",
+      sub: "Soumettez à nouveau vos pièces justificatives.",
+      color: "#E24B4A", bg: "#FFF0EE", border: "#FDDAD6",
+    },
+  }[status] || {
+    icon: "📋", label: "Identité non vérifiée",
+    sub: "La vérification augmente votre visibilité sur la carte.",
+    color: "#AAB0B7", bg: "#F5F5F5", border: "#E8E8E8",
+  };
+
+  return (
+    <View style={[kycStyles.banner, { backgroundColor: config.bg, borderColor: config.border }]}>
+      <Text style={kycStyles.icon}>{config.icon}</Text>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={[kycStyles.label, { color: config.color }]}>{config.label}</Text>
+        <Text style={kycStyles.sub}>{config.sub}</Text>
+      </View>
+    </View>
+  );
+}
+
+const kycStyles = StyleSheet.create({
+  banner: {
+    flexDirection: "row", alignItems: "center", gap: 10,
+    borderRadius: 14, padding: 12,
+    marginHorizontal: 12, marginTop: 10,
+    borderWidth: 1,
+  },
+  icon:  { fontSize: 22 },
+  label: { fontSize: 13, fontWeight: "700" },
+  sub:   { fontSize: 11, color: "#888", lineHeight: 16 },
+});
 
 export default function ProviderProfileOwnScreen({ navigation }) {
   const {
@@ -27,12 +81,19 @@ export default function ProviderProfileOwnScreen({ navigation }) {
     updateProfile,
     addPortfolioPhoto,
     removePortfolioPhoto,
+    updatePhotoCaption,   // modifier la légende d'une photo (§14.2)
     logout,
   } = useProviderOwnProfile();
 
+  const { switchRole, loading: roleLoading } = useRoleSwitch();
   const [editVisible, setEditVisible] = useState(false);
   const [notifMessages, setNotifMessages] = useState(true);
   const [notifRequests, setNotifRequests] = useState(true);
+
+  const handleSwitchToClient = useCallback(async () => {
+    await switchRole("client");
+    // AppNavigator écoute en temps réel : la tab bar bascule automatiquement
+  }, [switchRole]);
 
   const handleLogout = useCallback(() => {
     Alert.alert(
@@ -80,21 +141,58 @@ export default function ProviderProfileOwnScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <MenuSection title="Mes spécialités">
-          <View style={styles.tagsWrap}>
-            {(provider?.services || []).map((id) => {
+        {/* ── Statut de vérification KYC (§14.4) ── */}
+        <KycBanner status={provider?.verificationStatus} />
+
+        {/* ── Bascule vers le mode Client ── */}
+        <TouchableOpacity
+          style={styles.roleCard}
+          onPress={handleSwitchToClient}
+          activeOpacity={0.85}
+          disabled={roleLoading}
+        >
+          <Text style={styles.roleCardIcon}>🙋</Text>
+          <View style={styles.roleCardText}>
+            <Text style={styles.roleCardTitle}>Passer en mode Client</Text>
+            <Text style={styles.roleCardSub}>Chercher des prestataires et faire des demandes</Text>
+          </View>
+          <Text style={styles.roleCardArrow}>›</Text>
+        </TouchableOpacity>
+
+        <MenuSection title="Mes services">
+          <View style={styles.servicesGrid}>
+            {(provider?.services || []).map((id, index) => {
               const svc = SERVICES.find((s) => s.id === id);
-              return svc ? (
-                <View key={id} style={styles.tag}>
-                  <MenuItem
-                    icon={svc.icon}
-                    iconBg="#F0FAF6"
-                    label={svc.label}
-                    showArrow={false}
-                  />
+              const pricing = provider?.servicePricing?.[id];
+              if (!svc) return null;
+              return (
+                <View key={id} style={styles.serviceCard}>
+                  <View style={styles.serviceCardLeft}>
+                    <Text style={styles.serviceNum}>{index + 1}</Text>
+                  </View>
+                  <View style={styles.serviceIconWrap}>
+                    <Text style={styles.serviceIcon}>{svc.icon}</Text>
+                  </View>
+                  <View style={styles.serviceCardInfo}>
+                    <Text style={styles.serviceLabel}>
+                      {pricing?.customLabel || svc.label}
+                    </Text>
+                    {pricing ? (
+                      <Text style={styles.servicePrice}>
+                        {(pricing.minPrice || 0).toLocaleString("fr-FR")} –{" "}
+                        {(pricing.maxPrice || 0).toLocaleString("fr-FR")} FCFA
+                        {pricing.unit ? ` / ${pricing.unit}` : ""}
+                      </Text>
+                    ) : (
+                      <Text style={styles.servicePriceEmpty}>Tarif non renseigné</Text>
+                    )}
+                  </View>
                 </View>
-              ) : null;
+              );
             })}
+            {(provider?.services || []).length === 0 && (
+              <Text style={styles.servicesEmpty}>Aucun service renseigné.</Text>
+            )}
           </View>
         </MenuSection>
 
@@ -103,6 +201,7 @@ export default function ProviderProfileOwnScreen({ navigation }) {
             portfolio={provider?.portfolio}
             onAdd={addPortfolioPhoto}
             onRemove={removePortfolioPhoto}
+            onUpdateCaption={updatePhotoCaption}
           />
         </MenuSection>
 
@@ -119,10 +218,17 @@ export default function ProviderProfileOwnScreen({ navigation }) {
             iconBg="#FFFBEB"
             label="Mes avis reçus"
             sublabel={`${provider?.reviewCount || 0} avis · Note ${
-              provider?.rating?.toFixed(1) || "-"
+              (typeof provider?.rating === "object"
+                ? provider?.rating?.global
+                : provider?.rating
+              )?.toFixed(1) ?? "-"
             }/5`}
+            // Ouvre le profil public du prestataire sur l'onglet "Avis"
             onPress={() =>
-              Alert.alert("Bientôt", "Historique des avis à venir.")
+              navigation.navigate("ProviderProfile", {
+                providerId: profile?.id,
+                initialTab: "reviews",
+              })
             }
           />
           <MenuItem
@@ -130,16 +236,16 @@ export default function ProviderProfileOwnScreen({ navigation }) {
             iconBg="#E8F4FF"
             label="Mes tarifs"
             sublabel="Fourchettes par prestation"
-            onPress={() =>
-              Alert.alert("Bientôt", "Gestion des tarifs à venir.")
-            }
+            // Ouvre la feuille d'édition du profil — section tarifs en bas du modal
+            onPress={() => setEditVisible(true)}
           />
           <MenuItem
             icon="📍"
             iconBg="#F5EEFE"
             label="Zones de couverture"
             sublabel={`${(provider?.zones || []).join(", ") || "Non défini"}`}
-            onPress={() => Alert.alert("Bientôt", "Gestion des zones à venir.")}
+            // Ouvre la feuille d'édition — section zones d'intervention
+            onPress={() => setEditVisible(true)}
           />
         </MenuSection>
 
@@ -263,8 +369,41 @@ const styles = StyleSheet.create({
   scroll: { flex: 1, backgroundColor: "#F4F6F5" },
   scrollContent: { paddingBottom: 30 },
 
-  tagsWrap: { flexDirection: "row", flexWrap: "wrap" },
-  tag: { width: "100%" },
+  servicesGrid: { paddingHorizontal: 12, paddingBottom: 14, gap: 10 },
+  serviceCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "#F8FFFE",
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: "#E0F5EE",
+  },
+  serviceCardLeft: {
+    width: 22,
+    alignItems: "center",
+  },
+  serviceNum: {
+    fontSize: 12,
+    fontWeight: "800",
+    color: colors.primary,
+    opacity: 0.5,
+  },
+  serviceIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: "#E8F8F2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  serviceIcon: { fontSize: 20 },
+  serviceCardInfo: { flex: 1, gap: 3 },
+  serviceLabel: { fontSize: 14, fontWeight: "700", color: colors.textDark },
+  servicePrice: { fontSize: 12, color: colors.primary, fontWeight: "600" },
+  servicePriceEmpty: { fontSize: 12, color: "#BBB", fontStyle: "italic" },
+  servicesEmpty: { fontSize: 12, color: "#AAB0B7", paddingHorizontal: 14, paddingBottom: 14 },
 
   revenueCard: {
     backgroundColor: "#fff",
@@ -305,4 +444,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FDDAD6",
   },
+  roleCard: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    backgroundColor: "#fff", marginHorizontal: 12, marginTop: 12,
+    borderRadius: 16, padding: spacing.md,
+    borderWidth: 1.5, borderColor: colors.border,
+  },
+  roleCardIcon: { fontSize: 28 },
+  roleCardText: { flex: 1, gap: 2 },
+  roleCardTitle: { fontSize: 14, fontWeight: "700", color: colors.textDark },
+  roleCardSub: { fontSize: 12, color: colors.textGray },
+  roleCardArrow: { fontSize: 22, color: colors.textGray },
 });

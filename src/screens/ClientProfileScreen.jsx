@@ -2,20 +2,23 @@
 import React, { useState, useCallback } from "react";
 import {
   View,
+  Text,
   StyleSheet,
   ScrollView,
   Alert,
   Switch,
   ActivityIndicator,
+  TouchableOpacity,
 } from "react-native";
 import { CommonActions } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { useClientProfile } from "../hooks/useClientProfile";
+import { useRoleSwitch } from "../hooks/useRoleSwitch";
 import ClientProfileHeader from "../components/clientProfile/ClientProfileHeader";
 import FavoritesSection from "../components/clientProfile/FavoritesSection";
 import MenuSection from "../components/clientProfile/MenuSection";
 import MenuItem from "../components/clientProfile/MenuItem";
-import { colors } from "../theme";
+import { colors, spacing, radius } from "../theme";
 
 export default function ClientProfileScreen({ navigation }) {
   const {
@@ -27,6 +30,27 @@ export default function ClientProfileScreen({ navigation }) {
     removeFavorite,
     logout,
   } = useClientProfile();
+
+  const { providerStatus, switchRole, loading: roleLoading } = useRoleSwitch();
+
+  const handleProviderButton = useCallback(async () => {
+    if (providerStatus === null) {
+      // Pas encore de compte prestataire → lancer la création
+      navigation.navigate("ProviderSetup");
+    } else if (providerStatus === "approved") {
+      // Compte validé → basculer en mode prestataire
+      await switchRole("provider");
+      // AppNavigator écoute en temps réel : la tab bar bascule automatiquement
+    } else if (providerStatus === "pending") {
+      navigation.navigate("VerificationPending");
+    } else if (providerStatus === "rejected") {
+      Alert.alert(
+        "Dossier rejeté",
+        "Votre dossier a été rejeté. Retournez sur l'écran de vérification pour soumettre à nouveau vos documents.",
+        [{ text: "OK" }]
+      );
+    }
+  }, [providerStatus, navigation, switchRole]);
 
   // États des toggles notifications
   const [notifMessages, setNotifMessages] = useState(true);
@@ -119,6 +143,40 @@ export default function ClientProfileScreen({ navigation }) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* ── Bascule de rôle ── */}
+        <TouchableOpacity
+          style={[
+            styles.roleCard,
+            providerStatus === "approved" && styles.roleCardActive,
+            providerStatus === "pending" && styles.roleCardPending,
+            providerStatus === "rejected" && styles.roleCardRejected,
+          ]}
+          onPress={handleProviderButton}
+          activeOpacity={0.85}
+          disabled={roleLoading || providerStatus === undefined}
+        >
+          <Text style={styles.roleCardIcon}>
+            {providerStatus === null ? "🔧" :
+             providerStatus === "pending" ? "⏳" :
+             providerStatus === "approved" ? "✅" : "❌"}
+          </Text>
+          <View style={styles.roleCardText}>
+            <Text style={styles.roleCardTitle}>
+              {providerStatus === null ? "Devenir prestataire" :
+               providerStatus === "pending" ? "Vérification en cours..." :
+               providerStatus === "approved" ? "Passer en mode Prestataire" :
+               "Dossier rejeté — Réessayer"}
+            </Text>
+            <Text style={styles.roleCardSub}>
+              {providerStatus === null ? "Proposez vos services sur Djobna" :
+               providerStatus === "pending" ? "Votre dossier est en cours d'examen" :
+               providerStatus === "approved" ? "Votre compte prestataire est validé" :
+               "Cliquez pour soumettre à nouveau"}
+            </Text>
+          </View>
+          <Text style={styles.roleCardArrow}>›</Text>
+        </TouchableOpacity>
+
         {/* ── Favoris ── */}
         <MenuSection title="Mes prestataires favoris">
           <FavoritesSection
@@ -292,4 +350,18 @@ const styles = StyleSheet.create({
   },
   scroll: { flex: 1, backgroundColor: "#F4F6F5" },
   scrollContent: { paddingBottom: 30 },
+  roleCard: {
+    flexDirection: "row", alignItems: "center", gap: 12,
+    backgroundColor: "#fff", marginHorizontal: 12, marginTop: 12,
+    borderRadius: 16, padding: spacing.md,
+    borderWidth: 1.5, borderColor: colors.primary,
+  },
+  roleCardActive: { borderColor: colors.primary, backgroundColor: "#F0FAF6" },
+  roleCardPending: { borderColor: "#F5A623", backgroundColor: "#FFFBF0" },
+  roleCardRejected: { borderColor: "#E24B4A", backgroundColor: "#FFF0EE" },
+  roleCardIcon: { fontSize: 28 },
+  roleCardText: { flex: 1, gap: 2 },
+  roleCardTitle: { fontSize: 14, fontWeight: "700", color: colors.textDark },
+  roleCardSub: { fontSize: 12, color: colors.textGray },
+  roleCardArrow: { fontSize: 22, color: colors.textGray },
 });

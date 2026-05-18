@@ -1,5 +1,14 @@
-// src/screens/PhoneScreen.js
-import React, { useState, useRef } from "react";
+// src/screens/PhoneScreen.jsx
+// Écran de saisie du numéro de téléphone
+// → envoie un SMS OTP via Supabase (qui appelle Twilio en arrière-plan)
+//
+// Différence avec la version Firebase :
+//   - Plus de <FirebaseRecaptchaVerifierModal> ni de ref recaptcha
+//   - sendOTP() n'a plus besoin de recaptchaVerifier en paramètre
+//   - Plus de verificationId dans les params de navigation
+//     (Supabase identifie la session par le numéro de téléphone directement)
+
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -11,15 +20,12 @@ import {
   Alert,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
-import { auth } from "../config/firebase";
 import { useAuth } from "../hooks/useAuth";
 import { colors, spacing, radius } from "../theme";
 
 export default function PhoneScreen({ navigation }) {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-  const recaptchaVerifier = useRef(null);
   const { sendOTP } = useAuth();
 
   const handleSendOTP = async () => {
@@ -28,14 +34,14 @@ export default function PhoneScreen({ navigation }) {
       Alert.alert("Erreur", "Entrez un numéro valide à 9 chiffres");
       return;
     }
+
     setLoading(true);
     try {
-      const result = await sendOTP("+237" + cleaned, recaptchaVerifier.current);
+      // Plus besoin de passer recaptchaVerifier — Twilio gère l'anti-spam côté serveur
+      const result = await sendOTP("+237" + cleaned);
       if (result.success) {
-        navigation.navigate("OTP", {
-          phone: "+237" + cleaned,
-          verificationId: result.verificationId,
-        });
+        // On passe uniquement le phone — plus de verificationId avec Supabase
+        navigation.navigate("OTP", { phone: "+237" + cleaned });
       } else {
         Alert.alert("Erreur", result.message);
       }
@@ -53,12 +59,7 @@ export default function PhoneScreen({ navigation }) {
     >
       <StatusBar style="light" />
 
-      {/* reCAPTCHA invisible obligatoire pour Firebase Phone Auth */}
-      <FirebaseRecaptchaVerifierModal
-        ref={recaptchaVerifier}
-        firebaseConfig={auth.app.options}
-        attemptInvisibleVerification={true}
-      />
+      {/* Plus de <FirebaseRecaptchaVerifierModal> ici — supprimé avec Supabase */}
 
       <View style={styles.header}>
         <Text style={styles.brand}>Djobna</Text>

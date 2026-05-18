@@ -1,69 +1,80 @@
 // src/hooks/useProfile.js
-// Hook pour créer et gérer les profils dans Firestore
-// Utilisé dans ProfileSetupScreen.js
+// Création du profil utilisateur après la première connexion OTP.
+// Appelé dans ProfileSetupScreen.jsx juste après la vérification du code SMS.
+//
+// Ce hook écrit dans deux tables Supabase :
+//   - users   : profil de base commun à tous les utilisateurs
+//   - clients : données spécifiques au rôle client
+//
+// Remplace Firebase :
+//   setDoc(doc(db, 'users', uid), {...})   → supabase.from('users').insert({...})
+//   setDoc(doc(db, 'clients', uid), {...}) → supabase.from('clients').insert({...})
+//   serverTimestamp()                      → new Date().toISOString()
+//   user.phoneNumber                       → user.phone  (champ Supabase Auth)
+//   camelCase Firestore                    → snake_case PostgreSQL
 
 import { useState } from "react";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db, auth } from "../config/firebase";
+import { supabase } from "../config/supabase";
+
+// Upload une URI locale vers Supabase Storage et retourne l'URL publique
+async function uploadAvatar(userId, uri) {
+  const response = await fetch(uri);
+  const blob = await response.blob();
+  const { error } = await supabase.storage
+    .from("avatars")
+    .upload(`${userId}/avatar.jpg`, blob, { upsert: true });
+  if (error) throw error;
+  return supabase.storage.from("avatars").getPublicUrl(`${userId}/avatar.jpg`).data.publicUrl;
+}
 
 export function useProfile() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // ─────────────────────────────────────────
-  // Créer le profil utilisateur dans Firestore
-  // profileData : { displayName, quartier, photoURL, role, services? }
-  // ─────────────────────────────────────────
-  const createProfile = async (profileData) => {
+  // profileData : { displayName, ville, quartier, pays, photoUri? }
+  const createProfile = async ({ displayName, ville, quartier, pays, photoUri }) => {
     setLoading(true);
     setError(null);
 
     try {
-      const user = auth.currentUser;
+      // Récupérer l'utilisateur connecté — équivalent de auth.currentUser de Firebase
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Utilisateur non connecté");
 
-      // 1. Document commun dans users/
-      await setDoc(doc(db, "users", user.uid), {
-        phoneNumber: user.phoneNumber,
-        displayName: profileData.displayName,
-        photoURL: profileData.photoURL || null,
-        role: profileData.role,
-        quartier: profileData.quartier,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+      let photo_url = null;
+      if (photoUri) {
+        photo_url = await uploadAvatar(user.id, photoUri);
+      }
+
+      const now = new Date().toISOString(); // remplace serverTimestamp() de Firestore
+
+      // Écriture dans la table users (remplace setDoc sur /users/{uid})
+      // upsert = insert si inexistant, update si déjà présent
+      const { error: userError } = await supabase.from("users").upsert({
+        id: user.id,                 // clé primaire = id Supabase Auth
+        phone_number: user.phone,    // user.phone sous Supabase (= user.phoneNumber Firebase)
+        display_name: displayName,   // camelCase → snake_case
+        photo_url,
+        role: "client",
+        active_role: "client",       // activeRole → active_role
+        ville,
+        quartier,
+        pays,
+        created_at: now,
+        updated_at: now,
       });
+      if (userError) throw userError;
 
-      // 2. Document prestataire dans providers/
-      if (profileData.role === "provider" || profileData.role === "both") {
-        await setDoc(doc(db, "providers", user.uid), {
-          displayName: profileData.displayName,
-          photoURL: profileData.photoURL || null,
-          quartier: profileData.quartier,
-          services: profileData.services || [],
-          isAvailable: false,
-          rating: 0,
-          reviewCount: 0,
-          completedJobs: 0,
-          isPremium: false,
-          isVerified: false,
-          location: null,
-          bio: null,
-          portfolio: [],
-          zones: [profileData.quartier],
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }
-
-      // 3. Document client dans clients/
-      if (profileData.role === "client" || profileData.role === "both") {
-        await setDoc(doc(db, "clients", user.uid), {
-          favoriteProviders: [],
-          bookingHistory: [],
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-      }
+      // Écriture dans la table clients (remplace setDoc sur /clients/{uid})
+      const { error: clientError } = await supabase.from("clients").upsert({
+        id: user.id,
+        favorite_providers: [],      // favoriteProviders → favorite_providers
+        booking_history: [],         // bookingHistory → booking_history
+        profile_complete: true,      // profileComplete → profile_complete
+        created_at: now,
+        updated_at: now,
+      });
+      if (clientError) throw clientError;
 
       return { success: true };
     } catch (err) {

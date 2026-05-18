@@ -1,69 +1,80 @@
 // src/components/providerProfile/ProfileTab.jsx
-import React from "react";
-import { Text, StyleSheet, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 import MenuItem from "../clientProfile/MenuItem";
 import MenuSection from "../clientProfile/MenuSection";
-import { PRICE_DETAILS, SERVICES } from "../../constants/services";
+import { SERVICES } from "../../constants/services";
 
 export default function ProfileTab({ provider }) {
-  const mainService = provider?.services?.[0];
-  const prices = PRICE_DETAILS[mainService] || [];
   const serviceLabels = (provider?.services || [])
     .map((id) => SERVICES.find((s) => s.id === id))
     .filter(Boolean);
-  const zones = provider?.zones || [provider?.quartier].filter(Boolean);
+
+  // Tarifs réels depuis Firestore (servicePricing stocké à la création du profil)
+  const servicePricing = provider?.servicePricing || {};
+
+  const zones = provider?.interventionZones?.length
+    ? provider.interventionZones
+    : [provider?.quartier].filter(Boolean);
+
+  const languages = provider?.languages || [];
 
   return (
     <View style={styles.container}>
+      {/* ── Spécialités ── */}
       <MenuSection title="Spécialités">
         {serviceLabels.length > 0 ? (
-          serviceLabels.map((service) => (
-            <MenuItem
-              key={service.id}
-              icon={service.icon}
-              iconBg="#F0FAF6"
-              label={service.label}
-              showArrow={false}
-            />
-          ))
+          serviceLabels.map((svc) => {
+            const pricing = servicePricing[svc.id];
+            const sublabel = pricing
+              ? `${(pricing.minPrice || 0).toLocaleString("fr-FR")} – ${(pricing.maxPrice || 0).toLocaleString("fr-FR")} FCFA / ${pricing.unit || "prestation"}`
+              : null;
+            return (
+              <MenuItem
+                key={svc.id}
+                icon={svc.icon}
+                iconBg="#F0FAF6"
+                label={pricing?.customLabel || svc.label}
+                sublabel={sublabel}
+                showArrow={false}
+              />
+            );
+          })
         ) : (
           <Text style={styles.emptyText}>Aucune spécialité renseignée.</Text>
         )}
       </MenuSection>
 
+      {/* ── Biographie ── */}
       {provider?.bio ? (
         <MenuSection title="À propos">
           <Text style={styles.bio}>{provider.bio}</Text>
         </MenuSection>
       ) : null}
 
-      {prices.length > 0 ? (
-        <MenuSection title="Tarifs indicatifs">
-          {prices.map((item) => (
-            <MenuItem
-              key={`${item.name}-${item.price}`}
-              icon="💰"
-              iconBg="#E8F4FF"
-              label={item.name}
-              sublabel={item.price}
-              showArrow={false}
-            />
-          ))}
+      {/* ── Zones de couverture ── */}
+      {zones.length > 0 ? (
+        <MenuSection title="Zones de couverture">
+          <View style={styles.tagsWrap}>
+            {zones.map((zone) => (
+              <View key={zone} style={styles.zoneTag}>
+                <Text style={styles.zoneTagText}>📍 {zone}</Text>
+              </View>
+            ))}
+          </View>
         </MenuSection>
       ) : null}
 
-      {zones.length > 0 ? (
-        <MenuSection title="Zones de couverture">
-          {zones.map((zone) => (
-            <MenuItem
-              key={zone}
-              icon="📍"
-              iconBg="#F5EEFE"
-              label={zone}
-              showArrow={false}
-            />
-          ))}
+      {/* ── Langues parlées ── */}
+      {languages.length > 0 ? (
+        <MenuSection title="Langues parlées">
+          <View style={styles.tagsWrap}>
+            {languages.map((lang) => (
+              <View key={lang} style={styles.langTag}>
+                <Text style={styles.langTagText}>🗣 {lang}</Text>
+              </View>
+            ))}
+          </View>
         </MenuSection>
       ) : null}
     </View>
@@ -73,9 +84,9 @@ export default function ProfileTab({ provider }) {
 const styles = StyleSheet.create({
   container: { paddingBottom: 10 },
   bio: {
-    fontSize: 12,
+    fontSize: 13,
     color: "#555",
-    lineHeight: 20,
+    lineHeight: 21,
     paddingHorizontal: 14,
     paddingBottom: 14,
   },
@@ -85,4 +96,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 14,
   },
+  tagsWrap: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingBottom: 14,
+  },
+  zoneTag: {
+    backgroundColor: "#F5EEFE",
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#E8DDFD",
+  },
+  zoneTagText: { fontSize: 12, color: "#7C4DFF", fontWeight: "600" },
+  langTag: {
+    backgroundColor: "#E8F4FF",
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#C8E0FF",
+  },
+  langTagText: { fontSize: 12, color: "#185FA5", fontWeight: "600" },
 });

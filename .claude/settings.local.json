@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\projets\\\\entreprendre\\\\djobna\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(Format-Table)",
+      "Bash(Get-ChildItem -Recurse -File)",
+      "Bash(Measure-Object)",
+      "Bash(Select-Object -ExpandProperty Count)",
+      "Bash(npm uninstall *)",
+      "Bash(npm install *)",
+      "Bash(Remove-Item \"d:\\\\projets\\\\entreprendre\\\\djobna\\\\src\\\\config\\\\firebase.js\")",
+      "PowerShell(Remove-Item \"d:\\\\projets\\\\entreprendre\\\\djobna\\\\src\\\\config\\\\firebase.js\" -Confirm:$false)",
+      "Bash(npm list *)"
+    ]
+  }
+}

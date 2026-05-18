@@ -1,37 +1,51 @@
-// src/components/homeProvider/StatsBar.js
+// src/components/homeProvider/StatsBar.jsx
+//
+// Bloc statistiques rapides affiché en haut du dashboard prestataire (§13.1).
+// Affiche 4 métriques en grille 2×2 :
+//   - Missions du jour (todayCount)
+//   - Note moyenne (rating)
+//   - Revenus du mois (monthRevenue)
+//   - Solde disponible (walletBalance) ← ajouté §13.1
+
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 
+// Formate un nombre en milliers si > 1 000 (ex: 15 000 → "15K")
+function formatNumber(n) {
+  if (!n) return "0";
+  return n >= 1000 ? `${Math.round(n / 1000)}K` : String(n);
+}
+
 export default function StatsBar({ stats, isAvailable }) {
+  // Les 4 métriques à afficher (§13.1 Bloc Statistiques rapides)
   const items = [
     {
       value: stats.todayCount || "0",
       label: "Aujourd'hui",
     },
     {
-      value: stats.rating > 0 ? `${stats.rating.toFixed(1)}⭐` : "–",
+      // rating peut être un objet { global, ... } ou un nombre — on garde la compatibilité
+      value: stats.rating > 0 ? `${stats.rating.toFixed(1)} ⭐` : "–",
       label: "Note",
     },
     {
-      // Formater les revenus en milliers si > 1000
-      value:
-        stats.monthRevenue >= 1000
-          ? `${Math.round(stats.monthRevenue / 1000)}K`
-          : stats.monthRevenue || "0",
+      value: formatNumber(stats.monthRevenue),
       label: "Mois (FCFA)",
+    },
+    {
+      // Solde disponible — portefeuille prestataire (§13.1 + §12.3)
+      value: formatNumber(stats.walletBalance),
+      label: "Solde (FCFA)",
     },
   ];
 
   return (
-    <View style={styles.container}>
-      {items.map((item, index) => (
+    // Grille 2×2 : les 4 cartes s'organisent en 2 colonnes
+    <View style={styles.grid}>
+      {items.map((item) => (
         <View
           key={item.label}
-          style={[
-            styles.card,
-            !isAvailable && styles.cardOff,
-            index < items.length - 1 && styles.cardBorder,
-          ]}
+          style={[styles.card, !isAvailable && styles.cardOff]}
         >
           <Text style={[styles.value, !isAvailable && styles.valueOff]}>
             {item.value}
@@ -46,12 +60,17 @@ export default function StatsBar({ stats, isAvailable }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  // Grille 2 colonnes avec flexWrap
+  grid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
   },
+
+  // Chaque carte occupe ~50% de la largeur (moins le gap)
   card: {
-    flex: 1,
+    // "48%" pour laisser de la place au gap entre les deux colonnes
+    width: "48%",
     backgroundColor: "rgba(29,158,117,.18)",
     borderRadius: 10,
     padding: 8,
@@ -61,9 +80,10 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   cardOff: { opacity: 0.4 },
-  cardBorder: {},
+
   value: { fontSize: 16, fontWeight: "800", color: "#5DCAA5" },
   valueOff: { color: "rgba(255,255,255,.4)" },
+
   label: {
     fontSize: 9,
     fontWeight: "600",

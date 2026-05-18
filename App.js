@@ -8,6 +8,8 @@ import OTPScreen from "./src/screens/OTPScreen";
 import PhoneScreen from "./src/screens/PhoneScreen";
 import ProfileSetupScreen from "./src/screens/ProfileSetupScreen";
 import ProviderProfileScreen from "./src/screens/ProviderProfileScreen";
+import ProviderSetupScreen from "./src/screens/ProviderSetupScreen";
+import VerificationPendingScreen from "./src/screens/VerificationPendingScreen";
 import SplashScreen from "./src/screens/SplashScreen";
 
 const Stack = createNativeStackNavigator();
@@ -28,7 +30,19 @@ export default function App() {
         {/* App principale: choisit la tab bar selon le role utilisateur */}
         <Stack.Screen name="MainApp" component={AppNavigator} />
 
-        {/* ── Profil du prestataire ── */}
+        {/* ── Création compte prestataire ── */}
+        <Stack.Screen
+          name="ProviderSetup"
+          component={ProviderSetupScreen}
+          options={{ animation: "slide_from_bottom" }}
+        />
+        <Stack.Screen
+          name="VerificationPending"
+          component={VerificationPendingScreen}
+          options={{ gestureEnabled: false }}
+        />
+
+        {/* ── Profil public du prestataire ── */}
         <Stack.Screen
           name="ProviderProfile"
           component={ProviderProfileScreen}
