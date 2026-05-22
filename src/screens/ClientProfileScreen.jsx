@@ -29,6 +29,7 @@ export default function ClientProfileScreen({ navigation }) {
     stats,
     loading,
     removeFavorite,
+    updateProfilePhoto,
     logout,
   } = useClientProfile();
 
@@ -99,14 +100,10 @@ export default function ClientProfileScreen({ navigation }) {
     );
   }, [logout, navigation]);
 
-  // ── Modifier le profil ────────────────────
-  const handleEditProfile = useCallback(() => {
-    // À développer → écran de modification du profil
-    Alert.alert(
-      "Bientôt disponible",
-      "La modification du profil sera disponible prochainement.",
-    );
-  }, []);
+  // ── Modifier la photo de profil ──────────
+  const handleEditProfile = useCallback(async () => {
+    await updateProfilePhoto();
+  }, [updateProfilePhoto]);
 
   // ── Supprimer le compte ───────────────────
   const handleDeleteAccount = useCallback(() => {
@@ -222,13 +219,18 @@ export default function ClientProfileScreen({ navigation }) {
             onPress={handleEditProfile}
           />
           <MenuItem
+            icon="📝"
+            iconBg="#EFF6FF"
+            label="Mes demandes"
+            sublabel="Suivre vos demandes en cours"
+            onPress={() => navigation.navigate("MyRequests")}
+          />
+          <MenuItem
             icon="📋"
             iconBg="#E8F4FF"
             label="Historique des demandes"
             sublabel={`${history.length} demande${history.length > 1 ? "s" : ""} au total`}
-            onPress={() =>
-              Alert.alert("Bientôt", "Historique des demandes à venir.")
-            }
+            onPress={() => navigation.navigate("MissionHistory")}
           />
           <MenuItem
             icon="⭐"

@@ -33,7 +33,7 @@ async function getAuthenticatedRoute(user) {
     return profile ? "MainApp" : "ProfileSetup";
   } catch (err) {
     console.error("Erreur chargement profil utilisateur:", err);
-    return "MainApp";
+    return "Phone";
   }
 }
 

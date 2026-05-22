@@ -23,12 +23,12 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../config/supabase";
-import { SERVICES, QUARTIERS_DOUALA } from "../constants/services";
+import { SERVICES, QUARTIERS_PAR_VILLE } from "../constants/services";
 import { useProviderSetup } from "../hooks/useProviderSetup";
 import { colors, radius, spacing } from "../theme";
 
-const LANGUAGES = ["Français", "Anglais", "Duala", "Bamiléké", "Ewondo", "Fufuldé", "Pidgin"];
-const UNITS = ["Par intervention", "Par heure", "Par jour"];
+const LANGUAGES = ["Français", "Anglais", "Duala", "Bamiléké", "Ewondo", "Bassa", "Fulfulde", "Pidgin", "Haoussa"];
+const UNITS = ["Par heure", "Par intervention", "Par jour", "Par m²", "Par mètre", "Par kg"];
 
 const STEPS = [
   { label: "ÉTAPE 1 / 5", title: "Infos personnelles", subtitle: "Vos coordonnées de prestataire" },
@@ -76,10 +76,8 @@ export default function ProviderSetupScreen({ navigation }) {
       const user = authData?.user;
       if (!user) return;
 
-      // Récupère le numéro de téléphone — user.phone sous Supabase (= user.phoneNumber Firebase)
       setPhone(user.phone || "");
 
-      // Pré-remplit le formulaire depuis le profil client
       const { data: profile } = await supabase
         .from("users")
         .select("display_name, ville, quartier, pays")
@@ -87,21 +85,49 @@ export default function ProviderSetupScreen({ navigation }) {
         .single();
 
       if (profile) {
-        setDisplayName(profile.display_name || "");  // display_name (snake_case) → state displayName
+        setDisplayName(profile.display_name || "");
         setVille(profile.ville || "");
         setQuartier(profile.quartier || "");
         setPays(profile.pays || "Cameroun");
+      }
+
+      const { data: providerData } = await supabase
+        .from("providers")
+        .select("services, service_pricing, bio, years_of_experience, languages, intervention_zones")
+        .eq("user_id", user.id)
+        .single();
+
+      if (providerData) {
+        if (providerData.services?.length) {
+          setSelectedServiceIds(providerData.services);
+        }
+        if (providerData.service_pricing) {
+          const pricing = {};
+          for (const [id, p] of Object.entries(providerData.service_pricing)) {
+            pricing[id] = {
+              customLabel: p.customLabel || "",
+              minPrice: p.minPrice ? String(p.minPrice) : "",
+              maxPrice: p.maxPrice ? String(p.maxPrice) : "",
+              unit: p.unit || "Par intervention",
+            };
+          }
+          setServicePricing(pricing);
+        }
+        if (providerData.bio) setBio(providerData.bio);
+        if (providerData.years_of_experience) setYearsExp(String(providerData.years_of_experience));
+        if (providerData.languages?.length) setLanguages(providerData.languages);
+        if (providerData.intervention_zones?.length) setInterventionZones(providerData.intervention_zones);
       }
     });
   }, []);
 
   // ── Helpers photos ───────────────────────────────────
-  const pickPhoto = async (setter) => {
+  const pickPhoto = async (setter, aspect = [1, 1]) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") { Alert.alert("Permission refusée", "Accès à la galerie requis."); return; }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true, aspect: [1, 1], quality: 0.7,
+      allowsEditing: true, aspect, quality: 0.7,
     });
     if (!result.canceled) setter(result.assets[0].uri);
   };
@@ -313,14 +339,27 @@ export default function ProviderSetupScreen({ navigation }) {
               {showQuartierPicker && (
                 <View style={styles.pickerDropdown}>
                   <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                    {QUARTIERS_DOUALA.map((q) => (
-                      <TouchableOpacity key={q}
-                        style={[styles.pickerItem, quartier === q && styles.pickerItemSelected]}
-                        onPress={() => { setQuartier(q); setShowQuartierPicker(false); }}>
-                        <Text style={[styles.pickerItemText, quartier === q && styles.pickerItemTextSelected]}>{q}</Text>
-                        {quartier === q && <Text style={styles.checkMark}>✓</Text>}
-                      </TouchableOpacity>
-                    ))}
+                    {(QUARTIERS_PAR_VILLE[ville] || []).length > 0 ? (
+                      (QUARTIERS_PAR_VILLE[ville] || []).map((q) => (
+                        <TouchableOpacity key={q}
+                          style={[styles.pickerItem, quartier === q && styles.pickerItemSelected]}
+                          onPress={() => { setQuartier(q); setShowQuartierPicker(false); }}>
+                          <Text style={[styles.pickerItemText, quartier === q && styles.pickerItemTextSelected]}>{q}</Text>
+                          {quartier === q && <Text style={styles.checkMark}>✓</Text>}
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <View style={{ padding: 14 }}>
+                        <Text style={styles.pickerPlaceholder}>Entrez votre quartier manuellement</Text>
+                        <TextInput
+                          style={[styles.input, { marginTop: 8 }]}
+                          value={quartier}
+                          onChangeText={setQuartier}
+                          placeholder="Ex : Mon quartier"
+                          placeholderTextColor={colors.textGray}
+                        />
+                      </View>
+                    )}
                   </ScrollView>
                 </View>
               )}
@@ -348,7 +387,7 @@ export default function ProviderSetupScreen({ navigation }) {
               {showZonesPicker && (
                 <View style={styles.pickerDropdown}>
                   <ScrollView style={{ maxHeight: 220 }} nestedScrollEnabled>
-                    {QUARTIERS_DOUALA.map((z) => (
+                    {(QUARTIERS_PAR_VILLE[ville] || []).map((z) => (
                       <TouchableOpacity key={z}
                         style={[styles.pickerItem, interventionZones.includes(z) && styles.pickerItemSelected]}
                         onPress={() => toggleZone(z)}>
@@ -486,7 +525,7 @@ export default function ProviderSetupScreen({ navigation }) {
             {/* CNI Recto */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>CNI RECTO *</Text>
-              <TouchableOpacity style={styles.kycBtn} onPress={() => pickPhoto(setCniRecto)} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.kycBtn} onPress={() => pickPhoto(setCniRecto, [3, 2])} activeOpacity={0.8}>
                 {cniRecto
                   ? <Image source={{ uri: cniRecto }} style={styles.kycImage} />
                   : <View style={styles.kycPlaceholder}><Text style={styles.kycIcon}>🪪</Text><Text style={styles.kycBtnText}>Ajouter recto CNI</Text></View>}
@@ -496,7 +535,7 @@ export default function ProviderSetupScreen({ navigation }) {
             {/* CNI Verso */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>CNI VERSO *</Text>
-              <TouchableOpacity style={styles.kycBtn} onPress={() => pickPhoto(setCniVerso)} activeOpacity={0.8}>
+              <TouchableOpacity style={styles.kycBtn} onPress={() => pickPhoto(setCniVerso, [3, 2])} activeOpacity={0.8}>
                 {cniVerso
                   ? <Image source={{ uri: cniVerso }} style={styles.kycImage} />
                   : <View style={styles.kycPlaceholder}><Text style={styles.kycIcon}>🪪</Text><Text style={styles.kycBtnText}>Ajouter verso CNI</Text></View>}

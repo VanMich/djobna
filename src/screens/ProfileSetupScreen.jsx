@@ -21,7 +21,7 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../config/supabase";
-import { QUARTIERS_DOUALA } from "../constants/services";
+import { QUARTIERS_PAR_VILLE } from "../constants/services";
 import { useProfile } from "../hooks/useProfile";
 import { colors, radius, spacing } from "../theme";
 
@@ -188,26 +188,39 @@ export default function ProfileSetupScreen({ navigation }) {
           {showQuartierPicker && (
             <View style={styles.pickerDropdown}>
               <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                {QUARTIERS_DOUALA.map((q) => (
-                  <TouchableOpacity
-                    key={q}
-                    style={[styles.pickerItem, quartier === q && styles.pickerItemSelected]}
-                    onPress={() => {
-                      setQuartier(q);
-                      setShowQuartierPicker(false);
-                    }}
-                  >
-                    <Text
-                      style={[
-                        styles.pickerItemText,
-                        quartier === q && styles.pickerItemTextSelected,
-                      ]}
+                {(QUARTIERS_PAR_VILLE[ville] || []).length > 0 ? (
+                  (QUARTIERS_PAR_VILLE[ville] || []).map((q) => (
+                    <TouchableOpacity
+                      key={q}
+                      style={[styles.pickerItem, quartier === q && styles.pickerItemSelected]}
+                      onPress={() => {
+                        setQuartier(q);
+                        setShowQuartierPicker(false);
+                      }}
                     >
-                      {q}
-                    </Text>
-                    {quartier === q && <Text style={styles.checkMark}>✓</Text>}
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          styles.pickerItemText,
+                          quartier === q && styles.pickerItemTextSelected,
+                        ]}
+                      >
+                        {q}
+                      </Text>
+                      {quartier === q && <Text style={styles.checkMark}>✓</Text>}
+                    </TouchableOpacity>
+                  ))
+                ) : (
+                  <View style={{ padding: 14 }}>
+                    <Text style={styles.pickerPlaceholder}>Entrez votre quartier manuellement</Text>
+                    <TextInput
+                      style={[styles.input, { marginTop: 8 }]}
+                      value={quartier}
+                      onChangeText={setQuartier}
+                      placeholder="Ex : Mon quartier"
+                      placeholderTextColor={colors.textGray}
+                    />
+                  </View>
+                )}
               </ScrollView>
             </View>
           )}

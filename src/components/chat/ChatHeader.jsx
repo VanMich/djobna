@@ -1,78 +1,40 @@
-// src/components/chat/ChatHeader.js
 import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-} from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AVATAR_COLORS } from "../../constants/services";
 import { colors } from "../../theme";
 
-export default function ChatHeader({
-  providerName,
-  providerService,
-  providerServices,
-  isOnline,
-  onBack,
-  onCall,
-  onMore,
-}) {
+export default function ChatHeader({ providerName, providerServices, isTyping, onBack, onCall, onMore }) {
   const initials = (providerName || "XX")
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+    .split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const avatarColor = AVATAR_COLORS[providerServices?.[0]] || colors.primary;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        {/* Bouton retour */}
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={onBack}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="arrow-back" size={20} color="#5DCAA5" />
+    <SafeAreaView style={s.safe}>
+      <View style={s.header}>
+        <TouchableOpacity style={s.backBtn} onPress={onBack} activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={22} color="#fff" />
         </TouchableOpacity>
 
-        {/* Avatar */}
-        <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-          <Text style={styles.avatarText}>{initials}</Text>
-          {/* Point de statut en ligne */}
-          {isOnline && <View style={styles.onlineDot} />}
+        <View style={[s.avatar, { backgroundColor: avatarColor }]}>
+          <Text style={s.avatarText}>{initials}</Text>
         </View>
 
-        {/* Infos prestataire */}
-        <View style={styles.info}>
-          <Text style={styles.name} numberOfLines={1}>
-            {providerName}
-          </Text>
-          <Text style={styles.status}>
-            {isOnline ? "🟢 En ligne" : "⚫ Hors ligne"}
-            {providerService ? `  ·  ${providerService}` : ""}
-          </Text>
+        <View style={s.info}>
+          <Text style={s.name} numberOfLines={1}>{providerName}</Text>
+          {isTyping ? (
+            <Text style={s.typing}>écrit...</Text>
+          ) : (
+            <Text style={s.subtitle}>Djobna</Text>
+          )}
         </View>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={onCall}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="call-outline" size={18} color="#9FE1CB" />
+        <View style={s.actions}>
+          <TouchableOpacity style={s.actionBtn} onPress={onCall} activeOpacity={0.7}>
+            <Ionicons name="call-outline" size={18} color={colors.textLight} />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={onMore}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="ellipsis-vertical" size={18} color="#9FE1CB" />
+          <TouchableOpacity style={s.actionBtn} onPress={onMore} activeOpacity={0.7}>
+            <Ionicons name="ellipsis-vertical" size={18} color={colors.textLight} />
           </TouchableOpacity>
         </View>
       </View>
@@ -80,57 +42,23 @@ export default function ChatHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.background },
+const s = StyleSheet.create({
+  safe: { backgroundColor: colors.background },
   header: {
-    backgroundColor: colors.background,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 10, paddingVertical: 10, gap: 10,
   },
-  backBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 13,
-    alignItems: "center",
-    justifyContent: "center",
-    position: "relative",
-    flexShrink: 0,
-  },
-  avatarText: { fontSize: 14, fontWeight: "800", color: "#fff" },
-  onlineDot: {
-    position: "absolute",
-    bottom: -1,
-    right: -1,
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#22C55E",
-    borderWidth: 2,
-    borderColor: colors.background,
-  },
+  backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  avatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  avatarText: { fontSize: 15, fontWeight: "800", color: "#fff" },
   info: { flex: 1 },
-  name: { fontSize: 14, fontWeight: "700", color: "#fff" },
-  status: { fontSize: 10, color: "#5DCAA5", marginTop: 2 },
-  actions: { flexDirection: "row", gap: 8 },
+  name: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  typing: { fontSize: 12, color: "#5DCAA5", fontStyle: "italic", marginTop: 1 },
+  subtitle: { fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 1 },
+  actions: { flexDirection: "row", gap: 4 },
   actionBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,.1)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,.08)",
-    alignItems: "center",
-    justifyContent: "center",
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    alignItems: "center", justifyContent: "center",
   },
 });

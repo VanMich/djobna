@@ -24,17 +24,13 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { QUARTIERS_DOUALA, SERVICES } from "../../constants/services";
+import { QUARTIERS_PAR_VILLE, SERVICES } from "../../constants/services";
 import { colors, radius } from "../../theme";
 
 // Langues couramment parlées au Cameroun (§14 — section langues)
-const LANGUAGES = [
-  "Français", "Anglais", "Bamiléké", "Ewondo",
-  "Bassa", "Fulfuldé", "Duala", "Haoussa",
-];
+const LANGUAGES = ["Français", "Anglais", "Duala", "Bamiléké", "Ewondo", "Bassa", "Fulfulde", "Pidgin", "Haoussa"];
 
-// Unités de facturation courantes (affichées comme chips sélectionnables)
-const UNITS = ["heure", "mission", "m²", "mètre", "kg", "jour"];
+const UNITS = ["Par heure", "Par intervention", "Par jour", "Par m²", "Par mètre", "Par kg"];
 
 export default function EditProfileSheet({
   visible,
@@ -149,7 +145,7 @@ export default function EditProfileSheet({
   };
 
   // Zones disponibles à ajouter (= non encore sélectionnées)
-  const availableZones = QUARTIERS_DOUALA.filter((q) => !selectedZones.includes(q));
+  const availableZones = (QUARTIERS_PAR_VILLE[profile?.ville] || []).filter((q) => !selectedZones.includes(q));
 
   // Services exercés par le prestataire (pour la section tarifs)
   const providerServices = SERVICES.filter((s) =>
@@ -238,7 +234,7 @@ export default function EditProfileSheet({
             {showQPicker && (
               <View style={styles.pickerList}>
                 <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                  {QUARTIERS_DOUALA.map((q) => (
+                  {(QUARTIERS_PAR_VILLE[profile?.ville] || []).map((q) => (
                     <TouchableOpacity
                       key={q}
                       style={[styles.pickerItem, quartier === q && styles.pickerItemActive]}
@@ -412,7 +408,7 @@ export default function EditProfileSheet({
                               activeOpacity={0.8}
                             >
                               <Text style={active ? styles.chipSelectedText : styles.chipText}>
-                                /{u}
+                                {u}
                               </Text>
                             </TouchableOpacity>
                           );

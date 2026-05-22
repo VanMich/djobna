@@ -1,6 +1,6 @@
 // src/components/homeProvider/RequestCard.jsx
 import { Ionicons } from "@expo/vector-icons";
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SERVICES } from "../../constants/services";
 import { colors } from "../../theme";
 
@@ -15,7 +15,13 @@ function timeAgo(timestamp) {
   return `Il y a ${Math.floor(hrs / 24)}j`;
 }
 
-export default function RequestCard({ request, onAccept, onDecline, onProposeOtherTime }) {
+function formatDate(isoString) {
+  if (!isoString) return "Non précisée";
+  const d = new Date(isoString);
+  return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+export default function RequestCard({ request, onAccept, onDecline, onProposeOtherTime, onViewDetail }) {
   const initials = (request.clientName || "XX")
     .split(" ")
     .map((n) => n[0])
@@ -31,7 +37,7 @@ export default function RequestCard({ request, onAccept, onDecline, onProposeOth
       "Le client sera informé que vous n'êtes pas disponible.",
       [
         { text: "Annuler", style: "cancel" },
-        { text: "Décliner", style: "destructive", onPress: () => onDecline(request.id) },
+        { text: "Décliner", style: "destructive", onPress: () => onDecline(request.id, request.clientId) },
       ],
     );
   };
@@ -51,7 +57,7 @@ export default function RequestCard({ request, onAccept, onDecline, onProposeOth
   };
 
   return (
-    <View style={styles.card}>
+    <TouchableOpacity style={styles.card} onPress={onViewDetail} activeOpacity={0.97}>
       {/* ── En-tête : client + badge ── */}
       <View style={styles.top}>
         <View style={styles.avatar}>
@@ -96,6 +102,20 @@ export default function RequestCard({ request, onAccept, onDecline, onProposeOth
         </View>
       ) : null}
 
+      {/* ── Photos jointes ── */}
+      {request.photos?.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.photoStrip}
+          contentContainerStyle={styles.photoStripContent}
+        >
+          {request.photos.map((url, i) => (
+            <Image key={i} source={{ uri: url }} style={styles.photoThumb} />
+          ))}
+        </ScrollView>
+      )}
+
       {/* ── Infos pratiques ── */}
       <View style={styles.detailsRow}>
         {request.location ? (
@@ -107,7 +127,7 @@ export default function RequestCard({ request, onAccept, onDecline, onProposeOth
         {request.scheduledDate ? (
           <View style={styles.detailItem}>
             <Ionicons name="calendar-outline" size={12} color="#888" />
-            <Text style={styles.detailText}>{request.scheduledDate}</Text>
+            <Text style={styles.detailText}>{formatDate(request.scheduledDate)}</Text>
           </View>
         ) : null}
         {request.budget ? (
@@ -146,7 +166,7 @@ export default function RequestCard({ request, onAccept, onDecline, onProposeOth
         <Ionicons name="calendar-outline" size={13} color={colors.primary} />
         <Text style={styles.proposeBtnText}>Proposer un autre créneau</Text>
       </TouchableOpacity>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -230,6 +250,15 @@ const styles = StyleSheet.create({
   },
   btnAcceptText: { fontSize: 13, fontWeight: "700", color: "#fff" },
   btnDeclineText: { fontSize: 13, fontWeight: "700", color: "#888" },
+
+  photoStrip: { marginHorizontal: -2 },
+  photoStripContent: { gap: 6, paddingHorizontal: 2 },
+  photoThumb: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    backgroundColor: "#F0F0F0",
+  },
 
   proposeBtn: {
     flexDirection: "row",

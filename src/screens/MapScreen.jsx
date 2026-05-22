@@ -13,7 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker, UrlTile } from "react-native-maps";
 import { QUARTIERS_DOUALA, SERVICES } from "../constants/services";
 import { useProviders } from "../hooks/useProviders";
 import { colors, spacing } from "../theme";
@@ -44,7 +44,6 @@ function getRating(provider) {
 }
 
 export default function MapScreen({ navigation }) {
-  const [userLocation, setUserLocation] = useState(null);
   const [selectedProvider, setSelectedProvider] = useState(null);
 
   // ── Filtres ────────────────────────────────────────────
@@ -76,7 +75,6 @@ export default function MapScreen({ navigation }) {
       const loc = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      setUserLocation({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
       mapRef.current?.animateToRegion(
         { latitude: loc.coords.latitude, longitude: loc.coords.longitude, latitudeDelta: 0.03, longitudeDelta: 0.03 },
         800,
@@ -267,14 +265,18 @@ export default function MapScreen({ navigation }) {
       <MapView
         ref={mapRef}
         style={styles.map}
-        provider={PROVIDER_GOOGLE}
         initialRegion={DOUALA_CENTER}
         showsUserLocation
-        showsMyLocationButton
         onPress={hideProviderCard}
       >
+        <UrlTile
+          urlTemplate="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maximumZ={19}
+          flipY={false}
+          zIndex={-1}
+        />
         {providers.map((provider) => {
-          if (!provider.location) return null;
+          if (!provider.location?.latitude || !provider.location?.longitude) return null;
           const markerColor = MARKER_COLORS[provider.services?.[0]] || MARKER_COLORS.default;
           const svc = SERVICES.find((s) => s.id === provider.services?.[0]);
           const isPremium = provider.subscription?.plan === "premium";
@@ -283,6 +285,7 @@ export default function MapScreen({ navigation }) {
               key={provider.id}
               coordinate={{ latitude: provider.location.latitude, longitude: provider.location.longitude }}
               onPress={() => showProviderCard(provider)}
+              tracksViewChanges={false}
             >
               <View>
                 <View style={[styles.marker, { backgroundColor: markerColor }]}>

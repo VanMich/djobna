@@ -17,6 +17,8 @@ import { useCallback, useEffect, useState } from "react";
 import * as Location from "expo-location";
 import { supabase } from "../config/supabase";
 
+const PUSH_URL = "https://bvxrsytdbvhnmnqzcqev.supabase.co/functions/v1/send-push";
+
 // Mapping snake_case DB → camelCase pour les composants UI
 function mapRequest(r) {
   return {
@@ -87,6 +89,11 @@ export function useProviderDashboard() {
           },
           reviewCount: data.review_count || 0,
           walletBalance: data.wallet_balance || 0,
+          subscription: {
+            plan: data.subscription_plan || "classic",
+            expiresAt: data.subscription_expires_at || null,
+            trialUsed: data.trial_used || false,
+          },
         });
         setIsAvailable(data.availability || false);
         const rating = data.rating_global || 0;
@@ -231,40 +238,69 @@ export function useProviderDashboard() {
           .update({ status: "in_progress", updated_at: now })
           .eq("id", requestId);
 
-        await supabase
-          .from("providers")
-          .update({ today_count: (stats.todayCount || 0) + 1, updated_at: now })
-          .eq("id", userId);
+        const { data: chatRow, error: chatError } = await supabase
+          .from("chats")
+          .upsert({
+            provider_id: userId,
+            client_id: clientId,
+            request_id: requestId,
+            last_message: "✅ Demande acceptée",
+            last_message_at: now,
+          }, { onConflict: "request_id" })
+          .select("id")
+          .single();
 
-        // Initialise la conversation dans Supabase
-        // Remplace : set(ref(database, `chats/${chatId}/meta`), {...})
-        await supabase.from("chats").upsert({
-          provider_id: userId,
-          client_id: clientId,
-          request_id: requestId,
-          last_message: "Demande acceptée",
-          last_message_at: now,
+        if (chatError) throw chatError;
+
+        await supabase.from("messages").insert({
+          chat_id: chatRow.id,
+          sender_id: userId,
+          type: "system",
+          text: "✅ Demande acceptée",
           created_at: now,
         });
 
-        return { success: true, clientId };
+        fetch(PUSH_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientId: clientId,
+            title: "✅ Demande acceptée",
+            body: "Votre demande a été acceptée ! Consultez vos messages.",
+          }),
+        }).catch(() => {});
+
+        return { success: true, chatId: chatRow.id };
       } catch (err) {
         console.error("Erreur acceptation demande:", err);
         return { success: false };
       }
     },
-    [userId, stats.todayCount],
+    [userId],
   );
 
   // ── Décliner une demande ───────────────────────────────────────────────────
   const declineRequest = useCallback(
-    async (requestId) => {
+    async (requestId, clientId) => {
       if (!userId) return { success: false };
       try {
         await supabase
           .from("requests")
           .update({ status: "declined", updated_at: new Date().toISOString() })
           .eq("id", requestId);
+
+        if (clientId) {
+          fetch(PUSH_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recipientId: clientId,
+              title: "❌ Demande déclinée",
+              body: "Votre demande a été déclinée. Essayez un autre prestataire.",
+            }),
+          }).catch(() => {});
+        }
+
         return { success: true };
       } catch (err) {
         console.error("Erreur déclin demande:", err);
@@ -288,10 +324,29 @@ export function useProviderDashboard() {
           .from("requests")
           .update({
             status: "completed",
-            completed_at: now,   // horodatage de fin (utilisé pour filtrer "aujourd'hui")
+            completed_at: now,
             updated_at: now,
           })
           .eq("id", requestId);
+
+        // Message système dans le chat lié à cette demande
+        const { data: chatData } = await supabase
+          .from("chats")
+          .select("id")
+          .eq("request_id", requestId)
+          .maybeSingle();
+
+        if (chatData) {
+          await supabase.from("messages").insert({
+            chat_id: chatData.id,
+            sender_id: userId,
+            type: "system",
+            text: "🏁 Prestation terminée — en attente de confirmation du client",
+            read: false,
+            created_at: now,
+          });
+        }
+
         return { success: true };
       } catch (err) {
         console.error("Erreur complétion mission:", err);

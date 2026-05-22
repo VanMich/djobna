@@ -155,6 +155,41 @@ export function useProviderOwnProfile() {
     }
   }, [userId]);
 
+  // Upload et mise à jour de la photo de profil (bucket "avatars")
+  const updateProfilePhoto = useCallback(async () => {
+    if (!userId) return { success: false };
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") return { success: false };
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.75,
+    });
+    if (result.canceled) return { success: false };
+
+    try {
+      const localUri = result.assets[0].uri;
+      const blob = await fetch(localUri).then((r) => r.blob());
+      const storagePath = `${userId}/avatar.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(storagePath, blob, { upsert: true, contentType: "image/jpeg" });
+      if (uploadError) throw uploadError;
+
+      const publicUrl = supabase.storage.from("avatars").getPublicUrl(storagePath).data.publicUrl;
+      await supabase.from("users").update({
+        photo_url: publicUrl,
+        updated_at: new Date().toISOString(),
+      }).eq("id", userId);
+      return { success: true };
+    } catch (err) {
+      console.error("Erreur upload photo profil:", err);
+      return { success: false };
+    }
+  }, [userId]);
+
   // Ajoute une photo au portfolio : sélection galerie → upload Storage → stocke l'URL publique
   const addPortfolioPhoto = useCallback(async () => {
     if (!userId) return;
@@ -295,9 +330,10 @@ export function useProviderOwnProfile() {
     provider,
     loading,
     updateProfile,
+    updateProfilePhoto,
     addPortfolioPhoto,
     removePortfolioPhoto,
-    updatePhotoCaption,   // modifier la légende d'une photo (§14.2)
+    updatePhotoCaption,
     addZone,
     removeZone,
     logout,

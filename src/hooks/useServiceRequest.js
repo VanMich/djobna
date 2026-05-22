@@ -11,6 +11,8 @@
 import { useState } from "react";
 import { supabase } from "../config/supabase";
 
+const PUSH_URL = "https://bvxrsytdbvhnmnqzcqev.supabase.co/functions/v1/send-push";
+
 export function useServiceRequest() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -60,6 +62,17 @@ export function useServiceRequest() {
         updated_at: now,
       });
       if (insertError) throw insertError;
+
+      // Notifie le prestataire (fire & forget)
+      fetch(PUSH_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipientId: providerId,
+          title: "🔔 Nouvelle demande",
+          body: `${userData?.display_name || "Un client"} a besoin de vous`,
+        }),
+      }).catch(() => {});
 
       return { success: true };
     } catch (err) {

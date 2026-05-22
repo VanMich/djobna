@@ -56,6 +56,20 @@ export const QUARTIERS_DOUALA = [
   "Ndogbong",
 ];
 
+export const QUARTIERS_YAOUNDE = [
+  "Bastos", "Nlongkak", "Mvog-Mbi", "Mokolo", "Mvan",
+  "Nsimeyong", "Biyem-Assi", "Mendong", "Simbock", "Nkolbisson",
+  "Emana", "Mfandena", "Essos", "Omnisports", "Ngousso",
+  "Etoudi", "Messa", "Briqueterie", "Tsinga", "Obili",
+  "Nkol-Eton", "Ekounou", "Nkoldongo", "Olezoa", "Ahala",
+  "Efoulan", "Odza", "Tongolo", "Elig-Essono", "Centre Ville",
+];
+
+export const QUARTIERS_PAR_VILLE = {
+  "Douala": QUARTIERS_DOUALA,
+  "Yaoundé": QUARTIERS_YAOUNDE,
+};
+
 // Fourchettes de prix par service
 export const PRICE_RANGES = {
   mechanic: "5 000–20 000 FCFA",

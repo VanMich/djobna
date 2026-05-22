@@ -128,20 +128,19 @@ export default function OTPScreen({ navigation, route }) {
     const isFilled = code[idx] !== "";
     const isActive = idx === activeIdx;
     return (
-      <Animated.View
+      <View
         key={idx}
         style={[
           styles.box,
           isFilled && styles.boxFilled,
           isActive && styles.boxActive,
           error && code[idx] && styles.boxError,
-          { transform: [{ translateX: shakeAnim }] },
         ]}
       >
         <Text style={[styles.boxText, isFilled && styles.boxTextFilled]}>
           {code[idx] || (isActive ? "|" : "")}
         </Text>
-      </Animated.View>
+      </View>
     );
   };
 

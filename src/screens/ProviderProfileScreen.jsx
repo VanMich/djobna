@@ -51,10 +51,11 @@ export default function ProviderProfileScreen({ navigation, route }) {
   const [currentUserId,      setCurrentUserId]      = useState(null);
   const [isFav, setIsFav] = useState(false);
   const [requestModalVisible, setRequestModalVisible] = useState(false);
+  const openRequestTriggered = useRef(false);
 
   const scrollRef = useRef(null);
 
-  // Récupère l'uid du client connecté + vérifie s'il peut noter ce prestataire
+  // Récupère l'uid du client connecté + vérifie s'il peut noter + charge l'état favori
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       const uid = data?.user?.id;
@@ -63,6 +64,16 @@ export default function ProviderProfileScreen({ navigation, route }) {
       const { canReview: ok, requestId } = await checkCanReview(uid);
       setCanReview(ok);
       setReviewRequestId(requestId || null);
+
+      // Charge l'état favori depuis la DB
+      const { data: clientData } = await supabase
+        .from("clients")
+        .select("favorite_providers")
+        .eq("id", uid)
+        .maybeSingle();
+      if (clientData?.favorite_providers) {
+        setIsFav(clientData.favorite_providers.includes(providerId));
+      }
     });
   }, [providerId, checkCanReview]);
 
@@ -152,7 +163,30 @@ export default function ProviderProfileScreen({ navigation, route }) {
   }, [providerId]);
 
   const handleBack = useCallback(() => navigation.goBack(), [navigation]);
-  const handleToggleFav = useCallback(() => setIsFav((prev) => !prev), []);
+
+  const handleToggleFav = useCallback(async () => {
+    if (!currentUserId || !providerId) return;
+    const newVal = !isFav;
+    setIsFav(newVal);
+    try {
+      const { data: clientData } = await supabase
+        .from("clients")
+        .select("favorite_providers")
+        .eq("id", currentUserId)
+        .maybeSingle();
+      const current = clientData?.favorite_providers || [];
+      const updated = newVal
+        ? [...current, providerId]
+        : current.filter((id) => id !== providerId);
+      await supabase.from("clients").update({
+        favorite_providers: updated,
+        updated_at: new Date().toISOString(),
+      }).eq("id", currentUserId);
+    } catch (err) {
+      console.error("Erreur toggle favori:", err);
+      setIsFav(!newVal); // rollback
+    }
+  }, [currentUserId, providerId, isFav]);
 
   const handleShare = useCallback(async () => {
     if (!provider) return;
@@ -208,10 +242,13 @@ export default function ProviderProfileScreen({ navigation, route }) {
     }
   }, [navigation]);
 
-  // Ouvre la modale si on arrive depuis la carte (openRequest: true)
+  // Ouvre la modale une seule fois si on arrive depuis la carte (openRequest: true)
   useEffect(() => {
-    if (openRequest && provider) handleSolliciter();
-  }, [openRequest, provider]);
+    if (openRequest && provider && !openRequestTriggered.current) {
+      openRequestTriggered.current = true;
+      handleSolliciter();
+    }
+  }, [openRequest, provider, handleSolliciter]);
 
   const handleTabChange = useCallback((tabId) => {
     setActiveTab(tabId);

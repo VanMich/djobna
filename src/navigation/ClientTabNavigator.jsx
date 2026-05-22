@@ -6,7 +6,6 @@ import ChatListScreen from "../screens/ChatListScreen";
 import ClientProfileScreen from "../screens/ClientProfileScreen";
 import HomeScreen from "../screens/HomeScreen";
 import MapScreen from "../screens/MapScreen";
-import { useUnreadCount } from "../hooks/useUnreadCount";
 import { colors } from "../theme";
 
 const Tab = createBottomTabNavigator();
@@ -31,8 +30,7 @@ function TabIcon({ name, focused, badge }) {
   );
 }
 
-export default function ClientTabNavigator() {
-  const unreadCount = useUnreadCount();
+export default function ClientTabNavigator({ unreadCount = 0 }) {
 
   return (
     <Tab.Navigator

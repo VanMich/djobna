@@ -11,7 +11,11 @@
       "Bash(npm install *)",
       "Bash(Remove-Item \"d:\\\\projets\\\\entreprendre\\\\djobna\\\\src\\\\config\\\\firebase.js\")",
       "PowerShell(Remove-Item \"d:\\\\projets\\\\entreprendre\\\\djobna\\\\src\\\\config\\\\firebase.js\" -Confirm:$false)",
-      "Bash(npm list *)"
+      "Bash(npm list *)",
+      "Bash(mkdir -p \"d:\\\\projets\\\\entreprendre\\\\djobna\\\\scripts\")"
+    ],
+    "additionalDirectories": [
+      "d:\\projets\\entreprendre\\djobna"
     ]
   }
 }

@@ -10,6 +10,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { supabase } from "../config/supabase";
+import { useNotifications } from "../hooks/useNotifications";
+import { useUnreadCount } from "../hooks/useUnreadCount";
 import { colors } from "../theme";
 import ClientTabNavigator from "./ClientTabNavigator";
 import ProviderTabNavigator from "./ProviderTabNavigator";
@@ -17,7 +19,10 @@ import ProviderTabNavigator from "./ProviderTabNavigator";
 export default function AppNavigator({ navigation }) {
   const [activeRole, setActiveRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const roleChannelRef = useRef(null); // remplace unsubscribeDocRef
+  const roleChannelRef = useRef(null);
+
+  useNotifications();
+  const unreadCount = useUnreadCount();
 
   useEffect(() => {
     // Remplace onAuthStateChanged(auth, user => {...})
@@ -80,7 +85,7 @@ export default function AppNavigator({ navigation }) {
         // Realtime : écoute les changements de rôle pour basculer l'UI sans redémarrer
         // Remplace onSnapshot(doc(db,'users',user.uid), snap => setActiveRole(snap.data().activeRole))
         const channel = supabase
-          .channel(`nav-role-${user.id}`)
+          .channel(`nav-role-${user.id}-${Date.now()}`)
           .on("postgres_changes", {
             event: "UPDATE",
             schema: "public",
@@ -113,7 +118,9 @@ export default function AppNavigator({ navigation }) {
     );
   }
 
-  return activeRole === "provider" ? <ProviderTabNavigator /> : <ClientTabNavigator />;
+  return activeRole === "provider"
+    ? <ProviderTabNavigator unreadCount={unreadCount} />
+    : <ClientTabNavigator unreadCount={unreadCount} />;
 }
 
 const styles = StyleSheet.create({

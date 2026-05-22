@@ -81,9 +81,10 @@ export default function ProviderProfileOwnScreen({ navigation }) {
     provider,
     loading,
     updateProfile,
+    updateProfilePhoto,
     addPortfolioPhoto,
     removePortfolioPhoto,
-    updatePhotoCaption,   // modifier la légende d'une photo (§14.2)
+    updatePhotoCaption,
     logout,
   } = useProviderOwnProfile();
 
@@ -148,6 +149,7 @@ export default function ProviderProfileOwnScreen({ navigation }) {
         profile={profile}
         provider={provider}
         onSettings={() => setEditVisible(true)}
+        onEditPhoto={updateProfilePhoto}
       />
 
       <ScrollView

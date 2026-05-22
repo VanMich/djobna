@@ -18,13 +18,20 @@ import { supabase } from "../config/supabase";
 
 // Upload une URI locale vers Supabase Storage et retourne l'URL publique
 async function uploadAvatar(userId, uri) {
-  const response = await fetch(uri);
-  const blob = await response.blob();
+  const ext = uri.split('.').pop() || 'jpg';
+  const fileName = `${userId}.${ext}`;
+  const filePath = `${userId}/avatar.jpg`;
+  const formData = new FormData();
+  formData.append('file', {
+    uri,
+    name: fileName,
+    type: `image/${ext}`,
+  });
   const { error } = await supabase.storage
     .from("avatars")
-    .upload(`${userId}/avatar.jpg`, blob, { upsert: true });
+    .upload(filePath, formData, { upsert: true, contentType: `image/${ext}` });
   if (error) throw error;
-  return supabase.storage.from("avatars").getPublicUrl(`${userId}/avatar.jpg`).data.publicUrl;
+  return supabase.storage.from("avatars").getPublicUrl(filePath).data.publicUrl;
 }
 
 export function useProfile() {

@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SERVICES } from "../../constants/services";
 import { colors } from "../../theme";
 
-export default function ProviderOwnHeader({ profile, provider, onSettings }) {
+export default function ProviderOwnHeader({ profile, provider, onSettings, onEditPhoto }) {
   const initials = (profile?.displayName || "XX")
     .split(" ")
     .map((n) => n[0])
@@ -26,6 +26,9 @@ export default function ProviderOwnHeader({ profile, provider, onSettings }) {
     .map((s) => `${s.icon} ${s.label}`)
     .join(" · ");
 
+  const yearsExp = provider?.yearsOfExperience ?? provider?.years_of_experience ?? 0;
+  const expLabel = yearsExp > 0 ? `${yearsExp} an${yearsExp > 1 ? "s" : ""}` : "-";
+
   const stats = [
     {
       value: (provider?.rating?.global ?? 0) > 0 ? `${(provider.rating.global).toFixed(1)} ⭐` : "-",
@@ -33,7 +36,7 @@ export default function ProviderOwnHeader({ profile, provider, onSettings }) {
     },
     { value: provider?.reviewCount || 0, label: "Avis" },
     { value: provider?.completedJobs || 0, label: "Missions" },
-    { value: "2 ans", label: "Expér." },
+    { value: expLabel, label: "Expér." },
   ];
 
   return (
@@ -51,16 +54,25 @@ export default function ProviderOwnHeader({ profile, provider, onSettings }) {
         </View>
 
         <View style={styles.avatarRow}>
-          <View style={styles.avatarWrap}>
+          <TouchableOpacity
+            style={styles.avatarWrap}
+            onPress={onEditPhoto}
+            activeOpacity={onEditPhoto ? 0.8 : 1}
+          >
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
-            {provider?.isVerified && (
+            {onEditPhoto && (
+              <View style={styles.editBtn}>
+                <Ionicons name="camera" size={10} color="#555" />
+              </View>
+            )}
+            {provider?.isVerified && !onEditPhoto && (
               <View style={styles.verifiedBadge}>
                 <Ionicons name="checkmark" size={10} color="#fff" />
               </View>
             )}
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.infoBlock}>
             <Text style={styles.name}>{profile?.displayName}</Text>
@@ -148,6 +160,22 @@ const styles = StyleSheet.create({
     borderColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
+  },
+  editBtn: {
+    position: "absolute",
+    bottom: -3,
+    right: -3,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
   },
   infoBlock: { flex: 1, gap: 4 },
   name: { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },

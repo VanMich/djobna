@@ -21,6 +21,7 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { useProviderDashboard } from "../hooks/useProviderDashboard";
+import { supabase } from "../config/supabase";
 import ProviderHeader from "../components/homeProvider/ProviderHeader";
 import RequestCard from "../components/homeProvider/RequestCard";
 import MissionCard from "../components/homeProvider/MissionCard";
@@ -103,7 +104,7 @@ export default function HomeProviderScreen({ navigation }) {
     async (requestId, clientId, clientName) => {
       const result = await acceptRequest(requestId, clientId);
       if (result.success) {
-        navigation.navigate("Chat", { clientId, clientName });
+        navigation.navigate("Chat", { clientId, clientName, requestId, chatId: result.chatId });
       } else {
         Alert.alert("Erreur", "Impossible d'accepter la demande. Réessayez.");
       }
@@ -113,16 +114,39 @@ export default function HomeProviderScreen({ navigation }) {
 
   // ── Proposer un autre créneau → ouvrir le chat ────────────────────────────
   const handleProposeOtherTime = useCallback(
-    (requestId, clientId, clientName) => {
-      navigation.navigate("Chat", { clientId, clientName });
+    async (requestId, clientId, clientName) => {
+      try {
+        const now = new Date().toISOString();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data: chatRow, error } = await supabase
+          .from("chats")
+          .upsert({
+            provider_id: user.id,
+            client_id: clientId,
+            request_id: requestId,
+            last_message: "📅 Proposition d'un autre créneau",
+            last_message_at: now,
+          }, { onConflict: "request_id" })
+          .select("id")
+          .single();
+
+        if (error) throw error;
+
+        navigation.navigate("Chat", { clientId, clientName, requestId, chatId: chatRow.id });
+      } catch (err) {
+        console.error("Erreur ouverture chat:", err);
+        Alert.alert("Erreur", "Impossible d'ouvrir le chat. Réessayez.");
+      }
     },
     [navigation],
   );
 
   // ── Décliner une demande ──────────────────────────────────────────────────
   const handleDecline = useCallback(
-    async (requestId) => {
-      const result = await declineRequest(requestId);
+    async (requestId, clientId) => {
+      const result = await declineRequest(requestId, clientId);
       if (!result.success) {
         Alert.alert("Erreur", "Impossible de décliner. Réessayez.");
       }
@@ -139,6 +163,14 @@ export default function HomeProviderScreen({ navigation }) {
       }
     },
     [completeRequest],
+  );
+
+  // ── Ouvrir le détail d'une demande ───────────────────────────────────────
+  const handleViewDetail = useCallback(
+    (request) => {
+      navigation.navigate("RequestDetail", { request });
+    },
+    [navigation],
   );
 
   // ── Chargement initial ────────────────────────────────────────────────────
@@ -185,6 +217,7 @@ export default function HomeProviderScreen({ navigation }) {
                   onAccept={handleAccept}
                   onDecline={handleDecline}
                   onProposeOtherTime={handleProposeOtherTime}
+                  onViewDetail={() => handleViewDetail(request)}
                 />
               ))}
             </View>
@@ -259,11 +292,12 @@ export default function HomeProviderScreen({ navigation }) {
               <MissionCard
                 key={mission.id}
                 mission={mission}
-                // Clic sur la carte → chat avec le client
+                // Clic sur la carte → chat avec le client (via requestId)
                 onPress={() =>
                   navigation.navigate("Chat", {
                     clientId: mission.clientId,
                     clientName: mission.clientName,
+                    requestId: mission.id,
                   })
                 }
                 // Bouton "Marquer comme terminée" (§13.1)
@@ -304,6 +338,7 @@ export default function HomeProviderScreen({ navigation }) {
                   navigation.navigate("Chat", {
                     clientId: mission.clientId,
                     clientName: mission.clientName,
+                    requestId: mission.id,
                   })
                 }
                 // Pas de onComplete ici : la mission est déjà terminée

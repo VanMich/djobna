@@ -11,7 +11,8 @@
 //   - Les données users (displayName, photoURL) récupérées en JOIN en une seule requête
 //   - Les données sont mappées en camelCase pour ne pas casser les screens existants
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../config/supabase";
 
 // Mappe une ligne provider (snake_case PostgreSQL) vers camelCase pour les screens
@@ -52,56 +53,32 @@ export function useProviders(filters = {}) {
   const { service, quartier, minRating = 0, searchQuery = "" } = filters;
   const [rawProviders, setRawProviders] = useState([]);
   const [loading, setLoading] = useState(true);
-  // Compteur pour générer un nom de canal unique à chaque montage et éviter la
-  // collision "cannot add callbacks after subscribe()" lors des navigations tab.
-  const mountCount = useRef(0);
+  const activeRef = useRef(false);
 
-  useEffect(() => {
-    setLoading(true);
-    let active = true;
+  // Fetch au montage + à chaque fois que l'écran reprend le focus (onglets)
+  useFocusEffect(
+    useCallback(() => {
+      activeRef.current = true;
+      setLoading(true);
 
-    const fetchProviders = async () => {
-      const { data, error } = await supabase
+      supabase
         .from("providers")
-        .select(`
-          *,
-          users!inner ( display_name, photo_url )
-        `)
+        .select(`*, users!inner ( display_name, photo_url )`)
         .eq("availability", true)
-        .eq("verification_status", "approved");
+        .eq("verification_status", "approved")
+        .then(({ data, error }) => {
+          if (!activeRef.current) return;
+          if (error) {
+            console.error("Erreur chargement prestataires:", error);
+          } else {
+            setRawProviders((data || []).map(mapProvider));
+          }
+          setLoading(false);
+        });
 
-      if (!active) return;
-      if (error) {
-        console.error("Erreur chargement prestataires:", error);
-        setLoading(false);
-        return;
-      }
-
-      setRawProviders((data || []).map(mapProvider));
-      setLoading(false);
-    };
-
-    fetchProviders();
-
-    // Nom unique par montage : évite que removeChannel (async) laisse le canal
-    // en état "subscribed" quand l'effet se réexécute (tab navigation ou Strict Mode).
-    const channelName = `providers-available-${++mountCount.current}`;
-    const channel = supabase
-      .channel(channelName)
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "providers",
-      }, () => {
-        if (active) fetchProviders();
-      })
-      .subscribe();
-
-    return () => {
-      active = false;
-      supabase.removeChannel(channel);
-    };
-  }, []);
+      return () => { activeRef.current = false; };
+    }, []),
+  );
 
   // Filtrage côté client : service, quartier, note, recherche textuelle
   // Logique identique à l'original — les noms de champs sont déjà en camelCase via mapProvider

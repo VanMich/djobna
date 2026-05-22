@@ -1,5 +1,6 @@
 // src/components/providerProfile/ServiceRequestModal.jsx
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import {
@@ -25,18 +26,54 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledDate, setScheduledDate] = useState(null); // Date | null
   const [budget, setBudget] = useState("");
   const [photos, setPhotos] = useState([]);
 
+  const [showPicker, setShowPicker] = useState(false);
+  const [androidMode, setAndroidMode] = useState("date");
+  const [androidTemp, setAndroidTemp] = useState(new Date());
+
   const { submitRequest, loading } = useServiceRequest();
+
+  const formatScheduledDate = (date) => {
+    if (!date) return null;
+    const d = date.toLocaleDateString("fr-FR", { day: "2-digit", month: "long", year: "numeric" });
+    const t = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return `${d} à ${t}`;
+  };
+
+  const openPicker = () => {
+    setAndroidTemp(scheduledDate || new Date());
+    setAndroidMode("date");
+    setShowPicker(true);
+  };
+
+  const handlePickerChange = (event, selected) => {
+    if (Platform.OS === "android") {
+      if (event.type === "dismissed") { setShowPicker(false); return; }
+      if (!selected) return;
+      if (androidMode === "date") {
+        setAndroidTemp(selected);
+        setAndroidMode("time");
+      } else {
+        const d = new Date(androidTemp);
+        d.setHours(selected.getHours(), selected.getMinutes(), 0, 0);
+        setScheduledDate(d);
+        setShowPicker(false);
+        setAndroidMode("date");
+      }
+    } else {
+      if (selected) setScheduledDate(selected);
+    }
+  };
 
   const reset = () => {
     setSelectedService(null);
     setTitle("");
     setDescription("");
     setLocation("");
-    setScheduledDate("");
+    setScheduledDate(null);
     setBudget("");
     setPhotos([]);
   };
@@ -95,9 +132,11 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
         const { data: { user } } = await supabase.auth.getUser();
         photoUrls = await Promise.all(
           photos.map(async (uri, i) => {
-            const blob = await fetch(uri).then((r) => r.blob());
-            const path = `${user.id}/${Date.now()}-${i}.jpg`;
-            const { error } = await supabase.storage.from("request-photos").upload(path, blob);
+            const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
+            const path = `${user.id}/${Date.now()}-${i}.${ext}`;
+            const formData = new FormData();
+            formData.append("file", { uri, name: `photo-${i}.${ext}`, type: `image/${ext}` });
+            const { error } = await supabase.storage.from("request-photos").upload(path, formData, { contentType: `image/${ext}` });
             if (error) throw error;
             return supabase.storage.from("request-photos").getPublicUrl(path).data.publicUrl;
           })
@@ -115,7 +154,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
       title: title.trim(),
       description: description.trim(),
       location: location.trim(),
-      scheduledDate: scheduledDate.trim() || null,
+      scheduledDate: scheduledDate ? scheduledDate.toISOString() : null,
       budget: budget.trim() || null,
       photos: photoUrls,
     });
@@ -263,19 +302,40 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
             </View>
           </View>
 
-          {/* ── Date ── */}
+          {/* ── Date & heure ── */}
           <View style={styles.section}>
             <Text style={styles.label}>Date et heure souhaitées</Text>
-            <View style={styles.inputRow}>
-              <Ionicons name="calendar-outline" size={16} color="#AAB0B7" style={styles.inputIcon} />
-              <TextInput
-                style={[styles.input, styles.inputWithIcon]}
-                placeholder="Ex : 25/05/2026 à 10h00"
-                placeholderTextColor="#C0C0C0"
-                value={scheduledDate}
-                onChangeText={setScheduledDate}
-              />
-            </View>
+            <TouchableOpacity style={styles.dateField} onPress={openPicker} activeOpacity={0.8}>
+              <Ionicons name="calendar-outline" size={16} color={scheduledDate ? colors.primary : "#AAB0B7"} />
+              <Text style={[styles.dateFieldText, !scheduledDate && styles.dateFieldPlaceholder]}>
+                {scheduledDate ? formatScheduledDate(scheduledDate) : "Sélectionner une date et heure"}
+              </Text>
+              {scheduledDate ? (
+                <TouchableOpacity onPress={() => setScheduledDate(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close-circle" size={18} color="#C0C0C0" />
+                </TouchableOpacity>
+              ) : (
+                <Ionicons name="chevron-forward" size={16} color="#C0C0C0" />
+              )}
+            </TouchableOpacity>
+
+            {showPicker && (
+              <View>
+                <DateTimePicker
+                  value={Platform.OS === "android" && androidMode === "time" ? androidTemp : (scheduledDate || new Date())}
+                  mode={Platform.OS === "android" ? androidMode : "datetime"}
+                  display={Platform.OS === "ios" ? "inline" : "default"}
+                  minimumDate={new Date()}
+                  onChange={handlePickerChange}
+                  locale="fr-FR"
+                />
+                {Platform.OS === "ios" && (
+                  <TouchableOpacity style={styles.pickerDone} onPress={() => setShowPicker(false)}>
+                    <Text style={styles.pickerDoneText}>Fermer</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
 
           {/* ── Budget ── */}
@@ -431,6 +491,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#F4F4F4",
   },
   budgetUnitText: { fontSize: 12, fontWeight: "700", color: "#888" },
+
+  dateField: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: "#E8E8E8",
+    borderRadius: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    backgroundColor: "#FAFAFA",
+  },
+  dateFieldText: { flex: 1, fontSize: 14, color: "#111" },
+  dateFieldPlaceholder: { color: "#C0C0C0" },
+  pickerDone: { alignSelf: "flex-end", paddingHorizontal: 16, paddingVertical: 8 },
+  pickerDoneText: { fontSize: 14, fontWeight: "700", color: colors.primary },
 
   photosRow: { flexDirection: "row", gap: 10 },
   photoThumb: { position: "relative", width: 80, height: 80 },

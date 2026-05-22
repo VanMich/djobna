@@ -1,26 +1,29 @@
-// src/components/chat/ChatInput.js
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useState } from "react";
-import {
-  Alert,
-  Platform,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { useRef, useState } from "react";
+import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "../../config/supabase";
 import { colors } from "../../theme";
+import DevisFormModal from "./DevisFormModal";
 
 export default function ChatInput({
-  onSendMessage,
-  onSendImage,
-  onSendDevis,
-  userRole,
+  onSendMessage, onSendImage, onSendDevis,
+  userRole, isPremium,
+  replyTo, onCancelReply, onTyping,
 }) {
   const [text, setText] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [showDevisModal, setShowDevisModal] = useState(false);
+  const typingTimerRef = useRef(null);
+
+  const handleTextChange = (val) => {
+    setText(val);
+    if (onTyping) {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+      onTyping();
+      typingTimerRef.current = setTimeout(() => {}, 2000);
+    }
+  };
 
   const handleSend = () => {
     if (!text.trim()) return;
@@ -28,182 +31,136 @@ export default function ChatInput({
     setText("");
   };
 
-  // Menu pièce jointe
   const handleAttach = () => {
-    // Options selon le Role
-    const options = [
-      {
-        text: "📷 Photo",
-        onPress: handlePickImage,
-      },
-    ];
-    // Seul le prestataire peut envoyer un devis
+    const options = [{ text: "📷 Photo", onPress: handlePickImage }];
     if (userRole === "provider") {
       options.push({
         text: "📋 Envoyer un devis",
-        onPress: handleSendDevis,
+        onPress: () => {
+          if (!isPremium) {
+            Alert.alert("Fonctionnalité Premium", "L'envoi de devis est réservé aux abonnés Premium.");
+            return;
+          }
+          setShowDevisModal(true);
+        },
       });
     }
-
     options.push({ text: "Annuler", style: "cancel" });
-
     Alert.alert("Envoyer", "", options);
   };
 
-  // Choisir une image, l'uploader dans Supabase Storage puis appeler onSendImage avec l'URL publique
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") return;
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.7,
-    });
-
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.7 });
     if (result.canceled || !onSendImage) return;
 
     setUploading(true);
     try {
       const uri = result.assets[0].uri;
       const { data: { user } } = await supabase.auth.getUser();
-      const blob = await fetch(uri).then((r) => r.blob());
-      const path = `${user.id}/${Date.now()}.jpg`;
-      const { error } = await supabase.storage.from("chat-images").upload(path, blob);
+      const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${user.id}/${Date.now()}.${ext}`;
+      const formData = new FormData();
+      formData.append("file", { uri, name: `chat-${Date.now()}.${ext}`, type: `image/${ext}` });
+      const { error } = await supabase.storage.from("chat-images").upload(path, formData, { contentType: `image/${ext}` });
       if (error) throw error;
-      const publicUrl = supabase.storage.from("chat-images").getPublicUrl(path).data.publicUrl;
-      onSendImage(publicUrl);
+      onSendImage(supabase.storage.from("chat-images").getPublicUrl(path).data.publicUrl);
     } catch (err) {
-      console.error("Erreur upload image chat:", err);
-      Alert.alert("Erreur", "Impossible d'envoyer l'image. Réessayez.");
+      console.error("Erreur upload image:", err);
+      Alert.alert("Erreur", "Impossible d'envoyer l'image.");
     } finally {
       setUploading(false);
     }
   };
 
-  // Envoyer un devis (formulaire simplifié)
-  const handleSendDevis = () => {
-    // Ici on ouvre un Alert avec des champs
-    // En production ce serait un BottomSheet avec un formulaire
-    Alert.prompt(
-      "Titre du devis",
-      "Ex : Vidange Toyota Corolla",
-      [
-        {
-          text: "Suivant →",
-          onPress: (title) => {
-            Alert.prompt(
-              "Montant (FCFA)",
-              "Ex : 7500",
-              [
-                {
-                  text: "Envoyer",
-                  onPress: (price) => {
-                    if (title && price && onSendDevis) {
-                      onSendDevis({
-                        title,
-                        price: parseInt(price),
-                        description: "Pièces et déplacement inclus",
-                      });
-                    }
-                  },
-                },
-                { text: "Annuler", style: "cancel" },
-              ],
-              "plain-text",
-            );
-          },
-        },
-        { text: "Annuler", style: "cancel" },
-      ],
-      "plain-text",
-    );
-  };
+  const replyPreview = replyTo
+    ? (replyTo.type === "image" ? "📷 Photo" : replyTo.type === "devis" ? "📋 Devis" : (replyTo.text || "").slice(0, 60))
+    : null;
 
   return (
-    <View style={styles.container}>
-      {/* Bouton pièce jointe — désactivé pendant l'upload */}
-      <TouchableOpacity
-        style={[styles.attachBtn, uploading && { opacity: 0.5 }]}
-        onPress={handleAttach}
-        activeOpacity={0.8}
-        disabled={uploading}
-      >
-        <Ionicons name={uploading ? "cloud-upload-outline" : "attach"} size={20} color={colors.primary} />
-      </TouchableOpacity>
-
-      {/* Champ de texte */}
-      <TextInput
-        style={styles.input}
-        placeholder="Écrire un message…"
-        placeholderTextColor="#AAB0B7"
-        value={text}
-        onChangeText={setText}
-        multiline
-        maxLength={500}
-        returnKeyType="send"
-        onSubmitEditing={handleSend}
-        blurOnSubmit={false}
+    <View style={s.root}>
+      <DevisFormModal
+        visible={showDevisModal}
+        onClose={() => setShowDevisModal(false)}
+        onSend={(d) => { onSendDevis?.(d); setShowDevisModal(false); }}
       />
 
-      {/* Bouton envoyer */}
-      <TouchableOpacity
-        style={[styles.sendBtn, !text.trim() && styles.sendBtnDisabled]}
-        onPress={handleSend}
-        disabled={!text.trim()}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="send" size={16} color="#fff" />
-      </TouchableOpacity>
+      {replyTo && (
+        <View style={s.replyBar}>
+          <View style={s.replyBarAccent} />
+          <View style={s.replyBarContent}>
+            <Text style={s.replyBarLabel}>Réponse</Text>
+            <Text style={s.replyBarText} numberOfLines={1}>{replyPreview}</Text>
+          </View>
+          <TouchableOpacity onPress={onCancelReply} style={s.replyBarClose} activeOpacity={0.7}>
+            <Ionicons name="close" size={18} color="#888" />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <View style={s.inputRow}>
+        <TouchableOpacity
+          style={[s.iconBtn, uploading && { opacity: 0.4 }]}
+          onPress={handleAttach} disabled={uploading} activeOpacity={0.7}
+        >
+          <Ionicons name={uploading ? "cloud-upload-outline" : "add"} size={22} color={colors.primary} />
+        </TouchableOpacity>
+
+        <TextInput
+          style={s.input}
+          placeholder="Message..."
+          placeholderTextColor="#AAB0B7"
+          value={text}
+          onChangeText={handleTextChange}
+          multiline
+          maxLength={1000}
+          returnKeyType="default"
+          blurOnSubmit={false}
+        />
+
+        <TouchableOpacity
+          style={[s.sendBtn, !text.trim() && s.sendBtnOff]}
+          onPress={handleSend} disabled={!text.trim()} activeOpacity={0.8}
+        >
+          <Ionicons name="send" size={18} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#EEF0EF",
-    gap: 8,
+const s = StyleSheet.create({
+  root: { backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#EAEAEA" },
+
+  replyBar: {
+    flexDirection: "row", alignItems: "center",
+    paddingHorizontal: 12, paddingVertical: 8,
+    backgroundColor: "#F8FAF9", borderBottomWidth: 1, borderBottomColor: "#EAEAEA",
   },
-  attachBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: "#F0FAF6",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+  replyBarAccent: { width: 3, height: "100%", borderRadius: 2, backgroundColor: colors.primary, marginRight: 8 },
+  replyBarContent: { flex: 1 },
+  replyBarLabel: { fontSize: 11, fontWeight: "700", color: colors.primary },
+  replyBarText: { fontSize: 12, color: "#666", marginTop: 1 },
+  replyBarClose: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
+
+  inputRow: {
+    flexDirection: "row", alignItems: "flex-end",
+    paddingHorizontal: 8, paddingVertical: 8, gap: 6,
+  },
+  iconBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.green100, alignItems: "center", justifyContent: "center",
   },
   input: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-    borderRadius: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    fontSize: 14,
-    color: "#111",
-    maxHeight: 100,
-    borderWidth: 1,
-    borderColor: "#E8E8E8",
-    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    flex: 1, backgroundColor: "#F5F5F5", borderRadius: 22,
+    paddingVertical: Platform.OS === "ios" ? 10 : 8,
+    paddingHorizontal: 16, fontSize: 15, color: "#111",
+    maxHeight: 120, borderWidth: 1, borderColor: "#E8E8E8",
   },
   sendBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.primary, alignItems: "center", justifyContent: "center",
   },
-  sendBtnDisabled: { opacity: 0.5, elevation: 0 },
+  sendBtnOff: { backgroundColor: "#CCC" },
 });

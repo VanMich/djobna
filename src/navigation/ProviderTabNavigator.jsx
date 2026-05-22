@@ -5,7 +5,6 @@ import { Platform, StyleSheet, Text, View } from "react-native";
 import ChatListScreen from "../screens/ChatListScreen";
 import HomeProviderScreen from "../screens/HomeProviderScreen";
 import ProviderProfileOwnScreen from "../screens/ProviderProfileOwnScreen";
-import { useUnreadCount } from "../hooks/useUnreadCount";
 import { colors } from "../theme";
 
 const Tab = createBottomTabNavigator();
@@ -30,8 +29,7 @@ function TabIcon({ name, focused, badge }) {
   );
 }
 
-export default function ProviderTabNavigator() {
-  const unreadCount = useUnreadCount();
+export default function ProviderTabNavigator({ unreadCount = 0 }) {
 
   return (
     <Tab.Navigator

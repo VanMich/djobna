@@ -1,4 +1,5 @@
 // src/screens/VerificationPendingScreen.jsx
+import { CommonActions } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { colors, spacing } from "../theme";
@@ -50,7 +51,11 @@ export default function VerificationPendingScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.btn}
-          onPress={() => navigation.navigate("MainApp")}
+          onPress={() =>
+            navigation.dispatch(
+              CommonActions.reset({ index: 0, routes: [{ name: "MainApp" }] })
+            )
+          }
           activeOpacity={0.85}
         >
           <Text style={styles.btnText}>Continuer en mode Client →</Text>

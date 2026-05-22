@@ -20,21 +20,26 @@ import { supabase } from "../config/supabase";
 
 // Upload vers bucket 'avatars' (public) — retourne l'URL publique
 async function uploadAvatar(userId, uri) {
-  const blob = await fetch(uri).then((r) => r.blob());
+  const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
+  const filePath = `${userId}/avatar.jpg`;
+  const formData = new FormData();
+  formData.append("file", { uri, name: "avatar.jpg", type: `image/${ext}` });
   const { error } = await supabase.storage
     .from("avatars")
-    .upload(`${userId}/avatar.jpg`, blob, { upsert: true });
+    .upload(filePath, formData, { upsert: true, contentType: `image/${ext}` });
   if (error) throw error;
-  return supabase.storage.from("avatars").getPublicUrl(`${userId}/avatar.jpg`).data.publicUrl;
+  return supabase.storage.from("avatars").getPublicUrl(filePath).data.publicUrl;
 }
 
 // Upload vers bucket 'document' (privé) — retourne le chemin pour URL signée côté admin
 async function uploadKycDoc(userId, uri, filename) {
-  const blob = await fetch(uri).then((r) => r.blob());
+  const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
   const path = `${userId}/${filename}`;
+  const formData = new FormData();
+  formData.append("file", { uri, name: filename, type: `image/${ext}` });
   const { error } = await supabase.storage
     .from("documents")
-    .upload(path, blob, { upsert: true });
+    .upload(path, formData, { upsert: true, contentType: `image/${ext}` });
   if (error) throw error;
   return path;
 }
