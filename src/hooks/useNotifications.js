@@ -55,7 +55,8 @@ export function useNotifications() {
       const token = await registerPushToken();
       if (!token) return;
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
 
       // Stocke le token en base pour l'envoi côté serveur

@@ -13,6 +13,7 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-nativ
 import { Ionicons } from "@expo/vector-icons";
 
 import MenuSection from "../clientProfile/MenuSection";
+import Icon from "../ui/Icon";
 import { colors } from "../../theme";
 
 // Extrait la note globale depuis un objet rating ou un nombre brut
@@ -26,7 +27,7 @@ function CriteriaBar({ label, icon, value }) {
   const pct = Math.min(Math.max((value / 5) * 100, 0), 100);
   return (
     <View style={styles.criteriaRow}>
-      <Text style={styles.criteriaIcon}>{icon}</Text>
+      <Icon name={icon} size={14} color={colors.primary} weight="duotone" />
       <Text style={styles.criteriaLabel}>{label}</Text>
       <View style={styles.criteriaBarBg}>
         <View style={[styles.criteriaBarFill, { width: `${pct}%` }]} />
@@ -37,10 +38,10 @@ function CriteriaBar({ label, icon, value }) {
 }
 
 const CRITERIA = [
-  { key: "punctuality",   label: "Ponctualité",           icon: "⏱" },
-  { key: "quality",       label: "Qualité du travail",     icon: "🔧" },
-  { key: "communication", label: "Communication",          icon: "💬" },
-  { key: "valueForMoney", label: "Rapport qualité/prix",   icon: "💰" },
+  { key: "punctuality",   label: "Ponctualité",           icon: "timer" },
+  { key: "quality",       label: "Qualité du travail",     icon: "wrench" },
+  { key: "communication", label: "Communication",          icon: "chat-circle" },
+  { key: "valueForMoney", label: "Rapport qualité/prix",   icon: "hand-coins" },
 ];
 
 // ─── Carte d'un avis individuel ───────────────────────────────────────────────
@@ -66,7 +67,11 @@ function ReviewItem({ review, isLast, isOwnProfile, onReply }) {
         <Text style={styles.reviewName}>{review.authorName}</Text>
         <Text style={styles.reviewDate}>{review.date}</Text>
       </View>
-      <Text style={styles.reviewStars}>{"⭐".repeat(Math.min(review.rating || 0, 5))}</Text>
+      <View style={{ flexDirection: "row", gap: 2, marginBottom: 5 }}>
+        {Array.from({ length: Math.min(review.rating || 0, 5) }).map((_, i) => (
+          <Icon key={i} name="star" size={12} color="#F59E0B" weight="fill" />
+        ))}
+      </View>
       {review.comment ? (
         <Text style={styles.reviewText}>{review.comment}</Text>
       ) : null}
@@ -145,9 +150,11 @@ export default function ReviewsTab({ provider, reviews = [], canReview = false, 
             <Text style={styles.bigVal}>
               {globalRating > 0 ? globalRating.toFixed(1) : "–"}
             </Text>
-            <Text style={styles.bigStars}>
-              {"⭐".repeat(Math.round(globalRating))}
-            </Text>
+            <View style={{ flexDirection: "row", gap: 2, marginTop: 3 }}>
+              {Array.from({ length: Math.round(globalRating) }).map((_, i) => (
+                <Icon key={i} name="star" size={12} color="#F59E0B" weight="fill" />
+              ))}
+            </View>
             <Text style={styles.bigCount}>{reviewCount} avis</Text>
           </View>
           {/* Barres de distribution à droite */}
@@ -192,7 +199,7 @@ export default function ReviewsTab({ provider, reviews = [], canReview = false, 
           ))
         ) : (
           <View style={styles.emptyReviews}>
-            <Text style={styles.emptyIcon}>⭐</Text>
+            <Icon name="star" size={36} color="#DDD" weight="duotone" />
             <Text style={styles.emptyText}>Pas encore d'avis</Text>
             <Text style={styles.emptySubtext}>
               Les avis apparaîtront ici après chaque mission terminée.

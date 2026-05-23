@@ -1,11 +1,13 @@
 // src/components/clientProfile/MenuItem.js
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { CaretRight } from "phosphor-react-native";
+import Icon from "../ui/Icon";
 
 export default function MenuItem({
   icon,
   iconBg,
+  iconColor,
   label,
   sublabel,
   badge,
@@ -22,10 +24,17 @@ export default function MenuItem({
       onPress={onPress}
       activeOpacity={0.7}
     >
-      {/* Icône */}
-      <View style={[styles.iconWrap, { backgroundColor: iconBg || "#F5F5F5" }]}>
-        <Text style={styles.icon}>{icon}</Text>
-      </View>
+      {/* Icône — Phosphor icon name (string) via Icon wrapper */}
+      {icon ? (
+        <View style={[styles.iconWrap, { backgroundColor: iconBg || "#F5F5F5" }]}>
+          <Icon
+            name={icon}
+            size={18}
+            color={iconColor || (isDestructive ? "#E24B4A" : "#555")}
+            weight="duotone"
+          />
+        </View>
+      ) : null}
 
       {/* Texte */}
       <View style={styles.textBlock}>
@@ -50,7 +59,7 @@ export default function MenuItem({
         )}
         {rightComponent}
         {showArrow && !rightComponent && (
-          <Ionicons name="chevron-forward" size={16} color="#DDD" />
+          <CaretRight size={14} color="#CCC" weight="bold" />
         )}
       </View>
     </TouchableOpacity>
@@ -75,7 +84,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  icon: { fontSize: 16 },
+  // icon style removed — now uses Phosphor Icon component
   textBlock: { flex: 1, gap: 2 },
   label: { fontSize: 13, fontWeight: "600", color: "#111" },
   labelDestructive: { color: "#E24B4A" },

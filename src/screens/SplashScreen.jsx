@@ -22,12 +22,10 @@ async function getAuthenticatedRoute(user) {
   if (!user) return "Phone";
 
   try {
-    // maybeSingle() : retourne null sans erreur si aucun profil trouvé
-    // (remplace getDoc + snap.exists() de Firestore)
     const { data: profile } = await supabase
       .from("users")
       .select("id")
-      .eq("id", user.id) // user.id sous Supabase (= user.uid sous Firebase)
+      .eq("id", user.id)
       .maybeSingle();
 
     return profile ? "MainApp" : "ProfileSetup";
@@ -39,6 +37,7 @@ async function getAuthenticatedRoute(user) {
 
 export default function SplashScreen({ navigation }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const dotScales = useRef([
     new Animated.Value(1),
     new Animated.Value(1),
@@ -46,13 +45,22 @@ export default function SplashScreen({ navigation }) {
   ]).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 800,
-      useNativeDriver: true,
-    }).start();
+    // Logo entrance — scale + fade
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 60,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
 
-    // Animation des points de chargement
+    // Loading dots animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(dotScales[0], { toValue: 1.5, duration: 300, useNativeDriver: true }),
@@ -80,12 +88,17 @@ export default function SplashScreen({ navigation }) {
     checkSession();
 
     return () => clearTimeout(timer);
-  }, [fadeAnim, navigation, dotScales]);
+  }, [fadeAnim, scaleAnim, navigation, dotScales]);
 
   return (
     <View style={styles.container}>
       <StatusBar style="light" />
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+      <Animated.View
+        style={[
+          styles.content,
+          { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+        ]}
+      >
         <View style={styles.logo}>
           <Text style={styles.logoText}>Dj</Text>
         </View>
@@ -109,7 +122,7 @@ export default function SplashScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -126,12 +139,12 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 36,
     fontWeight: "800",
-    color: "#fff",
+    color: colors.headerText,
     letterSpacing: -1,
   },
   tagline: {
     fontSize: 14,
-    color: colors.textLight,
+    color: colors.headerSubtext,
     textAlign: "center",
     lineHeight: 22,
   },

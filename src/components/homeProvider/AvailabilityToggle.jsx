@@ -1,5 +1,5 @@
 // src/components/homeProvider/AvailabilityToggle.js
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,17 +17,18 @@ export default function AvailabilityToggle({
   // Animation du thumb du toggle
   const thumbAnim = useRef(new Animated.Value(isAvailable ? 1 : 0)).current;
 
-  const handleToggle = () => {
-    const newValue = !isAvailable;
-
-    // Animer le thumb
+  // Sync animation quand isAvailable change de l'extérieur (Realtime, etc.)
+  useEffect(() => {
     Animated.spring(thumbAnim, {
-      toValue: newValue ? 1 : 0,
+      toValue: isAvailable ? 1 : 0,
       useNativeDriver: true,
       tension: 80,
       friction: 10,
     }).start();
+  }, [isAvailable]);
 
+  const handleToggle = () => {
+    const newValue = !isAvailable;
     onToggle(newValue);
   };
 

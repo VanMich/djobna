@@ -19,6 +19,7 @@ import {
 import { SERVICES } from "../../constants/services";
 import { useServiceRequest } from "../../hooks/useServiceRequest";
 import { supabase } from "../../config/supabase";
+import Icon from "../ui/Icon";
 import { colors } from "../../theme";
 
 export default function ServiceRequestModal({ visible, onClose, provider }) {
@@ -129,7 +130,9 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
     let photoUrls = [];
     if (photos.length > 0) {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
+        if (!user) throw new Error("Non connecté");
         photoUrls = await Promise.all(
           photos.map(async (uri, i) => {
             const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
@@ -221,7 +224,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
                     onPress={() => setSelectedService(svc.id)}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.chipIcon}>{svc.icon}</Text>
+                    <Icon name={svc.icon} size={16} color={active ? "#fff" : colors.primary} weight="duotone" />
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>
                       {provider?.servicePricing?.[svc.id]?.customLabel || svc.label}
                     </Text>

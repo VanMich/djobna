@@ -13,9 +13,19 @@ import {
   View,
 } from "react-native";
 import { SERVICES } from "../constants/services";
-import { colors } from "../theme";
+import { Avatar, Badge } from "../components/ui";
+import Icon from "../components/ui/Icon";
+import { colors, radius, shadows } from "../theme";
 import { useProviderDashboard } from "../hooks/useProviderDashboard";
 import { supabase } from "../config/supabase";
+
+const STATUS_CONFIG = {
+  pending:     { label: "Nouveau",    color: "#F59E0B", bg: "#FFF8E8" },
+  in_progress: { label: "En cours",   color: "#3B82F6", bg: "#EFF6FF" },
+  completed:   { label: "Terminée",   color: "#10B981", bg: "#ECFDF5" },
+  declined:    { label: "Déclinée",   color: "#9CA3AF", bg: "#F3F4F6" },
+  cancelled:   { label: "Annulée",    color: "#EF4444", bg: "#FEF2F2" },
+};
 
 function timeAgo(timestamp) {
   if (!timestamp) return "";
@@ -63,8 +73,6 @@ export default function RequestDetailScreen({ navigation, route }) {
   const { acceptRequest, declineRequest } = useProviderDashboard();
 
   const svc = SERVICES.find((s) => s.id === request?.service);
-  const initials = (request?.clientName || "?")
-    .split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   const hasPhotos = request?.photos?.length > 0;
   const hasBudget = request?.budget && Number(request.budget) > 0;
@@ -112,7 +120,8 @@ export default function RequestDetailScreen({ navigation, route }) {
           onPress: async () => {
             try {
               const now = new Date().toISOString();
-              const { data: { user } } = await supabase.auth.getUser();
+              const { data: { session } } = await supabase.auth.getSession();
+              const user = session?.user;
               if (!user) return;
 
               const { data: chatRow, error: chatErr } = await supabase
@@ -165,9 +174,14 @@ export default function RequestDetailScreen({ navigation, route }) {
             <Ionicons name="chevron-back" size={20} color="#fff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Détail de la demande</Text>
-          <View style={styles.statusBadge}>
-            <Text style={styles.statusBadgeText}>Nouveau</Text>
-          </View>
+          {(() => {
+            const s = STATUS_CONFIG[request?.status] || STATUS_CONFIG.pending;
+            return (
+              <View style={[styles.statusBadge, { backgroundColor: s.bg }]}>
+                <Text style={[styles.statusBadgeText, { color: s.color }]}>{s.label}</Text>
+              </View>
+            );
+          })()}
         </View>
       </SafeAreaView>
 
@@ -179,9 +193,12 @@ export default function RequestDetailScreen({ navigation, route }) {
       >
         {/* ── Client ── */}
         <View style={styles.clientCard}>
-          <View style={styles.clientAvatar}>
-            <Text style={styles.clientAvatarText}>{initials}</Text>
-          </View>
+          <Avatar
+            name={request?.clientName}
+            photoURL={request?.clientPhotoURL}
+            size={48}
+            service={request?.service}
+          />
           <View style={styles.clientInfo}>
             <Text style={styles.clientName}>{request.clientName || "Client"}</Text>
             <View style={styles.clientMeta}>
@@ -197,7 +214,10 @@ export default function RequestDetailScreen({ navigation, route }) {
           </View>
           {svc && (
             <View style={styles.serviceChip}>
-              <Text style={styles.serviceChipText}>{svc.icon} {svc.label}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Icon name={svc.icon} size={13} color={colors.primary} weight="duotone" />
+                <Text style={styles.serviceChipText}>{svc.label}</Text>
+              </View>
             </View>
           )}
         </View>
@@ -273,13 +293,13 @@ export default function RequestDetailScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#F4F6F5" },
+  root: { flex: 1, backgroundColor: colors.surface },
 
   errorWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
-  errorText: { color: "#888", fontSize: 14 },
+  errorText: { color: colors.textSecondary, fontSize: 14 },
 
   // Header
-  headerSafe: { backgroundColor: colors.background },
+  headerSafe: { backgroundColor: colors.headerBg },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -290,19 +310,19 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 36,
     height: 36,
-    borderRadius: 10,
+    borderRadius: radius.sm,
     backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: "700", color: "#fff" },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: "700", color: colors.headerText },
   statusBadge: {
-    backgroundColor: "#E8F5F0",
+    backgroundColor: colors.primaryLight,
     borderRadius: 20,
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
-  statusBadgeText: { fontSize: 11, fontWeight: "700", color: "#0F6E56" },
+  statusBadgeText: { fontSize: 11, fontWeight: "700", color: colors.primaryDark },
 
   // Corps
   body: { flex: 1 },
@@ -310,42 +330,28 @@ const styles = StyleSheet.create({
 
   // Client card
   clientCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
+    backgroundColor: colors.card,
+    borderRadius: radius.lg,
     padding: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
     borderWidth: 1,
-    borderColor: "#EEF0EF",
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
   },
-  clientAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: "#185FA5",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  },
-  clientAvatarText: { fontSize: 16, fontWeight: "800", color: "#fff" },
   clientInfo: { flex: 1, gap: 4 },
-  clientName: { fontSize: 15, fontWeight: "700", color: "#111" },
+  clientName: { fontSize: 15, fontWeight: "700", color: colors.textPrimary },
   clientMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
-  clientMetaText: { fontSize: 12, color: "#AAB0B7" },
-  dot: { fontSize: 12, color: "#AAB0B7" },
+  clientMetaText: { fontSize: 12, color: colors.textMuted },
+  dot: { fontSize: 12, color: colors.textMuted },
   serviceChip: {
-    backgroundColor: "#F0FAF6",
-    borderRadius: 10,
+    backgroundColor: colors.primaryLight,
+    borderRadius: radius.sm,
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: "#C8EDDF",
+    borderColor: colors.green200,
     alignSelf: "flex-start",
     flexShrink: 0,
   },
@@ -355,7 +361,7 @@ const styles = StyleSheet.create({
   requestTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#111",
+    color: colors.textPrimary,
     lineHeight: 28,
     letterSpacing: -0.3,
     paddingHorizontal: 2,
@@ -366,7 +372,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 11,
     fontWeight: "700",
-    color: "#AAB0B7",
+    color: colors.textMuted,
     letterSpacing: 0.8,
     textTransform: "uppercase",
     paddingHorizontal: 2,
@@ -374,22 +380,22 @@ const styles = StyleSheet.create({
 
   // Description
   descCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
     padding: 14,
     borderWidth: 1,
-    borderColor: "#EEF0EF",
+    borderColor: colors.borderLight,
   },
-  descText: { fontSize: 14, color: "#444", lineHeight: 22 },
+  descText: { fontSize: 14, color: colors.textSecondary, lineHeight: 22 },
 
   // Infos
   infoCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
+    backgroundColor: colors.card,
+    borderRadius: radius.md,
     paddingVertical: 6,
     paddingHorizontal: 14,
     borderWidth: 1,
-    borderColor: "#EEF0EF",
+    borderColor: colors.borderLight,
     gap: 2,
   },
   infoRow: {
@@ -398,26 +404,26 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#F5F5F5",
+    borderBottomColor: colors.divider,
   },
   infoIconWrap: {
     width: 30,
     height: 30,
-    borderRadius: 8,
-    backgroundColor: "#F0FAF6",
+    borderRadius: radius.sm,
+    backgroundColor: colors.primaryLight,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
-  infoText: { fontSize: 13, color: "#333", flex: 1, lineHeight: 18 },
+  infoText: { fontSize: 13, color: colors.textPrimary, flex: 1, lineHeight: 18 },
 
   // Photos
   photosRow: { gap: 10, paddingRight: 4 },
   photo: {
     width: 130,
     height: 130,
-    borderRadius: 14,
-    backgroundColor: "#F0F0F0",
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
   },
 
   // Bottom bar
@@ -428,14 +434,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     paddingBottom: 24,
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: "#EEF0EF",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 8,
+    borderTopColor: colors.borderLight,
+    ...shadows.lg,
   },
   btnDecline: {
     flex: 1,
@@ -444,12 +446,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     paddingVertical: 13,
-    borderRadius: 12,
-    backgroundColor: "#F5F5F5",
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#E8E8E8",
+    borderColor: colors.border,
   },
-  btnDeclineText: { fontSize: 13, fontWeight: "700", color: "#888" },
+  btnDeclineText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
 
   btnPropose: {
     flex: 1,
@@ -458,10 +460,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     paddingVertical: 13,
-    borderRadius: 12,
-    backgroundColor: "#F0FAF6",
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryLight,
     borderWidth: 1,
-    borderColor: "#C8EDDF",
+    borderColor: colors.green200,
   },
   btnProposeText: { fontSize: 13, fontWeight: "700", color: colors.primary },
 
@@ -472,7 +474,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 6,
     paddingVertical: 13,
-    borderRadius: 12,
+    borderRadius: radius.md,
     backgroundColor: colors.primary,
     shadowColor: colors.primary,
     shadowOpacity: 0.3,
@@ -480,5 +482,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  btnAcceptText: { fontSize: 13, fontWeight: "700", color: "#fff" },
+  btnAcceptText: { fontSize: 13, fontWeight: "700", color: colors.textInverse },
 });

@@ -25,6 +25,7 @@ import { supabase } from "../config/supabase";
 import ProviderHeader from "../components/homeProvider/ProviderHeader";
 import RequestCard from "../components/homeProvider/RequestCard";
 import MissionCard from "../components/homeProvider/MissionCard";
+import Icon from "../components/ui/Icon";
 import { colors } from "../theme";
 
 // ─── Bandeau abonnement Premium (§13.2) ───────────────────────────────────────
@@ -117,7 +118,8 @@ export default function HomeProviderScreen({ navigation }) {
     async (requestId, clientId, clientName) => {
       try {
         const now = new Date().toISOString();
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) return;
 
         const { data: chatRow, error } = await supabase
@@ -194,7 +196,7 @@ export default function HomeProviderScreen({ navigation }) {
           stats={stats}
           requestCount={requests.length}
           onToggle={toggleAvailability}
-          onNotif={() => navigation.navigate("Notifications")}
+          onNotif={() => Alert.alert("Notifications", "Fonctionnalité à venir.")}
         />
         <ScrollView
           style={styles.scroll}
@@ -224,7 +226,7 @@ export default function HomeProviderScreen({ navigation }) {
           ) : (
             <View style={styles.offlineBody}>
               <View style={styles.offlineIcon}>
-                <Text style={styles.offlineEmoji}>😴</Text>
+                <Icon name="clock" size={36} color="#AAB0B7" weight="duotone" />
               </View>
               <Text style={styles.offlineTitle}>Vous êtes hors ligne</Text>
               <Text style={styles.offlineSub}>
@@ -249,7 +251,7 @@ export default function HomeProviderScreen({ navigation }) {
         stats={stats}
         requestCount={requests.length}
         onToggle={toggleAvailability}
-        onNotif={() => navigation.navigate("Notifications")}
+        onNotif={() => Alert.alert("Notifications", "Fonctionnalité à venir.")}
       />
 
       <ScrollView
@@ -393,7 +395,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
   },
   scroll: { flex: 1, backgroundColor: "#F4F6F5" },
   scrollContent: { padding: 12, paddingBottom: 30, gap: 4 },

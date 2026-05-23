@@ -25,6 +25,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { QUARTIERS_PAR_VILLE, SERVICES } from "../../constants/services";
+import Icon from "../ui/Icon";
 import { colors, radius } from "../../theme";
 
 // Langues couramment parlées au Cameroun (§14 — section langues)
@@ -350,7 +351,7 @@ export default function EditProfileSheet({
                   <View key={svc.id} style={styles.pricingCard}>
                     {/* Identité du service */}
                     <View style={styles.pricingHeader}>
-                      <Text style={styles.pricingIcon}>{svc.icon}</Text>
+                      <Icon name={svc.icon} size={18} color={colors.primary} weight="duotone" />
                       <Text style={styles.pricingServiceName}>{svc.label}</Text>
                     </View>
 

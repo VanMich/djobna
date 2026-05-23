@@ -45,7 +45,8 @@ export function useProfile() {
 
     try {
       // Récupérer l'utilisateur connecté — équivalent de auth.currentUser de Firebase
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error("Utilisateur non connecté");
 
       let photo_url = null;

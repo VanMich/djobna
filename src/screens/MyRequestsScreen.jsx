@@ -12,7 +12,8 @@ import {
 } from "react-native";
 import { SERVICES } from "../constants/services";
 import { useMyRequests } from "../hooks/useMyRequests";
-import { colors, radius, spacing } from "../theme";
+import Icon from "../components/ui/Icon";
+import { colors, radius, spacing, shadows } from "../theme";
 
 const STATUS_CONFIG = {
   pending: { label: "En attente", bg: "#FFF7ED", color: "#C2410C", border: "#FDBA74" },
@@ -130,10 +131,13 @@ function RequestCard({ request, index, onPress }) {
             </View>
           </View>
 
-          <Text style={styles.serviceLabel} numberOfLines={1}>
-            {serviceInfo?.icon} {serviceInfo?.label || request.service}
-            {request.title ? ` — ${request.title}` : ""}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+            {serviceInfo?.icon && <Icon name={serviceInfo.icon} size={14} color={colors.primary} weight="duotone" />}
+            <Text style={styles.serviceLabel} numberOfLines={1}>
+              {serviceInfo?.label || request.service}
+              {request.title ? ` — ${request.title}` : ""}
+            </Text>
+          </View>
 
           <View style={styles.cardFooter}>
             <View style={styles.datePill}>
@@ -202,9 +206,9 @@ function EmptyState() {
 
   return (
     <View style={styles.empty}>
-      <Animated.Text style={[styles.emptyIcon, { transform: [{ translateY: bounce }] }]}>
-        {"📭"}
-      </Animated.Text>
+      <Animated.View style={[{ transform: [{ translateY: bounce }] }]}>
+        <Icon name="tray-arrow-down" size={52} color="#CCC" weight="duotone" />
+      </Animated.View>
       <Text style={styles.emptyTitle}>Aucune demande pour le moment</Text>
       <Text style={styles.emptySub}>
         Vos demandes de services apparaîtront ici une fois envoyées.
@@ -214,8 +218,8 @@ function EmptyState() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  headerSafe: { backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.surface },
+  headerSafe: { backgroundColor: colors.headerBg },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -224,48 +228,44 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: "#fff" },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: colors.headerText },
 
-  body: { flex: 1, backgroundColor: "#F2F4F3" },
+  body: { flex: 1, backgroundColor: colors.surface },
   bodyContent: { padding: spacing.md, paddingBottom: 40, gap: 10 },
 
   cardWrap: { marginBottom: 2 },
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
     padding: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 13,
     borderWidth: 1,
-    borderColor: "#EEF0EF",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    borderColor: colors.borderLight,
+    ...shadows.sm,
   },
   avatar: {
     width: 48,
     height: 48,
-    borderRadius: 14,
+    borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 16, fontWeight: "800", color: "#fff" },
+  avatarText: { fontSize: 16, fontWeight: "800", color: colors.textInverse },
 
   cardBody: { flex: 1, gap: 4 },
   cardTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  providerName: { fontSize: 14, fontWeight: "700", color: "#111", flex: 1 },
+  providerName: { fontSize: 14, fontWeight: "700", color: colors.textPrimary, flex: 1 },
   statusBadge: {
-    borderRadius: 8,
+    borderRadius: radius.sm,
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderWidth: 1,
   },
   statusText: { fontSize: 10, fontWeight: "700" },
 
-  serviceLabel: { fontSize: 12, color: "#888" },
+  serviceLabel: { fontSize: 12, color: colors.textSecondary },
 
   cardFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 },
   datePill: {

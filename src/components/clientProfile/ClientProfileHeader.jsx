@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import Icon from "../ui/Icon";
 import { colors } from "../../theme";
 
 export default function ClientProfileHeader({
@@ -59,18 +60,19 @@ export default function ClientProfileHeader({
             <Text style={styles.phone}>
               {profile?.phoneNumber || "+237 — — — — — —"}
             </Text>
-            <Text style={styles.quartier}>
-              📍 {profile?.quartier || "Douala"}
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Icon name="map-pin" size={12} color={colors.headerSubtext} weight="fill" />
+              <Text style={styles.quartier}>{profile?.quartier || "Douala"}</Text>
+            </View>
           </View>
         </View>
 
         {/* Stats rapides */}
         <View style={styles.statsRow}>
           {[
-            { value: stats.missionsCount, label: "Missions" },
-            { value: stats.favoritesCount, label: "Favoris" },
-            { value: stats.reviewsGiven || 0, label: "Avis donnés" },
+            { value: stats?.missionsCount ?? 0, label: "Missions" },
+            { value: stats?.favoritesCount ?? 0, label: "Favoris" },
+            { value: stats?.reviewsGiven ?? 0, label: "Avis donnés" },
           ].map((s, i, arr) => (
             <View
               key={s.label}
@@ -90,9 +92,9 @@ export default function ClientProfileHeader({
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.background },
+  safeArea: { backgroundColor: colors.headerBg },
   header: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: 6,

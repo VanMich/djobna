@@ -17,16 +17,17 @@ import {
   Animated,
   Vibration,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../hooks/useAuth";
-import { colors, spacing } from "../theme";
+import { colors, spacing, radius } from "../theme";
 
 const OTP_LENGTH = 6;
 
 export default function OTPScreen({ navigation, route }) {
-  // phone vient de PhoneScreen — plus de verificationId avec Supabase
-  const { phone } = route.params;
+  const { phone } = route.params || {};
 
   const [code, setCode] = useState(Array(OTP_LENGTH).fill(""));
   const [activeIdx, setActiveIdx] = useState(0);
@@ -34,19 +35,25 @@ export default function OTPScreen({ navigation, route }) {
   const [canResend, setCanResend] = useState(false);
 
   const { sendOTP, verifyOTP, loading, error } = useAuth();
+
+  // Sécurité : si phone est absent, revenir à l'écran précédent
+  useEffect(() => {
+    if (!phone) navigation.goBack();
+  }, [phone, navigation]);
+
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
   // Animation d'entrée
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 60, friction: 10, useNativeDriver: true }),
+    ]).start();
   }, []);
 
-  // Compte à rebours avant de pouvoir renvoyer le code
+  // Compte à rebours
   useEffect(() => {
     if (countdown <= 0) {
       setCanResend(true);
@@ -67,7 +74,6 @@ export default function OTPScreen({ navigation, route }) {
     ]).start();
   }, [shakeAnim]);
 
-  // Saisie d'un chiffre sur le clavier virtuel
   const handleKey = useCallback(
     async (digit) => {
       if (activeIdx >= OTP_LENGTH || loading) return;
@@ -80,13 +86,9 @@ export default function OTPScreen({ navigation, route }) {
 
       if (nextIdx === OTP_LENGTH) {
         const fullCode = newCode.join("");
-
-        // verifyOTP prend (phone, code) — plus de verificationId
-        // isNewUser = true si c'est le premier login (pas encore de profil dans users)
         const result = await verifyOTP(phone, fullCode);
 
         if (result.success) {
-          // Redirection directe selon isNewUser — getAuthenticatedRoute n'est plus nécessaire
           navigation.replace(result.isNewUser ? "ProfileSetup" : "MainApp");
         } else {
           shakeBoxes();
@@ -100,7 +102,6 @@ export default function OTPScreen({ navigation, route }) {
     [activeIdx, code, loading, verifyOTP, phone, shakeBoxes, navigation],
   );
 
-  // Effacement du dernier chiffre
   const handleDelete = useCallback(() => {
     if (activeIdx <= 0) return;
     const newCode = [...code];
@@ -109,21 +110,19 @@ export default function OTPScreen({ navigation, route }) {
     setActiveIdx(activeIdx - 1);
   }, [activeIdx, code]);
 
-  // Renvoyer un nouveau code SMS
   const handleResend = async () => {
     setCode(Array(OTP_LENGTH).fill(""));
     setActiveIdx(0);
     setCountdown(60);
     setCanResend(false);
 
-    // Plus besoin de recaptchaVerifier, plus besoin de mettre à jour verificationId
     const result = await sendOTP(phone);
     if (!result.success) {
       Alert.alert("Erreur", result.message || "Impossible de renvoyer le code.");
     }
   };
 
-  // Rendu d'une case du code OTP
+  // Rendu d'une case OTP
   const renderBox = (idx) => {
     const isFilled = code[idx] !== "";
     const isActive = idx === activeIdx;
@@ -147,31 +146,42 @@ export default function OTPScreen({ navigation, route }) {
   const keypad = ["1", "2", "3", "4", "5", "6", "7", "8", "9", null, "0", "⌫"];
 
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+    <View style={styles.container}>
       <StatusBar style="light" />
 
-      {/* Plus de <FirebaseRecaptchaVerifierModal> — supprimé avec Supabase */}
-
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.back}>← Retour</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+          <Ionicons name="chevron-back" size={20} color={colors.headerText} />
         </TouchableOpacity>
         <Text style={styles.title}>Code de{"\n"}vérification</Text>
         <Text style={styles.subtitle}>Code envoyé au {phone}</Text>
       </View>
 
-      <View style={styles.body}>
+      <Animated.View
+        style={[
+          styles.body,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        {/* Loading overlay */}
+        {loading ? (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingText}>Vérification…</Text>
+          </View>
+        ) : null}
+
         <Animated.View
           style={[styles.boxes, { transform: [{ translateX: shakeAnim }] }]}
         >
           {Array.from({ length: OTP_LENGTH }, (_, i) => renderBox(i))}
         </Animated.View>
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
         <View style={styles.timerRow}>
           {canResend ? (
-            <TouchableOpacity onPress={handleResend}>
+            <TouchableOpacity onPress={handleResend} activeOpacity={0.7}>
               <Text style={styles.resendBtn}>Renvoyer le code</Text>
             </TouchableOpacity>
           ) : (
@@ -188,7 +198,7 @@ export default function OTPScreen({ navigation, route }) {
                 <View style={styles.keyEmpty} />
               ) : k === "⌫" ? (
                 <TouchableOpacity style={styles.key} onPress={handleDelete} activeOpacity={0.7}>
-                  <Text style={styles.keyText}>⌫</Text>
+                  <Ionicons name="backspace-outline" size={22} color={colors.textPrimary} />
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={styles.key} onPress={() => handleKey(k)} activeOpacity={0.7}>
@@ -198,42 +208,63 @@ export default function OTPScreen({ navigation, route }) {
             </React.Fragment>
           ))}
         </View>
-      </View>
-    </Animated.View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     padding: spacing.lg,
     paddingTop: 60,
     gap: spacing.sm,
   },
-  back: { color: colors.primary, fontSize: 14, fontWeight: "500", marginBottom: 8 },
-  title: { fontSize: 26, fontWeight: "700", color: "#fff", lineHeight: 34 },
-  subtitle: { fontSize: 13, color: colors.textLight },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: spacing.sm,
+  },
+  title: { fontSize: 26, fontWeight: "700", color: colors.headerText, lineHeight: 34 },
+  subtitle: { fontSize: 13, color: colors.headerSubtext },
   body: { flex: 1, padding: spacing.lg, alignItems: "center", gap: 20 },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255,255,255,0.85)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    gap: 12,
+  },
+  loadingText: { fontSize: 14, color: colors.textSecondary, fontWeight: "500" },
   boxes: { flexDirection: "row", gap: 8, marginTop: spacing.md },
   box: {
     width: 48,
     height: 60,
-    borderRadius: 14,
+    borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.border,
-    backgroundColor: colors.lightGray,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
   },
-  boxFilled: { backgroundColor: "#F0FAF6", borderColor: colors.primary },
-  boxActive: { borderColor: colors.primary, backgroundColor: "#fff", elevation: 3 },
-  boxError: { borderColor: "#E24B4A", backgroundColor: "#FCEBEB" },
-  boxText: { fontSize: 26, fontWeight: "700", color: colors.textGray },
+  boxFilled: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
+  boxActive: { borderColor: colors.primary, backgroundColor: colors.background, elevation: 3 },
+  boxError: { borderColor: colors.error, backgroundColor: colors.errorLight },
+  boxText: { fontSize: 26, fontWeight: "700", color: colors.textMuted },
   boxTextFilled: { color: colors.primaryDark },
-  errorText: { fontSize: 13, color: "#E24B4A", textAlign: "center" },
+  errorText: { fontSize: 13, color: colors.error, textAlign: "center" },
   timerRow: { alignItems: "center" },
-  timerText: { fontSize: 13, color: colors.textGray },
+  timerText: { fontSize: 13, color: colors.textSecondary },
   timerCount: { color: colors.primary, fontWeight: "600" },
   resendBtn: { fontSize: 14, color: colors.primary, fontWeight: "600" },
   keypad: {
@@ -247,13 +278,13 @@ const styles = StyleSheet.create({
   key: {
     width: "30%",
     height: 56,
-    borderRadius: 12,
-    backgroundColor: colors.lightGray,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: colors.border,
   },
   keyEmpty: { width: "30%", height: 56 },
-  keyText: { fontSize: 22, fontWeight: "600", color: colors.textDark },
+  keyText: { fontSize: 22, fontWeight: "600", color: colors.textPrimary },
 });

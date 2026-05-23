@@ -9,7 +9,7 @@ import { colors } from "../theme";
 
 export default function ChatListScreen({ navigation }) {
   const { conversations, loading } = useChatList();
-  const [searchQuery, setSearchQuery] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = useMemo(() => {
     if (!searchQuery) return conversations;

@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 
 import { SERVICES } from "../../constants/services";
+import Icon from "../ui/Icon";
 import { colors } from "../../theme";
 
 export default function ProviderOwnHeader({ profile, provider, onSettings, onEditPhoto }) {
@@ -23,7 +24,7 @@ export default function ProviderOwnHeader({ profile, provider, onSettings, onEdi
   const serviceLabels = (provider?.services || [])
     .map((id) => SERVICES.find((s) => s.id === id))
     .filter(Boolean)
-    .map((s) => `${s.icon} ${s.label}`)
+    .map((s) => s.label)
     .join(" · ");
 
   const yearsExp = provider?.yearsOfExperience ?? provider?.years_of_experience ?? 0;
@@ -31,7 +32,7 @@ export default function ProviderOwnHeader({ profile, provider, onSettings, onEdi
 
   const stats = [
     {
-      value: (provider?.rating?.global ?? 0) > 0 ? `${(provider.rating.global).toFixed(1)} ⭐` : "-",
+      value: (provider?.rating?.global ?? 0) > 0 ? `${(provider.rating.global).toFixed(1)}` : "-", hasIcon: true,
       label: "Note",
     },
     { value: provider?.reviewCount || 0, label: "Avis" },
@@ -96,7 +97,10 @@ export default function ProviderOwnHeader({ profile, provider, onSettings, onEdi
                 i < arr.length - 1 && styles.statItemBorder,
               ]}
             >
-              <Text style={styles.statValue}>{s.value}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                <Text style={styles.statValue}>{s.value}</Text>
+                {s.hasIcon && <Icon name="star" size={12} color="#F59E0B" weight="fill" />}
+              </View>
               <Text style={styles.statLabel}>{s.label}</Text>
             </View>
           ))}
@@ -107,9 +111,9 @@ export default function ProviderOwnHeader({ profile, provider, onSettings, onEdi
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.background },
+  safeArea: { backgroundColor: colors.headerBg },
   header: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: 6,

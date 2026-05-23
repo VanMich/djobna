@@ -57,7 +57,8 @@ export function useProviderSetup() {
 
     try {
       // Récupère l'utilisateur connecté — remplace auth.currentUser
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error("Utilisateur non connecté");
 
       // Upload photo de profil → bucket avatars (public)

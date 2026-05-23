@@ -19,10 +19,9 @@ import { supabase } from "../config/supabase";
 function mapProvider(p) {
   return {
     id: p.id,
-    // Champs venus du JOIN avec la table users
-    displayName: p.users?.display_name || "",
-    photoURL: p.users?.photo_url || null,
-    // Champs de la table providers
+    // Champs directement dans providers (pas de JOIN users)
+    displayName: p.display_name || "",
+    photoURL: p.photo_url || null,
     bio: p.bio,
     services: p.services || [],
     servicePricing: p.service_pricing || {},   // service_pricing → servicePricing
@@ -34,7 +33,7 @@ function mapProvider(p) {
     languages: p.languages || [],
     availability: p.availability,
     location: p.location || null,
-    subscription: { plan: p.subscription_plan || "classic" },
+    subscription: { plan: "classic" }, // subscription_plan n'est plus dans la vue publique
     rating: {
       global: p.rating_global || 0,
       punctuality: p.rating_punctuality || 0,
@@ -45,7 +44,7 @@ function mapProvider(p) {
     reviewCount: p.review_count || 0,
     verificationStatus: p.verification_status,
     portfolio: p.portfolio || [],
-    walletBalance: p.wallet_balance || 0,
+    // walletBalance supprimé — donnée privée non exposée dans la vue publique
   };
 }
 
@@ -62,8 +61,8 @@ export function useProviders(filters = {}) {
       setLoading(true);
 
       supabase
-        .from("providers")
-        .select(`*, users!inner ( display_name, photo_url )`)
+        .from("public_providers")
+        .select("*")
         .eq("availability", true)
         .eq("verification_status", "approved")
         .then(({ data, error }) => {

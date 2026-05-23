@@ -16,14 +16,15 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { supabase } from "../config/supabase";
 import { QUARTIERS_PAR_VILLE } from "../constants/services";
 import { useProfile } from "../hooks/useProfile";
-import { colors, radius, spacing } from "../theme";
+import { Input, Select, Button } from "../components/ui";
+import Icon from "../components/ui/Icon";
+import { colors, radius, spacing, typography } from "../theme";
 
 export default function ProfileSetupScreen({ navigation }) {
   const [displayName, setDisplayName] = useState("");
@@ -31,17 +32,13 @@ export default function ProfileSetupScreen({ navigation }) {
   const [quartier, setQuartier] = useState("");
   const [pays, setPays] = useState("Cameroun");
   const [photoUri, setPhotoUri] = useState(null);
-  const [showQuartierPicker, setShowQuartierPicker] = useState(false);
   const [phone, setPhone] = useState("");
 
   const { createProfile, loading } = useProfile();
 
-  // Récupérer le numéro de téléphone de l'utilisateur connecté
-  // Remplace auth.currentUser?.phoneNumber (synchrone Firebase)
-  // Supabase : user.phone (= numéro E.164 utilisé lors du signInWithOtp)
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setPhone(data?.user?.phone || "");
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setPhone(session?.user?.phone || "");
     });
   }, []);
 
@@ -102,6 +99,8 @@ export default function ProfileSetupScreen({ navigation }) {
     );
   }
 
+  const quartiersForVille = QUARTIERS_PAR_VILLE[ville] || [];
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
@@ -118,27 +117,21 @@ export default function ProfileSetupScreen({ navigation }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Téléphone pré-rempli — non modifiable */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>NUMÉRO DE TÉLÉPHONE</Text>
-          <View style={styles.inputReadOnly}>
-            <Text style={styles.inputReadOnlyText}>{phone}</Text>
-            <Text style={styles.lockIcon}>🔒</Text>
-          </View>
-        </View>
+        {/* Téléphone pré-rempli */}
+        <Input
+          label="NUMÉRO DE TÉLÉPHONE"
+          value={phone}
+          readOnly
+        />
 
         {/* Nom complet */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>NOM COMPLET *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex : Jean-Baptiste Mbarga"
-            placeholderTextColor={colors.textGray}
-            value={displayName}
-            onChangeText={setDisplayName}
-            autoCapitalize="words"
-          />
-        </View>
+        <Input
+          label="NOM COMPLET *"
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder="Ex : Jean-Baptiste Mbarga"
+          autoCapitalize="words"
+        />
 
         {/* Photo de profil */}
         <View style={styles.inputGroup}>
@@ -148,7 +141,7 @@ export default function ProfileSetupScreen({ navigation }) {
               {photoUri ? (
                 <Image source={{ uri: photoUri }} style={styles.photoImage} />
               ) : (
-                <Text style={styles.photoPlaceholder}>👤</Text>
+                <Icon name="camera" size={28} color="#CCC" weight="duotone" />
               )}
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoBtn} onPress={pickImage} activeOpacity={0.8}>
@@ -161,147 +154,82 @@ export default function ProfileSetupScreen({ navigation }) {
         </View>
 
         {/* Ville */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>VILLE *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex : Douala"
-            placeholderTextColor={colors.textGray}
-            value={ville}
-            onChangeText={setVille}
-            autoCapitalize="words"
-          />
-        </View>
+        <Input
+          label="VILLE *"
+          value={ville}
+          onChangeText={(v) => {
+            setVille(v);
+            setQuartier(""); // reset quartier on city change
+          }}
+          placeholder="Ex : Douala"
+          autoCapitalize="words"
+        />
 
         {/* Quartier */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>QUARTIER *</Text>
-          <TouchableOpacity
-            style={[styles.picker, quartier && styles.pickerSelected]}
-            onPress={() => setShowQuartierPicker(!showQuartierPicker)}
-          >
-            <Text style={[styles.pickerText, !quartier && styles.pickerPlaceholder]}>
-              {quartier || "Choisissez votre quartier"}
-            </Text>
-            <Text style={styles.pickerArrow}>{showQuartierPicker ? "▴" : "▾"}</Text>
-          </TouchableOpacity>
-          {showQuartierPicker && (
-            <View style={styles.pickerDropdown}>
-              <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                {(QUARTIERS_PAR_VILLE[ville] || []).length > 0 ? (
-                  (QUARTIERS_PAR_VILLE[ville] || []).map((q) => (
-                    <TouchableOpacity
-                      key={q}
-                      style={[styles.pickerItem, quartier === q && styles.pickerItemSelected]}
-                      onPress={() => {
-                        setQuartier(q);
-                        setShowQuartierPicker(false);
-                      }}
-                    >
-                      <Text
-                        style={[
-                          styles.pickerItemText,
-                          quartier === q && styles.pickerItemTextSelected,
-                        ]}
-                      >
-                        {q}
-                      </Text>
-                      {quartier === q && <Text style={styles.checkMark}>✓</Text>}
-                    </TouchableOpacity>
-                  ))
-                ) : (
-                  <View style={{ padding: 14 }}>
-                    <Text style={styles.pickerPlaceholder}>Entrez votre quartier manuellement</Text>
-                    <TextInput
-                      style={[styles.input, { marginTop: 8 }]}
-                      value={quartier}
-                      onChangeText={setQuartier}
-                      placeholder="Ex : Mon quartier"
-                      placeholderTextColor={colors.textGray}
-                    />
-                  </View>
-                )}
-              </ScrollView>
-            </View>
-          )}
-        </View>
+        <Select
+          label="QUARTIER *"
+          value={quartier}
+          options={quartiersForVille}
+          onSelect={setQuartier}
+          placeholder="Choisissez votre quartier"
+          allowCustom={quartiersForVille.length === 0}
+          customPlaceholder="Entrez votre quartier"
+          searchable={quartiersForVille.length > 10}
+        />
 
         {/* Pays */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>PAYS *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ex : Cameroun"
-            placeholderTextColor={colors.textGray}
-            value={pays}
-            onChangeText={setPays}
-            autoCapitalize="words"
-          />
-        </View>
+        <Input
+          label="PAYS *"
+          value={pays}
+          onChangeText={setPays}
+          placeholder="Ex : Cameroun"
+          autoCapitalize="words"
+        />
 
-        <TouchableOpacity style={styles.btnPrimary} onPress={handleSubmit} activeOpacity={0.85}>
-          <Text style={styles.btnText}>Créer mon profil →</Text>
-        </TouchableOpacity>
+        <Button
+          title="Créer mon profil →"
+          onPress={handleSubmit}
+          loading={loading}
+          style={{ marginTop: spacing.sm }}
+        />
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background },
+  safeArea: { flex: 1, backgroundColor: colors.headerBg },
   loadingContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
-  },
-  loadingText: { marginTop: 12, fontSize: 14, color: colors.textGray },
-  header: {
     backgroundColor: colors.background,
+  },
+  loadingText: { marginTop: 12, fontSize: 14, color: colors.textSecondary },
+  header: {
+    backgroundColor: colors.headerBg,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     paddingTop: spacing.sm,
     gap: 6,
   },
   brand: { fontSize: 18, fontWeight: "800", color: colors.primary },
-  title: { fontSize: 26, fontWeight: "700", color: "#fff", lineHeight: 34 },
-  subtitle: { fontSize: 13, color: colors.textLight },
-  scroll: { flex: 1, backgroundColor: "#fff" },
+  title: { fontSize: 26, fontWeight: "700", color: colors.headerText, lineHeight: 34 },
+  subtitle: { fontSize: 13, color: colors.headerSubtext },
+  scroll: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: spacing.lg, paddingBottom: 40, gap: spacing.md },
   inputGroup: { gap: 6 },
   label: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: colors.textGray,
+    ...typography.label,
+    fontSize: 11,
     letterSpacing: 0.5,
   },
-  input: {
-    backgroundColor: colors.lightGray,
-    borderRadius: radius.md,
-    padding: 14,
-    fontSize: 15,
-    color: colors.textDark,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  inputReadOnly: {
-    backgroundColor: "#F4F4F4",
-    borderRadius: radius.md,
-    padding: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  inputReadOnlyText: { fontSize: 15, color: colors.textGray, fontWeight: "500" },
-  lockIcon: { fontSize: 14 },
   photoRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   photoPreview: {
     width: 64,
     height: 64,
     borderRadius: 18,
-    backgroundColor: "#E8E8E8",
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
@@ -309,67 +237,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   photoImage: { width: 64, height: 64 },
-  photoPlaceholder: { fontSize: 28 },
   photoBtn: {
     flex: 1,
-    backgroundColor: colors.lightGray,
+    backgroundColor: colors.surface,
     borderRadius: radius.md,
     padding: 14,
     borderWidth: 1.5,
     borderColor: colors.border,
     gap: 2,
   },
-  photoBtnText: { fontSize: 13, color: colors.textDark, fontWeight: "600" },
-  photoBtnSub: { fontSize: 11, color: colors.textGray },
-  picker: {
-    backgroundColor: colors.lightGray,
-    borderRadius: radius.md,
-    padding: 14,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  pickerSelected: { borderColor: colors.primary, backgroundColor: "#F0FAF6" },
-  pickerText: { fontSize: 14, color: colors.textDark, fontWeight: "500" },
-  pickerPlaceholder: { color: colors.textGray, fontWeight: "400" },
-  pickerArrow: { fontSize: 12, color: colors.textGray },
-  pickerDropdown: {
-    marginTop: 6,
-    backgroundColor: "#fff",
-    borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  pickerItem: {
-    padding: 13,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderBottomWidth: 0.5,
-    borderBottomColor: colors.border,
-  },
-  pickerItemSelected: { backgroundColor: "#F0FAF6" },
-  pickerItemText: { fontSize: 14, color: colors.textDark },
-  pickerItemTextSelected: { color: colors.primary, fontWeight: "600" },
-  checkMark: { fontSize: 14, color: colors.primary, fontWeight: "700" },
-  btnPrimary: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 16,
-    alignItems: "center",
-    marginTop: spacing.sm,
-    shadowColor: colors.primary,
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  btnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  photoBtnText: { fontSize: 13, color: colors.textPrimary, fontWeight: "600" },
+  photoBtnSub: { fontSize: 11, color: colors.textSecondary },
 });

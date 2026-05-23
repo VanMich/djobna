@@ -16,6 +16,7 @@ import {
 import MapView, { Marker, UrlTile } from "react-native-maps";
 import { QUARTIERS_DOUALA, SERVICES } from "../constants/services";
 import { useProviders } from "../hooks/useProviders";
+import Icon from "../components/ui/Icon";
 import { colors, spacing } from "../theme";
 
 const DOUALA_CENTER = {
@@ -135,7 +136,10 @@ export default function MapScreen({ navigation }) {
         <View style={styles.header}>
           <View style={styles.topRow}>
             <View style={styles.greetingBlock}>
-              <Text style={styles.greetingText}>Explorez 🗺️</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <Text style={styles.greetingText}>Explorez</Text>
+                <Icon name="compass" size={14} color={colors.headerSubtext} weight="duotone" />
+              </View>
               <Text style={styles.userNameText}>Prestataires près de vous</Text>
             </View>
             <View style={styles.countBadge}>
@@ -198,7 +202,10 @@ export default function MapScreen({ navigation }) {
                 onPress={() => setActiveService(null)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.chipText, !activeService && styles.chipTextActive]}>🌟 Tous</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Icon name="sparkle" size={14} color={!activeService ? "#fff" : "#555"} weight="fill" />
+                  <Text style={[styles.chipText, !activeService && styles.chipTextActive]}>Tous</Text>
+                </View>
               </TouchableOpacity>
               {SERVICES.map((svc) => (
                 <TouchableOpacity
@@ -207,9 +214,12 @@ export default function MapScreen({ navigation }) {
                   onPress={() => setActiveService(svc.id === activeService ? null : svc.id)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.chipText, activeService === svc.id && styles.chipTextActive]}>
-                    {svc.icon} {svc.label.split(" ")[0]}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Icon name={svc.icon} size={14} color={activeService === svc.id ? "#fff" : "#555"} weight="duotone" />
+                    <Text style={[styles.chipText, activeService === svc.id && styles.chipTextActive]}>
+                      {svc.label.split(" ")[0]}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -246,9 +256,12 @@ export default function MapScreen({ navigation }) {
                   onPress={() => setActiveRating(opt === activeRating ? 0 : opt)}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.ratingChipText, activeRating === opt && styles.ratingChipTextActive]}>
-                    {i > 0 ? "⭐ " : ""}{RATING_LABELS[i]}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                    {i > 0 && <Icon name="star" size={12} color={activeRating === opt ? "#fff" : "#F59E0B"} weight="fill" />}
+                    <Text style={[styles.ratingChipText, activeRating === opt && styles.ratingChipTextActive]}>
+                      {RATING_LABELS[i]}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
               {activeFilterCount > 0 && (
@@ -294,7 +307,7 @@ export default function MapScreen({ navigation }) {
                       <Text style={styles.markerPremiumText}>★</Text>
                     </View>
                   )}
-                  <Text style={styles.markerEmoji}>{svc?.icon || "👤"}</Text>
+                  <Icon name={svc?.icon || "wrench"} size={16} color="#fff" weight="fill" />
                   <Text style={styles.markerName}>{provider.displayName?.split(" ")[0]}</Text>
                 </View>
                 <View style={[styles.markerTail, { borderTopColor: markerColor }]} />
@@ -351,10 +364,16 @@ export default function MapScreen({ navigation }) {
               </Text>
               <View style={styles.cardMetaRow}>
                 {getRating(selectedProvider) > 0 && (
-                  <Text style={styles.cardMeta}>⭐ {getRating(selectedProvider).toFixed(1)}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                    <Icon name="star" size={11} color="#F59E0B" weight="fill" />
+                    <Text style={styles.cardMeta}>{getRating(selectedProvider).toFixed(1)}</Text>
+                  </View>
                 )}
                 {selectedProvider.quartier ? (
-                  <Text style={styles.cardMeta}>📍 {selectedProvider.quartier}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+                    <Icon name="map-pin" size={11} color="#888" weight="fill" />
+                    <Text style={styles.cardMeta}>{selectedProvider.quartier}</Text>
+                  </View>
                 ) : null}
               </View>
             </View>
@@ -395,9 +414,9 @@ export default function MapScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  headerSafe: { backgroundColor: colors.background },
+  headerSafe: { backgroundColor: colors.headerBg },
   header: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     paddingHorizontal: 20,
     paddingBottom: 18,
     gap: 16,
@@ -467,7 +486,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: colors.primary,
     borderWidth: 2,
-    borderColor: colors.background,
+    borderColor: colors.headerBg,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -476,7 +495,7 @@ const styles = StyleSheet.create({
   filterBadgeTextOpen: { color: colors.primary },
 
   filterPanel: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     overflow: "hidden",
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,.06)",

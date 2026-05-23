@@ -25,6 +25,7 @@ import {
 import { supabase } from "../config/supabase";
 import { SERVICES, QUARTIERS_PAR_VILLE } from "../constants/services";
 import { useProviderSetup } from "../hooks/useProviderSetup";
+import Icon from "../components/ui/Icon";
 import { colors, radius, spacing } from "../theme";
 
 const LANGUAGES = ["Français", "Anglais", "Duala", "Bamiléké", "Ewondo", "Bassa", "Fulfulde", "Pidgin", "Haoussa"];
@@ -72,8 +73,8 @@ export default function ProviderSetupScreen({ navigation }) {
   // Pré-remplissage depuis le profil client existant
   // Remplace auth.currentUser + getDoc(doc(db,'users',uid))
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data: authData }) => {
-      const user = authData?.user;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const user = session?.user;
       if (!user) return;
 
       setPhone(user.phone || "");
@@ -94,7 +95,7 @@ export default function ProviderSetupScreen({ navigation }) {
       const { data: providerData } = await supabase
         .from("providers")
         .select("services, service_pricing, bio, years_of_experience, languages, intervention_zones")
-        .eq("user_id", user.id)
+        .eq("id", user.id)
         .single();
 
       if (providerData) {
@@ -289,7 +290,7 @@ export default function ProviderSetupScreen({ navigation }) {
               <Text style={styles.label}>TÉLÉPHONE</Text>
               <View style={styles.inputReadOnly}>
                 <Text style={styles.inputReadOnlyText}>{phone}</Text>
-                <Text>🔒</Text>
+                <Icon name="lock" size={16} color="#AAB0B7" weight="fill" />
               </View>
             </View>
 
@@ -308,7 +309,7 @@ export default function ProviderSetupScreen({ navigation }) {
                 <TouchableOpacity style={styles.photoPreview} onPress={() => pickPhoto(setPhotoUri)} activeOpacity={0.8}>
                   {photoUri
                     ? <Image source={{ uri: photoUri }} style={styles.photoImage} />
-                    : <Text style={styles.photoPlaceholder}>👤</Text>}
+                    : <Icon name="camera" size={28} color="#CCC" weight="duotone" />}
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.photoBtn} onPress={() => pickPhoto(setPhotoUri)} activeOpacity={0.8}>
                   <Text style={styles.photoBtnText}>{photoUri ? "Changer la photo" : "Ajouter une photo"}</Text>
@@ -417,7 +418,7 @@ export default function ProviderSetupScreen({ navigation }) {
                   <TouchableOpacity key={svc.id}
                     style={[styles.chip, selected && styles.chipSelected]}
                     onPress={() => toggleService(svc)} activeOpacity={0.8}>
-                    <Text style={styles.chipIcon}>{svc.icon}</Text>
+                    <Icon name={svc.icon} size={18} color={selected ? "#fff" : colors.primary} weight="duotone" />
                     <Text style={[styles.chipLabel, selected && styles.chipLabelSelected]}>{svc.label}</Text>
                   </TouchableOpacity>
                 );
@@ -430,7 +431,10 @@ export default function ProviderSetupScreen({ navigation }) {
               const p = servicePricing[id] || {};
               return (
                 <View key={id} style={styles.pricingCard}>
-                  <Text style={styles.pricingCardTitle}>{svc?.icon} {svc?.label}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                    <Icon name={svc?.icon || "wrench"} size={18} color={colors.primary} weight="duotone" />
+                    <Text style={styles.pricingCardTitle}>{svc?.label}</Text>
+                  </View>
 
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>INTITULÉ PERSONNALISÉ</Text>
@@ -548,7 +552,7 @@ export default function ProviderSetupScreen({ navigation }) {
               <TouchableOpacity style={styles.kycBtn} onPress={takeSelfie} activeOpacity={0.8}>
                 {selfie
                   ? <Image source={{ uri: selfie }} style={styles.kycImage} />
-                  : <View style={styles.kycPlaceholder}><Text style={styles.kycIcon}>🤳</Text><Text style={styles.kycBtnText}>Prendre un selfie</Text></View>}
+                  : <View style={styles.kycPlaceholder}><Icon name="camera" size={24} color="#AAB0B7" weight="duotone" /><Text style={styles.kycBtnText}>Prendre un selfie</Text></View>}
               </TouchableOpacity>
               <Text style={styles.hintInfo}>Tenez votre CNI bien visible à côté de votre visage.</Text>
             </View>
@@ -562,9 +566,18 @@ export default function ProviderSetupScreen({ navigation }) {
           <View style={styles.stepContent}>
             <View style={styles.recapCard}>
               <Text style={styles.recapTitle}>Informations personnelles</Text>
-              <Text style={styles.recapLine}>👤 {displayName}</Text>
-              <Text style={styles.recapLine}>📍 {quartier}, {ville}, {pays}</Text>
-              <Text style={styles.recapLine}>🗺️ Zones : {interventionZones.join(", ")}</Text>
+              <View style={styles.recapRow}>
+                <Icon name="identification-card" size={14} color="#888" weight="duotone" />
+                <Text style={styles.recapLine}>{displayName}</Text>
+              </View>
+              <View style={styles.recapRow}>
+                <Icon name="map-pin" size={14} color="#888" weight="duotone" />
+                <Text style={styles.recapLine}>{quartier}, {ville}, {pays}</Text>
+              </View>
+              <View style={styles.recapRow}>
+                <Icon name="globe" size={14} color="#888" weight="duotone" />
+                <Text style={styles.recapLine}>Zones : {interventionZones.join(", ")}</Text>
+              </View>
             </View>
 
             <View style={styles.recapCard}>
@@ -573,25 +586,46 @@ export default function ProviderSetupScreen({ navigation }) {
                 const p = servicePricing[id];
                 const svc = SERVICES.find((s) => s.id === id);
                 return (
-                  <Text key={id} style={styles.recapLine}>
-                    {svc?.icon} {p?.customLabel} — {p?.minPrice}–{p?.maxPrice} FCFA {p?.unit}
-                  </Text>
+                  <View key={id} style={styles.recapRow}>
+                    <Icon name={svc?.icon || "wrench"} size={14} color="#888" weight="duotone" />
+                    <Text style={styles.recapLine}>
+                      {p?.customLabel} — {p?.minPrice}–{p?.maxPrice} FCFA {p?.unit}
+                    </Text>
+                  </View>
                 );
               })}
             </View>
 
             <View style={styles.recapCard}>
               <Text style={styles.recapTitle}>Profil</Text>
-              <Text style={styles.recapLine}>💼 {yearsExp || "0"} an(s) d'expérience</Text>
-              <Text style={styles.recapLine}>🗣️ {languages.join(", ")}</Text>
-              <Text style={styles.recapLine} numberOfLines={3}>📝 {bio}</Text>
+              <View style={styles.recapRow}>
+                <Icon name="clock" size={14} color="#888" weight="duotone" />
+                <Text style={styles.recapLine}>{yearsExp || "0"} an(s) d'expérience</Text>
+              </View>
+              <View style={styles.recapRow}>
+                <Icon name="translate" size={14} color="#888" weight="duotone" />
+                <Text style={styles.recapLine}>{languages.join(", ")}</Text>
+              </View>
+              <View style={styles.recapRow}>
+                <Icon name="file-text" size={14} color="#888" weight="duotone" />
+                <Text style={styles.recapLine} numberOfLines={3}>{bio}</Text>
+              </View>
             </View>
 
             <View style={styles.recapCard}>
               <Text style={styles.recapTitle}>Documents KYC</Text>
-              <Text style={styles.recapLine}>{cniRecto ? "✅" : "❌"} CNI recto</Text>
-              <Text style={styles.recapLine}>{cniVerso ? "✅" : "❌"} CNI verso</Text>
-              <Text style={styles.recapLine}>{selfie ? "✅" : "❌"} Selfie avec CNI</Text>
+              <View style={styles.recapRow}>
+                <Icon name={cniRecto ? "check-circle" : "x-circle"} size={14} color={cniRecto ? colors.primary : "#E24B4A"} weight="fill" />
+                <Text style={styles.recapLine}>CNI recto</Text>
+              </View>
+              <View style={styles.recapRow}>
+                <Icon name={cniVerso ? "check-circle" : "x-circle"} size={14} color={cniVerso ? colors.primary : "#E24B4A"} weight="fill" />
+                <Text style={styles.recapLine}>CNI verso</Text>
+              </View>
+              <View style={styles.recapRow}>
+                <Icon name={selfie ? "check-circle" : "x-circle"} size={14} color={selfie ? colors.primary : "#E24B4A"} weight="fill" />
+                <Text style={styles.recapLine}>Selfie avec CNI</Text>
+              </View>
             </View>
 
             <View style={styles.infoBox}>
@@ -618,11 +652,11 @@ export default function ProviderSetupScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background },
-  loader: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff", gap: 12 },
-  loaderText: { fontSize: 14, color: colors.textGray },
+  safeArea: { flex: 1, backgroundColor: colors.headerBg },
+  loader: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.background, gap: 12 },
+  loaderText: { fontSize: 14, color: colors.textSecondary },
   header: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     paddingTop: spacing.sm,
@@ -633,8 +667,8 @@ const styles = StyleSheet.create({
   backBtn: { marginBottom: 6 },
   backText: { color: colors.primary, fontSize: 14, fontWeight: "500" },
   stepLabel: { fontSize: 11, fontWeight: "700", color: colors.primary, letterSpacing: 0.5 },
-  title: { fontSize: 24, fontWeight: "700", color: "#fff", lineHeight: 32 },
-  subtitle: { fontSize: 13, color: colors.textLight },
+  title: { fontSize: 24, fontWeight: "700", color: colors.headerText, lineHeight: 32 },
+  subtitle: { fontSize: 13, color: colors.headerSubtext },
   scroll: { flex: 1, backgroundColor: "#fff" },
   scrollContent: { padding: spacing.lg, paddingBottom: 40, gap: spacing.md },
   stepContent: { gap: spacing.md },
@@ -733,7 +767,8 @@ const styles = StyleSheet.create({
     padding: spacing.md, gap: 6, borderWidth: 1, borderColor: colors.border,
   },
   recapTitle: { fontSize: 13, fontWeight: "700", color: colors.textDark, marginBottom: 4 },
-  recapLine: { fontSize: 13, color: colors.textGray, lineHeight: 20 },
+  recapRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  recapLine: { fontSize: 13, color: colors.textGray, lineHeight: 20, flex: 1 },
   btnPrimary: {
     backgroundColor: colors.primary, borderRadius: 14, padding: 16,
     alignItems: "center", marginTop: spacing.sm,

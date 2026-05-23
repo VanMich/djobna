@@ -10,6 +10,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import AvailabilityToggle from "./AvailabilityToggle";
 import StatsBar from "./StatsBar";
+import Icon from "../ui/Icon";
 import { colors } from "../../theme";
 
 export default function ProviderHeader({
@@ -21,8 +22,8 @@ export default function ProviderHeader({
   onNotif,
 }) {
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Bonjour 👋" : hour < 18 ? "Bon après-midi 👋" : "Bonsoir 👋";
+  const greetingText =
+    hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
   const firstName = provider?.displayName?.split(" ")[0] || "vous";
 
@@ -32,7 +33,10 @@ export default function ProviderHeader({
         {/* Ligne 1 : Salutation + Notif */}
         <View style={styles.topRow}>
           <View style={styles.greetBlock}>
-            <Text style={styles.greeting}>{greeting}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <Text style={styles.greeting}>{greetingText}</Text>
+              <Icon name="hand-waving" size={14} color="#5DCAA5" weight="fill" />
+            </View>
             <Text style={styles.name}>{firstName}</Text>
           </View>
           <TouchableOpacity
@@ -67,9 +71,9 @@ export default function ProviderHeader({
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.background },
+  safeArea: { backgroundColor: colors.headerBg },
   header: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: 6,

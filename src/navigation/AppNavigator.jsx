@@ -29,18 +29,24 @@ export default function AppNavigator({ navigation }) {
     // Supabase donne session?.user au lieu de user directement
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        // Ignorer les events qui ne changent pas l'état d'auth
+        // TOKEN_REFRESHED est un rafraîchissement automatique, pas un changement de session
+        if (event === "TOKEN_REFRESHED") return;
+
         // Nettoie l'abonnement Realtime précédent si l'utilisateur change
-        // Remplace unsubscribeDocRef.current()
         if (roleChannelRef.current) {
           supabase.removeChannel(roleChannelRef.current);
           roleChannelRef.current = null;
         }
 
-        const user = session?.user; // session?.user remplace user directement
+        const user = session?.user;
 
         if (!user) {
-          setLoading(false);
-          navigation.replace("Phone");
+          // Seulement rediriger si c'est un vrai sign out, pas un glitch
+          if (event === "SIGNED_OUT") {
+            setLoading(false);
+            navigation.replace("Phone");
+          }
           return;
         }
 
@@ -128,11 +134,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     gap: 12,
   },
   loadingText: {
-    color: colors.textLight,
+    color: colors.headerSubtext,
     fontSize: 13,
     fontWeight: "600",
   },

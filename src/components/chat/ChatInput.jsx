@@ -32,10 +32,10 @@ export default function ChatInput({
   };
 
   const handleAttach = () => {
-    const options = [{ text: "📷 Photo", onPress: handlePickImage }];
+    const options = [{ text: "Photo", onPress: handlePickImage }];
     if (userRole === "provider") {
       options.push({
-        text: "📋 Envoyer un devis",
+        text: "Envoyer un devis",
         onPress: () => {
           if (!isPremium) {
             Alert.alert("Fonctionnalité Premium", "L'envoi de devis est réservé aux abonnés Premium.");
@@ -58,7 +58,9 @@ export default function ChatInput({
     setUploading(true);
     try {
       const uri = result.assets[0].uri;
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) { Alert.alert("Erreur", "Vous devez être connecté."); return; }
       const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${user.id}/${Date.now()}.${ext}`;
       const formData = new FormData();
@@ -75,7 +77,7 @@ export default function ChatInput({
   };
 
   const replyPreview = replyTo
-    ? (replyTo.type === "image" ? "📷 Photo" : replyTo.type === "devis" ? "📋 Devis" : (replyTo.text || "").slice(0, 60))
+    ? (replyTo.type === "image" ? "Photo" : replyTo.type === "devis" ? "Devis" : (replyTo.text || "").slice(0, 60))
     : null;
 
   return (
@@ -131,7 +133,7 @@ export default function ChatInput({
 }
 
 const s = StyleSheet.create({
-  root: { backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#EAEAEA" },
+  root: { backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#EAEAEA", paddingBottom: Platform.OS === "ios" ? 20 : 12 },
 
   replyBar: {
     flexDirection: "row", alignItems: "center",

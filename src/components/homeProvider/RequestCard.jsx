@@ -1,7 +1,9 @@
 // src/components/homeProvider/RequestCard.jsx
+import React from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SERVICES } from "../../constants/services";
+import Icon from "../ui/Icon";
 import { colors } from "../../theme";
 
 function timeAgo(timestamp) {
@@ -21,7 +23,7 @@ function formatDate(isoString) {
   return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-export default function RequestCard({ request, onAccept, onDecline, onProposeOtherTime, onViewDetail }) {
+function RequestCard({ request, onAccept, onDecline, onProposeOtherTime, onViewDetail }) {
   const initials = (request.clientName || "XX")
     .split(" ")
     .map((n) => n[0])
@@ -86,7 +88,10 @@ export default function RequestCard({ request, onAccept, onDecline, onProposeOth
       {/* ── Service demandé ── */}
       {svc && (
         <View style={styles.serviceTag}>
-          <Text style={styles.serviceTagText}>{svc.icon} {svc.label}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Icon name={svc.icon} size={12} color={colors.primary} weight="duotone" />
+            <Text style={styles.serviceTagText}>{svc.label}</Text>
+          </View>
         </View>
       )}
 
@@ -273,3 +278,5 @@ const styles = StyleSheet.create({
   },
   proposeBtnText: { fontSize: 12, fontWeight: "700", color: colors.primary },
 });
+
+export default React.memo(RequestCard);

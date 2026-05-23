@@ -5,7 +5,7 @@ import { colors } from "../../theme";
 
 const SWIPE_THRESHOLD = 60;
 
-export default function MessageBubble({ message, isMe, onRetry, onReply }) {
+function MessageBubble({ message, isMe, onRetry, onReply }) {
   const translateX = useRef(new Animated.Value(0)).current;
 
   const panResponder = useRef(
@@ -84,8 +84,8 @@ export default function MessageBubble({ message, isMe, onRetry, onReply }) {
 }
 
 function ReplyQuote({ reply, isMe }) {
-  const previewText = reply.type === "image" ? "📷 Photo"
-    : reply.type === "devis" ? "📋 Devis"
+  const previewText = reply.type === "image" ? "Photo"
+    : reply.type === "devis" ? "Devis"
     : (reply.text || "").slice(0, 80);
 
   return (
@@ -169,3 +169,5 @@ const s = StyleSheet.create({
   },
   systemText: { fontSize: 12, color: "#0F6E56", fontWeight: "600", textAlign: "center" },
 });
+
+export default React.memo(MessageBubble);

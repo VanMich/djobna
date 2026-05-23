@@ -33,8 +33,8 @@ export function useClientProfile() {
 
   // Récupération de l'uid dès le montage — remplace auth.currentUser (synchrone Firebase)
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data?.user?.id ?? null);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? null);
     });
   }, []);
 
@@ -112,24 +112,18 @@ export function useClientProfile() {
           return;
         }
 
-        // Récupère les profils des prestataires favoris en une seule requête avec JOIN
-        // Remplace le Promise.all de getDoc(users) + getDoc(providers) par favori
+        // Récupère les profils des prestataires favoris via la vue publique
         const { data: favProviders } = await supabase
-          .from("providers")
-          .select(`
-            *,
-            users!inner ( display_name, photo_url, phone_number )
-          `)
+          .from("public_providers")
+          .select("*")
           .in("id", favIds);
 
         if (!active) return;
 
-        // Aplatir les données imbriquées (users est un objet dans le résultat du join)
         const enriched = (favProviders || []).map((p) => ({
           id: p.id,
-          displayName: p.users.display_name,
-          photoURL: p.users.photo_url,
-          phoneNumber: p.users.phone_number,
+          displayName: p.display_name || "",
+          photoURL: p.photo_url || null,
           services: p.services,
           ville: p.ville,
           quartier: p.quartier,

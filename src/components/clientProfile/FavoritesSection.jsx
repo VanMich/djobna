@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { AVATAR_COLORS, SERVICES } from "../../constants/services";
+import Icon from "../ui/Icon";
 import { colors } from "../../theme";
 
 export default function FavoritesSection({ favorites, onPress, onRemove }) {
@@ -73,7 +74,7 @@ export default function FavoritesSection({ favorites, onPress, onRemove }) {
               {provider.displayName?.split(" ")[0]}
             </Text>
             {/* Service */}
-            <Text style={styles.service}>{svc?.icon}</Text>
+            {svc?.icon && <Icon name={svc.icon} size={14} color={colors.primary} weight="duotone" />}
           </TouchableOpacity>
         );
       })}

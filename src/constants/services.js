@@ -2,22 +2,22 @@
 // Liste des services disponibles sur Djobna (contexte camerounais)
 
 export const SERVICES = [
-  { id: "mechanic", icon: "🔧", label: "Mécanicien" },
-  { id: "plumber", icon: "🪠", label: "Plombier" },
-  { id: "electrician", icon: "⚡", label: "Électricien" },
-  { id: "barber", icon: "✂️", label: "Coiffeur / Ébarbeur" },
-  { id: "painter", icon: "🎨", label: "Peintre" },
-  { id: "carpenter", icon: "🪚", label: "Menuisier" },
-  { id: "tailor", icon: "🧵", label: "Couturier" },
-  { id: "housekeeper", icon: "🏠", label: "Femme de ménage" },
-  { id: "caterer", icon: "👨‍🍳", label: "Traiteur" },
-  { id: "locksmith", icon: "🔐", label: "Serrurier" },
-  { id: "mover", icon: "📦", label: "Déménageur" },
-  { id: "security", icon: "🛡️", label: "Gardien" },
-  { id: "gardener", icon: "🌿", label: "Jardinier" },
-  { id: "welder", icon: "🔥", label: "Soudeur" },
-  { id: "aircon", icon: "❄️", label: "Climaticien" },
-  { id: "tiler", icon: "🧱", label: "Carreleur" },
+  { id: "mechanic", icon: "wrench", label: "Mécanicien" },
+  { id: "plumber", icon: "drop", label: "Plombier" },
+  { id: "electrician", icon: "lightning", label: "Électricien" },
+  { id: "barber", icon: "scissors", label: "Coiffeur / Ébarbeur" },
+  { id: "painter", icon: "paint-brush", label: "Peintre" },
+  { id: "carpenter", icon: "hammer", label: "Menuisier" },
+  { id: "tailor", icon: "needle", label: "Couturier" },
+  { id: "housekeeper", icon: "broom", label: "Femme de ménage" },
+  { id: "caterer", icon: "cooking-pot", label: "Traiteur" },
+  { id: "locksmith", icon: "key", label: "Serrurier" },
+  { id: "mover", icon: "package", label: "Déménageur" },
+  { id: "security", icon: "shield-check", label: "Gardien" },
+  { id: "gardener", icon: "plant", label: "Jardinier" },
+  { id: "welder", icon: "flame", label: "Soudeur" },
+  { id: "aircon", icon: "snowflake", label: "Climaticien" },
+  { id: "tiler", icon: "wall", label: "Carreleur" },
 ];
 
 // Quartiers de Douala
@@ -90,25 +90,25 @@ export const PRICE_RANGES = {
 // Tarifs détaillés par service
 export const PRICE_DETAILS = {
   mechanic: [
-    { name: "🔧 Vidange", price: "5 000–8 000 FCFA" },
-    { name: "🛞 Freins", price: "10 000–20 000 FCFA" },
-    { name: "⚙️ Diagnostic", price: "2 000–5 000 FCFA" },
-    { name: "🔩 Embrayage", price: "25 000–50 000 FCFA" },
+    { name: "Vidange", price: "5 000–8 000 FCFA" },
+    { name: "Freins", price: "10 000–20 000 FCFA" },
+    { name: "Diagnostic", price: "2 000–5 000 FCFA" },
+    { name: "Embrayage", price: "25 000–50 000 FCFA" },
   ],
   plumber: [
-    { name: "🚿 Fuite", price: "5 000–15 000 FCFA" },
-    { name: "🚰 Robinetterie", price: "3 000–8 000 FCFA" },
-    { name: "🛁 Installation", price: "20 000–50 000 FCFA" },
+    { name: "Fuite", price: "5 000–15 000 FCFA" },
+    { name: "Robinetterie", price: "3 000–8 000 FCFA" },
+    { name: "Installation", price: "20 000–50 000 FCFA" },
   ],
   electrician: [
-    { name: "⚡ Installation", price: "10 000–30 000 FCFA" },
-    { name: "🔌 Dépannage", price: "5 000–15 000 FCFA" },
-    { name: "💡 Tableau", price: "20 000–60 000 FCFA" },
+    { name: "Installation", price: "10 000–30 000 FCFA" },
+    { name: "Dépannage", price: "5 000–15 000 FCFA" },
+    { name: "Tableau", price: "20 000–60 000 FCFA" },
   ],
   barber: [
-    { name: "✂️ Coupe homme", price: "1 500–3 000 FCFA" },
-    { name: "🪒 Barbe", price: "1 000–2 000 FCFA" },
-    { name: "💈 Coupe + Barbe", price: "2 500–4 000 FCFA" },
+    { name: "Coupe homme", price: "1 500–3 000 FCFA" },
+    { name: "Barbe", price: "1 000–2 000 FCFA" },
+    { name: "Coupe + Barbe", price: "2 500–4 000 FCFA" },
   ],
 };
 

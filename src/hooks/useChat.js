@@ -1,15 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { supabase } from "../config/supabase";
-
-const PUSH_URL = "https://bvxrsytdbvhnmnqzcqev.supabase.co/functions/v1/send-push";
-
-function pushNotify(recipientId, title, body) {
-  fetch(PUSH_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ recipientId, title, body }),
-  }).catch(() => {});
-}
+import { supabase, pushNotify } from "../config/supabase";
 
 function mapMessage(m) {
   return {
@@ -55,6 +45,9 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const typingTimeoutRef = useRef(null);
+  const typingChannelRef = useRef(null);
+  // Indique si la résolution du chatId est terminée (évite le flash du vide)
+  const chatIdResolvedRef = useRef(!!chatIdParam);
 
   // ── 1. Current user (getSession = local, pas d'appel réseau) ───────────────
   useEffect(() => {
@@ -73,25 +66,37 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
   useEffect(() => {
     if (!userId) return;
 
-    if (chatIdParam) { setChatId(chatIdParam); return; }
+    if (chatIdParam) {
+      chatIdResolvedRef.current = true;
+      setChatId(chatIdParam);
+      return;
+    }
 
     if (requestIdParam) {
+      chatIdResolvedRef.current = false;
       (async () => {
         const { data } = await supabase
           .from("chats").select("id").eq("request_id", requestIdParam).maybeSingle();
+        chatIdResolvedRef.current = true;
         if (data) setChatId(data.id);
         else setLoading(false);
       })();
       return;
     }
 
-    if (!otherUserId) { setLoading(false); return; }
+    if (!otherUserId) {
+      chatIdResolvedRef.current = true;
+      setLoading(false);
+      return;
+    }
 
+    chatIdResolvedRef.current = false;
     (async () => {
       const { data: existing } = await supabase
         .from("chats").select("id")
         .or(`and(provider_id.eq.${userId},client_id.eq.${otherUserId}),and(provider_id.eq.${otherUserId},client_id.eq.${userId})`)
         .order("created_at", { ascending: false }).limit(1);
+      chatIdResolvedRef.current = true;
       if (existing?.length > 0) setChatId(existing[0].id);
       else setLoading(false);
     })();
@@ -125,7 +130,8 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
   // ── 3. Messages + Realtime ────────────────────────────────────────────────
   useEffect(() => {
     if (!chatId || !userId) {
-      if (userId !== null && !chatId) setLoading(false);
+      // Ne couper le loading que si la résolution du chatId est terminée
+      if (userId !== null && !chatId && chatIdResolvedRef.current) setLoading(false);
       return;
     }
 
@@ -194,20 +200,23 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
       })
       .subscribe();
 
+    typingChannelRef.current = typingChannel;
+
     return () => {
       supabase.removeChannel(typingChannel);
+      typingChannelRef.current = null;
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
   }, [chatId, userId]);
 
   const broadcastTyping = useCallback(() => {
-    if (!chatId || !userId) return;
-    supabase.channel(`typing-${chatId}`).send({
+    if (!typingChannelRef.current || !userId) return;
+    typingChannelRef.current.send({
       type: "broadcast",
       event: "typing",
       payload: { userId },
     });
-  }, [chatId, userId]);
+  }, [userId]);
 
   // ── Send text ─────────────────────────────────────────────────────────────
   const sendMessage = useCallback(
@@ -351,10 +360,11 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
 
   // ── Confirm complete ──────────────────────────────────────────────────────
   const confirmComplete = useCallback(async () => {
-    if (!requestId || !chatId) return;
+    if (!requestId || !chatId) throw new Error("Données manquantes (requestId ou chatId)");
     const now = new Date().toISOString();
 
-    await supabase.from("requests").update({ status: "completed", completed_at: now }).eq("id", requestId);
+    const { error } = await supabase.from("requests").update({ status: "completed", completed_at: now }).eq("id", requestId);
+    if (error) throw error;
     setRequestStatus("completed");
 
     await supabase.from("messages").insert({

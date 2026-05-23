@@ -13,7 +13,6 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   Alert,
   SafeAreaView,
   ScrollView,
@@ -33,6 +32,7 @@ import ServiceRequestModal from "../components/providerProfile/ServiceRequestMod
 import RatingModal from "../components/reviews/RatingModal";
 import { useReviews } from "../hooks/useReviews";
 import { supabase } from "../config/supabase";
+import { SkeletonProfilePublic } from "../components/ui";
 import { colors } from "../theme";
 
 export default function ProviderProfileScreen({ navigation, route }) {
@@ -57,8 +57,8 @@ export default function ProviderProfileScreen({ navigation, route }) {
 
   // Récupère l'uid du client connecté + vérifie s'il peut noter + charge l'état favori
   useEffect(() => {
-    supabase.auth.getUser().then(async ({ data }) => {
-      const uid = data?.user?.id;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const uid = session?.user?.id;
       if (!uid || !providerId) return;
       setCurrentUserId(uid);
       const { canReview: ok, requestId } = await checkCanReview(uid);
@@ -113,27 +113,23 @@ export default function ProviderProfileScreen({ navigation, route }) {
 
     (async () => {
       try {
-        // Une seule requête avec JOIN — remplace les deux getDoc (providers + users)
+        // Requête via la vue publique (sans données financières/sensibles)
         const { data, error } = await supabase
-          .from("providers")
-          .select(`
-            *,
-            users!inner ( display_name, photo_url, phone_number, ville, quartier, pays )
-          `)
+          .from("public_providers")
+          .select("*")
           .eq("id", providerId)
           .single();
 
         if (!active) return;
         if (error || !data) { setLoading(false); return; }
 
-        // Aplatir les données JOIN + mapper snake_case → camelCase
+        // Mapper snake_case → camelCase
         setProvider({
           id: providerId,
-          displayName: data.users.display_name,     // display_name → displayName
-          photoURL: data.users.photo_url,
-          phoneNumber: data.users.phone_number,
-          ville: data.users.ville,
-          quartier: data.users.quartier,
+          displayName: data.display_name || "",
+          photoURL: data.photo_url || null,
+          ville: data.ville,
+          quartier: data.quartier,
           bio: data.bio,
           services: data.services || [],
           servicePricing: data.service_pricing || {}, // service_pricing → servicePricing
@@ -216,7 +212,8 @@ export default function ProviderProfileScreen({ navigation, route }) {
 
   const handleSolliciter = useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
 
       const { data: userData } = await supabase
@@ -257,9 +254,9 @@ export default function ProviderProfileScreen({ navigation, route }) {
 
   if (loading) {
     return (
-      <View style={styles.loader}>
+      <View style={styles.root}>
         <StatusBar style="light" />
-        <ActivityIndicator size="large" color={colors.primary} />
+        <SkeletonProfilePublic />
       </View>
     );
   }
@@ -335,14 +332,14 @@ export default function ProviderProfileScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
-  headerSafe: { backgroundColor: colors.background, zIndex: 20, elevation: 20 },
+  root: { flex: 1, backgroundColor: colors.headerBg },
+  headerSafe: { backgroundColor: colors.headerBg, zIndex: 20, elevation: 20 },
   loader: {
     flex: 1, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.background, gap: 8, paddingHorizontal: 24,
+    backgroundColor: colors.headerBg, gap: 8, paddingHorizontal: 24,
   },
-  emptyTitle: { color: "#fff", fontSize: 18, fontWeight: "800" },
-  emptyText: { color: colors.textLight, fontSize: 13, textAlign: "center" },
+  emptyTitle: { color: colors.headerText, fontSize: 18, fontWeight: "800" },
+  emptyText: { color: colors.headerSubtext, fontSize: 13, textAlign: "center" },
   scroll: { flex: 1, backgroundColor: "#F4F6F5" },
   scrollContent: { paddingBottom: 30 },
 });

@@ -3,29 +3,39 @@ import { supabase } from "../config/supabase";
 
 export function useChatList() {
   const [userId, setUserId] = useState(null);
+  const [activeRole, setActiveRole] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const mountedRef = useRef(true);
 
-  // ── 1. Récupérer userId via getSession (local, pas d'appel réseau) ────────
+  // ── 1. Récupérer userId + activeRole ──────────────────────────────────────
   useEffect(() => {
     mountedRef.current = true;
 
     const initUser = async () => {
-      // getSession() est LOCAL — pas d'appel réseau, pas de risque de timeout
       const { data: { session } } = await supabase.auth.getSession();
       if (!mountedRef.current) return;
       if (session?.user?.id) {
         setUserId(session.user.id);
+        const { data } = await supabase
+          .from("users")
+          .select("active_role")
+          .eq("id", session.user.id)
+          .single();
+        if (mountedRef.current) setActiveRole(data?.active_role || "client");
       } else {
-        // Fallback : écouter onAuthStateChange si la session n'est pas encore prête
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, sess) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, sess) => {
           if (sess?.user?.id && mountedRef.current) {
             setUserId(sess.user.id);
+            const { data } = await supabase
+              .from("users")
+              .select("active_role")
+              .eq("id", sess.user.id)
+              .single();
+            if (mountedRef.current) setActiveRole(data?.active_role || "client");
             subscription.unsubscribe();
           }
         });
-        // Si après 3s toujours rien, marquer comme non connecté
         setTimeout(() => {
           if (mountedRef.current && !userId) {
             setUserId("");
@@ -41,14 +51,15 @@ export function useChatList() {
 
   // ── 2. Fetch conversations (SANS FK join — plus robuste) ──────────────────
   const fetchConversations = useCallback(async () => {
-    if (!userId) return;
+    if (!userId || !activeRole) return;
 
     try {
-      // Étape 1 : récupérer les chats de l'utilisateur (pas de join)
+      // Étape 1 : récupérer les chats filtrés par rôle actif
+      const roleColumn = activeRole === "provider" ? "provider_id" : "client_id";
       const { data: chats, error: chatsError } = await supabase
         .from("chats")
         .select("id, provider_id, client_id, request_id, last_message, last_message_at")
-        .or(`provider_id.eq.${userId},client_id.eq.${userId}`)
+        .eq(roleColumn, userId)
         .order("last_message_at", { ascending: false });
 
       if (chatsError) {
@@ -72,8 +83,8 @@ export function useChatList() {
 
       // Requêtes parallèles — chacune indépendante, aucune ne bloque les autres
       const [usersRes, providersRes, unreadRes, lastSendersRes] = await Promise.all([
-        supabase.from("users").select("id, display_name, photo_url, role").in("id", otherIds),
-        supabase.from("providers").select("id, services").in("id", providerIds),
+        supabase.from("public_users").select("id, display_name, photo_url, role").in("id", otherIds),
+        supabase.from("public_providers").select("id, services").in("id", providerIds),
         supabase.from("messages").select("chat_id").in("chat_id", chatIds).eq("read", false).neq("sender_id", userId),
         supabase.from("messages").select("chat_id, sender_id").in("chat_id", chatIds).order("created_at", { ascending: false }).limit(chatIds.length),
       ]);
@@ -128,24 +139,32 @@ export function useChatList() {
       console.warn("useChatList unexpected error:", err);
       if (mountedRef.current) setLoading(false);
     }
-  }, [userId]);
+  }, [userId, activeRole]);
 
   // ── 3. Lancer le fetch + Realtime ─────────────────────────────────────────
   useEffect(() => {
-    if (userId === null) return; // encore en chargement auth
-    if (!userId) { setLoading(false); return; } // pas connecté
+    if (userId === null || activeRole === null) return;
+    if (!userId) { setLoading(false); return; }
 
     fetchConversations();
 
+    // Filtre le canal Realtime sur le rôle actif pour ne recevoir que les
+    // changements des chats de cet utilisateur (évite un refetch global)
+    const roleColumn = activeRole === "provider" ? "provider_id" : "client_id";
     const channel = supabase
       .channel(`chatlist-${userId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "chats" }, fetchConversations)
+      .on("postgres_changes", {
+        event: "*", schema: "public", table: "chats",
+        filter: `${roleColumn}=eq.${userId}`,
+      }, fetchConversations)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, fetchConversations)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, fetchConversations)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages",
+        filter: `read=eq.true`,
+      }, fetchConversations)
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [userId, fetchConversations]);
+  }, [userId, activeRole, fetchConversations]);
 
   return { conversations, loading };
 }

@@ -3,7 +3,9 @@ import { StyleSheet, Text, View } from "react-native";
 
 import MenuItem from "../clientProfile/MenuItem";
 import MenuSection from "../clientProfile/MenuSection";
+import Icon from "../ui/Icon";
 import { SERVICES } from "../../constants/services";
+import { colors } from "../../theme";
 
 export default function ProfileTab({ provider }) {
   const serviceLabels = (provider?.services || [])
@@ -34,6 +36,7 @@ export default function ProfileTab({ provider }) {
                 key={svc.id}
                 icon={svc.icon}
                 iconBg="#F0FAF6"
+                iconColor={colors.primary}
                 label={pricing?.customLabel || svc.label}
                 sublabel={sublabel}
                 showArrow={false}
@@ -58,7 +61,8 @@ export default function ProfileTab({ provider }) {
           <View style={styles.tagsWrap}>
             {zones.map((zone) => (
               <View key={zone} style={styles.zoneTag}>
-                <Text style={styles.zoneTagText}>📍 {zone}</Text>
+                <Icon name="map-pin" size={12} color={colors.primary} weight="fill" />
+                <Text style={styles.zoneTagText}>{zone}</Text>
               </View>
             ))}
           </View>
@@ -71,7 +75,8 @@ export default function ProfileTab({ provider }) {
           <View style={styles.tagsWrap}>
             {languages.map((lang) => (
               <View key={lang} style={styles.langTag}>
-                <Text style={styles.langTagText}>🗣 {lang}</Text>
+                <Icon name="translate" size={12} color="#3B82F6" weight="duotone" />
+                <Text style={styles.langTagText}>{lang}</Text>
               </View>
             ))}
           </View>
@@ -104,6 +109,9 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   zoneTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: "#F5EEFE",
     borderRadius: 20,
     paddingVertical: 6,
@@ -113,6 +121,9 @@ const styles = StyleSheet.create({
   },
   zoneTagText: { fontSize: 12, color: "#7C4DFF", fontWeight: "600" },
   langTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     backgroundColor: "#E8F4FF",
     borderRadius: 20,
     paddingVertical: 6,

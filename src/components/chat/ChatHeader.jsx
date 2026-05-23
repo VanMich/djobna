@@ -43,16 +43,16 @@ export default function ChatHeader({ providerName, providerServices, isTyping, o
 }
 
 const s = StyleSheet.create({
-  safe: { backgroundColor: colors.background },
+  safe: { backgroundColor: colors.headerBg },
   header: {
     flexDirection: "row", alignItems: "center",
     paddingHorizontal: 10, paddingVertical: 10, gap: 10,
   },
   backBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
   avatar: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  avatarText: { fontSize: 15, fontWeight: "800", color: "#fff" },
+  avatarText: { fontSize: 15, fontWeight: "800", color: colors.textInverse },
   info: { flex: 1 },
-  name: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  name: { fontSize: 15, fontWeight: "700", color: colors.headerText },
   typing: { fontSize: 12, color: "#5DCAA5", fontStyle: "italic", marginTop: 1 },
   subtitle: { fontSize: 11, color: "rgba(255,255,255,0.5)", marginTop: 1 },
   actions: { flexDirection: "row", gap: 4 },

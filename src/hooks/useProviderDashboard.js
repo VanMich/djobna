@@ -15,9 +15,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import * as Location from "expo-location";
-import { supabase } from "../config/supabase";
-
-const PUSH_URL = "https://bvxrsytdbvhnmnqzcqev.supabase.co/functions/v1/send-push";
+import { supabase, pushNotify } from "../config/supabase";
 
 // Mapping snake_case DB → camelCase pour les composants UI
 function mapRequest(r) {
@@ -52,8 +50,8 @@ export function useProviderDashboard() {
 
   // Récupère l'uid au montage — remplace auth.currentUser (synchrone Firebase)
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data?.user?.id ?? ""); // "" = non connecté
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? ""); // "" = non connecté
     });
   }, []);
 
@@ -260,15 +258,7 @@ export function useProviderDashboard() {
           created_at: now,
         });
 
-        fetch(PUSH_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            recipientId: clientId,
-            title: "✅ Demande acceptée",
-            body: "Votre demande a été acceptée ! Consultez vos messages.",
-          }),
-        }).catch(() => {});
+        pushNotify(clientId, "✅ Demande acceptée", "Votre demande a été acceptée ! Consultez vos messages.");
 
         return { success: true, chatId: chatRow.id };
       } catch (err) {
@@ -290,15 +280,7 @@ export function useProviderDashboard() {
           .eq("id", requestId);
 
         if (clientId) {
-          fetch(PUSH_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              recipientId: clientId,
-              title: "❌ Demande déclinée",
-              body: "Votre demande a été déclinée. Essayez un autre prestataire.",
-            }),
-          }).catch(() => {});
+          pushNotify(clientId, "❌ Demande déclinée", "Votre demande a été déclinée. Essayez un autre prestataire.");
         }
 
         return { success: true };

@@ -23,17 +23,17 @@ function mapReview(r) {
     clientId:      r.client_id,
     providerId:    r.provider_id,
     ratedBy:       r.rated_by,
-    globalRating:  r.rating_global,
-    punctuality:   r.rating_punctuality    || 0,
-    quality:       r.rating_quality        || 0,
-    communication: r.rating_communication  || 0,
-    valueForMoney: r.rating_value_for_money|| 0,
+    globalRating:  r.global_rating,
+    punctuality:   r.punctuality       || 0,
+    quality:       r.quality           || 0,
+    communication: r.communication     || 0,
+    valueForMoney: r.value_for_money   || 0,
     comment:       r.comment        || "",
     providerReply: r.provider_reply || "",
     authorName:    r.author_name    || "Client",
     createdAt:     r.created_at,
     // Champs compatibles avec le composant ReviewItem de ReviewsTab
-    rating: r.rating_global,
+    rating: r.global_rating,
     date:   r.created_at
       ? new Date(r.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
       : "",
@@ -122,17 +122,17 @@ export function useReviews(providerId) {
   }) => {
     try {
       const { error } = await supabase.from("reviews").insert({
-        request_id:            requestId,
-        client_id:             clientId,
-        provider_id:           providerId,
-        rated_by:              "client",
-        rating_global:         globalRating,
-        rating_punctuality:    punctuality   || globalRating,
-        rating_quality:        quality       || globalRating,
-        rating_communication:  communication || globalRating,
-        rating_value_for_money: valueForMoney || globalRating,
-        comment:               comment       || "",
-        author_name:           authorName    || "Client",
+        request_id:      requestId,
+        client_id:       clientId,
+        provider_id:     providerId,
+        rated_by:        "client",
+        global_rating:   globalRating,
+        punctuality:     punctuality   || globalRating,
+        quality:         quality       || globalRating,
+        communication:   communication || globalRating,
+        value_for_money: valueForMoney || globalRating,
+        comment:         comment       || "",
+        author_name:     authorName    || "Client",
       });
 
       if (error) throw error;

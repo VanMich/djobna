@@ -4,7 +4,7 @@
 // Sections : services, réalisations, compte, notifications, aide.
 // Le badge KYC (§14.4) s'affiche tant que le compte n'est pas vérifié.
 
-import React, { useCallback, useState, useRef } from "react";
+import React, { useCallback, useState, useRef, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CommonActions } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 
@@ -24,9 +25,11 @@ import PortfolioSection from "../components/providerOwnProfile/PortfolioSection"
 import ProviderOwnHeader from "../components/providerOwnProfile/ProviderOwnHeader";
 import MenuItem from "../components/clientProfile/MenuItem";
 import MenuSection from "../components/clientProfile/MenuSection";
+import Icon from "../components/ui/Icon";
 import { SERVICES } from "../constants/services";
 import { useProviderOwnProfile } from "../hooks/useProviderOwnProfile";
 import { useRoleSwitch } from "../hooks/useRoleSwitch";
+import { SkeletonProfileOwn } from "../components/ui";
 import { colors, spacing } from "../theme";
 
 // ─── Badge de statut de vérification KYC (§14.4) ─────────────────────────────
@@ -37,24 +40,24 @@ function KycBanner({ status }) {
 
   const config = {
     pending: {
-      icon: "⏳", label: "Vérification en cours…",
+      icon: "hourglass", label: "Vérification en cours…",
       sub: "Vos documents sont en cours d'examen par notre équipe.",
       color: "#BA7517", bg: "#FFF8E8", border: "#F0D49A",
     },
     rejected: {
-      icon: "❌", label: "Documents refusés",
+      icon: "x-circle", label: "Documents refusés",
       sub: "Soumettez à nouveau vos pièces justificatives.",
       color: "#E24B4A", bg: "#FFF0EE", border: "#FDDAD6",
     },
   }[status] || {
-    icon: "📋", label: "Identité non vérifiée",
+    icon: "identification-card", label: "Identité non vérifiée",
     sub: "La vérification augmente votre visibilité sur la carte.",
     color: "#AAB0B7", bg: "#F5F5F5", border: "#E8E8E8",
   };
 
   return (
     <View style={[kycStyles.banner, { backgroundColor: config.bg, borderColor: config.border }]}>
-      <Text style={kycStyles.icon}>{config.icon}</Text>
+      <Icon name={config.icon} size={22} color={config.color} weight="duotone" />
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={[kycStyles.label, { color: config.color }]}>{config.label}</Text>
         <Text style={kycStyles.sub}>{config.sub}</Text>
@@ -101,6 +104,26 @@ export default function ProviderProfileOwnScreen({ navigation }) {
   const [notifMessages, setNotifMessages] = useState(true);
   const [notifRequests, setNotifRequests] = useState(true);
 
+  // Charger les préférences notifications sauvegardées
+  useEffect(() => {
+    AsyncStorage.getItem("notif_prefs_provider").then((raw) => {
+      if (!raw) return;
+      try {
+        const prefs = JSON.parse(raw);
+        if (prefs.messages !== undefined) setNotifMessages(prefs.messages);
+        if (prefs.requests !== undefined) setNotifRequests(prefs.requests);
+      } catch {}
+    });
+  }, []);
+
+  // Sauvegarder à chaque changement
+  useEffect(() => {
+    AsyncStorage.setItem("notif_prefs_provider", JSON.stringify({
+      messages: notifMessages,
+      requests: notifRequests,
+    }));
+  }, [notifMessages, notifRequests]);
+
   const handleSwitchToClient = useCallback(async () => {
     const result = await switchRole("client");
     if (result?.success) {
@@ -121,7 +144,9 @@ export default function ProviderProfileOwnScreen({ navigation }) {
           style: "destructive",
           onPress: async () => {
             await logout();
-            navigation.replace("Phone");
+            navigation.dispatch(
+              CommonActions.reset({ index: 0, routes: [{ name: "Phone" }] })
+            );
           },
         },
       ],
@@ -134,9 +159,9 @@ export default function ProviderProfileOwnScreen({ navigation }) {
 
   if (loading) {
     return (
-      <View style={styles.loader}>
+      <View style={styles.root}>
         <StatusBar style="light" />
-        <ActivityIndicator size="large" color={colors.primary} />
+        <SkeletonProfileOwn statCount={4} />
       </View>
     );
   }
@@ -170,7 +195,9 @@ export default function ProviderProfileOwnScreen({ navigation }) {
             activeOpacity={1}
             disabled={roleLoading}
           >
-            <Text style={styles.roleCardIcon}>🙋</Text>
+            <View style={styles.roleCardIconWrap}>
+              <Icon name="user-switch" size={24} color={colors.primary} weight="duotone" />
+            </View>
             <View style={styles.roleCardText}>
               <Text style={styles.roleCardTitle}>Passer en mode Client</Text>
               <Text style={styles.roleCardSub}>
@@ -196,7 +223,7 @@ export default function ProviderProfileOwnScreen({ navigation }) {
                     <Text style={styles.serviceNum}>{index + 1}</Text>
                   </View>
                   <View style={styles.serviceIconWrap}>
-                    <Text style={styles.serviceIcon}>{svc.icon}</Text>
+                    <Icon name={svc.icon} size={20} color={colors.primary} weight="duotone" />
                   </View>
                   <View style={styles.serviceCardInfo}>
                     <Text style={styles.serviceLabel}>
@@ -232,15 +259,17 @@ export default function ProviderProfileOwnScreen({ navigation }) {
 
         <MenuSection title="Mon compte">
           <MenuItem
-            icon="✏️"
+            icon="pencil-simple"
             iconBg="#F0FAF6"
+            iconColor={colors.primary}
             label="Modifier mon profil"
             sublabel="Bio, quartier, nom"
             onPress={() => setEditVisible(true)}
           />
           <MenuItem
-            icon="⭐"
+            icon="star"
             iconBg="#FFFBEB"
+            iconColor="#F59E0B"
             label="Mes avis reçus"
             sublabel={`${provider?.reviewCount || 0} avis · Note ${
               (typeof provider?.rating === "object"
@@ -257,16 +286,17 @@ export default function ProviderProfileOwnScreen({ navigation }) {
             }
           />
           <MenuItem
-            icon="💰"
+            icon="currency-dollar"
             iconBg="#E8F4FF"
+            iconColor="#0EA5E9"
             label="Mes tarifs"
             sublabel="Fourchettes par prestation"
-            // Ouvre la feuille d'édition du profil — section tarifs en bas du modal
             onPress={() => setEditVisible(true)}
           />
           <MenuItem
-            icon="📍"
+            icon="map-pin"
             iconBg="#F5EEFE"
+            iconColor="#8B5CF6"
             label="Zones de couverture"
             sublabel={`${(provider?.zones || []).join(", ") || "Non défini"}`}
             // Ouvre la feuille d'édition — section zones d'intervention
@@ -278,8 +308,9 @@ export default function ProviderProfileOwnScreen({ navigation }) {
           <View style={styles.revenueTop}>
             <View>
               <MenuItem
-                icon="📊"
+                icon="chart-bar"
                 iconBg="#F0FAF6"
+                iconColor={colors.primary}
                 label="Revenus du mois"
                 sublabel={`${monthRevenue.toLocaleString(
                   "fr-FR",
@@ -298,8 +329,9 @@ export default function ProviderProfileOwnScreen({ navigation }) {
 
         <MenuSection title="Notifications">
           <MenuItem
-            icon="💬"
+            icon="chat-circle"
             iconBg="#F5EEFE"
+            iconColor="#8B5CF6"
             label="Messages clients"
             sublabel="Nouveaux messages"
             showArrow={false}
@@ -314,8 +346,9 @@ export default function ProviderProfileOwnScreen({ navigation }) {
             }
           />
           <MenuItem
-            icon="🔧"
+            icon="wrench"
             iconBg="#F0FAF6"
+            iconColor={colors.primary}
             label="Nouvelles demandes"
             sublabel="Alertes en temps réel"
             showArrow={false}
@@ -333,8 +366,9 @@ export default function ProviderProfileOwnScreen({ navigation }) {
 
         <MenuSection title="Aide & Support">
           <MenuItem
-            icon="?"
+            icon="question"
             iconBg="#E8F4FF"
+            iconColor="#3B82F6"
             label="Centre d'aide"
             sublabel="FAQ et tutoriels"
             onPress={() =>
@@ -342,8 +376,9 @@ export default function ProviderProfileOwnScreen({ navigation }) {
             }
           />
           <MenuItem
-            icon="💬"
+            icon="chat-circle-dots"
             iconBg="#F0FAF6"
+            iconColor={colors.primary}
             label="Nous contacter"
             sublabel="WhatsApp · Email"
             onPress={() =>
@@ -351,20 +386,22 @@ export default function ProviderProfileOwnScreen({ navigation }) {
             }
           />
           <MenuItem
-            icon="ℹ️"
+            icon="info"
             iconBg="#F5F5F5"
+            iconColor="#888"
             label="À propos"
-            sublabel="Djobna v1.0.0 - Fait avec coeur au Cameroun"
+            sublabel="Djobna v1.0.0 - Fait au Cameroun"
             onPress={() =>
-              Alert.alert("Djobna", "Version 1.0.0\nFait avec coeur au Cameroun")
+              Alert.alert("Djobna", "Version 1.0.0\nFait au Cameroun")
             }
           />
         </MenuSection>
 
         <View style={styles.logoutWrap}>
           <MenuItem
-            icon="🚪"
+            icon="sign-out"
             iconBg="#FFF0EE"
+            iconColor="#E24B4A"
             label="Se déconnecter"
             isDestructive
             onPress={handleLogout}
@@ -389,7 +426,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
   },
   scroll: { flex: 1, backgroundColor: "#F4F6F5" },
   scrollContent: { paddingBottom: 30 },
@@ -423,7 +460,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  serviceIcon: { fontSize: 20 },
+  // serviceIcon style removed — now uses Phosphor Icon component
   serviceCardInfo: { flex: 1, gap: 3 },
   serviceLabel: { fontSize: 14, fontWeight: "700", color: colors.textDark },
   servicePrice: { fontSize: 12, color: colors.primary, fontWeight: "600" },
@@ -475,7 +512,10 @@ const styles = StyleSheet.create({
     borderRadius: 16, padding: spacing.md,
     borderWidth: 1.5, borderColor: colors.border,
   },
-  roleCardIcon: { fontSize: 28 },
+  roleCardIconWrap: {
+    width: 44, height: 44, borderRadius: 12,
+    backgroundColor: "#F0FAF6", alignItems: "center", justifyContent: "center",
+  },
   roleCardText: { flex: 1, gap: 2 },
   roleCardTitle: { fontSize: 14, fontWeight: "700", color: colors.textDark },
   roleCardSub: { fontSize: 12, color: colors.textGray },

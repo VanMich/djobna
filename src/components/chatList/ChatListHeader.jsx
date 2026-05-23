@@ -46,10 +46,10 @@ export default function ChatListHeader({ searchQuery, onSearchChange }) {
 }
 
 const s = StyleSheet.create({
-  safe: { backgroundColor: colors.background },
+  safe: { backgroundColor: colors.headerBg },
   header: { paddingHorizontal: 16, paddingBottom: 12, paddingTop: 8 },
   titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  title: { fontSize: 24, fontWeight: "800", color: "#fff", letterSpacing: -0.5 },
+  title: { fontSize: 24, fontWeight: "800", color: colors.headerText, letterSpacing: -0.5 },
   searchBtn: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: "rgba(255,255,255,0.1)",
@@ -61,7 +61,7 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 12,
     paddingHorizontal: 12, height: 40,
   },
-  searchInput: { flex: 1, fontSize: 15, color: "#fff" },
+  searchInput: { flex: 1, fontSize: 15, color: colors.headerText },
   cancelBtn: { paddingVertical: 8 },
   cancelText: { fontSize: 14, color: colors.textLight, fontWeight: "600" },
 });

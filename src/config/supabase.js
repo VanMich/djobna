@@ -34,6 +34,31 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PUSH NOTIFICATION HELPER
+// Envoie une push notification via l'edge function send-push sécurisée.
+// Inclut automatiquement le JWT de l'utilisateur connecté.
+// ─────────────────────────────────────────────────────────────────────────────
+const PUSH_URL = `${SUPABASE_URL}/functions/v1/send-push`;
+
+export async function pushNotify(recipientId, title, body, data) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    fetch(PUSH_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ recipientId, title, body: body || "", data: data || {} }),
+    }).catch(() => {});
+  } catch {
+    // fire & forget — ne pas bloquer l'UX
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // AIDE-MÉMOIRE RAPIDE — équivalences Firebase → Supabase
 //
 // AUTHENTIFICATION :

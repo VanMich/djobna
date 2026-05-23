@@ -8,39 +8,48 @@
 //   - Plus de verificationId dans les params de navigation
 //     (Supabase identifie la session par le numéro de téléphone directement)
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Animated,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { useAuth } from "../hooks/useAuth";
-import { colors, spacing, radius } from "../theme";
+import { Input, Button } from "../components/ui";
+import Icon from "../components/ui/Icon";
+import { colors, spacing, radius, typography } from "../theme";
 
 export default function PhoneScreen({ navigation }) {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const { sendOTP } = useAuth();
 
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.spring(slideAnim, { toValue: 0, tension: 60, friction: 10, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
   const handleSendOTP = async () => {
     const cleaned = phone.replace(/\s/g, "");
-    if (cleaned.length !== 9) {
+    if (cleaned.length !== 9 || !/^\d{9}$/.test(cleaned)) {
       Alert.alert("Erreur", "Entrez un numéro valide à 9 chiffres");
       return;
     }
 
     setLoading(true);
     try {
-      // Plus besoin de passer recaptchaVerifier — Twilio gère l'anti-spam côté serveur
       const result = await sendOTP("+237" + cleaned);
       if (result.success) {
-        // On passe uniquement le phone — plus de verificationId avec Supabase
         navigation.navigate("OTP", { phone: "+237" + cleaned });
       } else {
         Alert.alert("Erreur", result.message);
@@ -59,8 +68,6 @@ export default function PhoneScreen({ navigation }) {
     >
       <StatusBar style="light" />
 
-      {/* Plus de <FirebaseRecaptchaVerifierModal> ici — supprimé avec Supabase */}
-
       <View style={styles.header}>
         <Text style={styles.brand}>Djobna</Text>
         <Text style={styles.title}>Entrez votre{"\n"}numéro de téléphone</Text>
@@ -69,103 +76,67 @@ export default function PhoneScreen({ navigation }) {
         </Text>
       </View>
 
-      <View style={styles.body}>
-        <Text style={styles.label}>NUMÉRO DE TÉLÉPHONE</Text>
-        <View style={styles.inputRow}>
-          <View style={styles.countryCode}>
+      <Animated.View
+        style={[
+          styles.body,
+          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+        ]}
+      >
+        <Input
+          label="NUMÉRO DE TÉLÉPHONE"
+          value={phone}
+          onChangeText={setPhone}
+          placeholder="6 XX XX XX XX"
+          keyboardType="phone-pad"
+          maxLength={9}
+          autoFocus
+          leftComponent={
             <Text style={styles.countryText}>🇨🇲 +237</Text>
-          </View>
-          <TextInput
-            style={styles.input}
-            placeholder="6 XX XX XX XX"
-            placeholderTextColor={colors.textGray}
-            keyboardType="phone-pad"
-            maxLength={9}
-            value={phone}
-            onChangeText={setPhone}
-            autoFocus
-          />
-        </View>
+          }
+        />
 
         <View style={styles.infoBox}>
           <Text style={styles.infoText}>
-            📱 Fonctionne avec MTN, Orange et Camtel. Code SMS gratuit.
+            Fonctionne avec MTN, Orange et Camtel. Code SMS gratuit.
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={[styles.btn, loading && styles.btnDisabled]}
+        <View style={{ flex: 1 }} />
+
+        <Button
+          title={loading ? "Envoi..." : "Recevoir le code SMS →"}
           onPress={handleSendOTP}
-          disabled={loading}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.btnText}>
-            {loading ? "Envoi..." : "Recevoir le code SMS →"}
-          </Text>
-        </TouchableOpacity>
-      </View>
+          loading={loading}
+          disabled={phone.replace(/\s/g, "").length < 9}
+        />
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     padding: spacing.lg,
     paddingTop: 60,
     gap: spacing.sm,
   },
   brand: { fontSize: 22, fontWeight: "800", color: colors.primary },
-  title: { fontSize: 24, fontWeight: "700", color: "#fff", lineHeight: 32 },
-  subtitle: { fontSize: 14, color: colors.textLight },
+  title: { fontSize: 24, fontWeight: "700", color: colors.headerText, lineHeight: 32 },
+  subtitle: { fontSize: 14, color: colors.headerSubtext },
   body: {
     flex: 1,
     padding: spacing.lg,
     gap: spacing.md,
-    backgroundColor: "#fff",
+    backgroundColor: colors.background,
   },
-  label: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: colors.textGray,
-    letterSpacing: 0.5,
-  },
-  inputRow: { flexDirection: "row", gap: 10 },
-  countryCode: {
-    backgroundColor: colors.lightGray,
-    borderRadius: radius.md,
-    padding: 14,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    justifyContent: "center",
-  },
-  countryText: { fontSize: 15, fontWeight: "600", color: colors.textDark },
-  input: {
-    flex: 1,
-    backgroundColor: colors.lightGray,
-    borderRadius: radius.md,
-    padding: 14,
-    fontSize: 16,
-    fontWeight: "500",
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    color: colors.textDark,
-  },
+  countryText: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
   infoBox: {
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.primaryLight,
     borderRadius: radius.md,
     padding: 12,
     borderWidth: 1,
-    borderColor: "#9FE1CB",
+    borderColor: colors.green200,
   },
-  infoText: { fontSize: 13, color: "#0F6E56", lineHeight: 20 },
-  btn: {
-    backgroundColor: colors.primary,
-    borderRadius: 14,
-    padding: 16,
-    alignItems: "center",
-    marginTop: "auto",
-  },
-  btnDisabled: { opacity: 0.6 },
-  btnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  infoText: { fontSize: 13, color: colors.primaryDark, lineHeight: 20 },
 });

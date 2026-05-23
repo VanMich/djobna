@@ -6,6 +6,7 @@ import { supabase } from "../config/supabase";
 
 export function useUnreadCount() {
   const [userId, setUserId] = useState(null);
+  const [activeRole, setActiveRole] = useState(null);
   const [count, setCount] = useState(0);
   const mountedRef = useRef(true);
 
@@ -13,9 +14,27 @@ export function useUnreadCount() {
     mountedRef.current = true;
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.id && mountedRef.current) { setUserId(session.user.id); return; }
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_ev, sess) => {
-        if (sess?.user?.id && mountedRef.current) { setUserId(sess.user.id); subscription.unsubscribe(); }
+      if (session?.user?.id && mountedRef.current) {
+        setUserId(session.user.id);
+        const { data } = await supabase
+          .from("users")
+          .select("active_role")
+          .eq("id", session.user.id)
+          .single();
+        if (mountedRef.current) setActiveRole(data?.active_role || "client");
+        return;
+      }
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_ev, sess) => {
+        if (sess?.user?.id && mountedRef.current) {
+          setUserId(sess.user.id);
+          const { data } = await supabase
+            .from("users")
+            .select("active_role")
+            .eq("id", sess.user.id)
+            .single();
+          if (mountedRef.current) setActiveRole(data?.active_role || "client");
+          subscription.unsubscribe();
+        }
       });
     };
     init();
@@ -23,15 +42,15 @@ export function useUnreadCount() {
   }, []);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !activeRole) return;
 
     const fetchCount = async () => {
       try {
-        // 1. Récupère les IDs des chats de l'utilisateur
+        const roleColumn = activeRole === "provider" ? "provider_id" : "client_id";
         const { data: userChats, error: chatsErr } = await supabase
           .from("chats")
           .select("id")
-          .or(`client_id.eq.${userId},provider_id.eq.${userId}`);
+          .eq(roleColumn, userId);
 
         if (chatsErr) {
           console.error("useUnreadCount — erreur fetch chats:", chatsErr.message);
@@ -65,15 +84,19 @@ export function useUnreadCount() {
 
     fetchCount();
 
-    // Écoute les INSERT (nouveau message) et UPDATE (marquage lu) uniquement
+    // Écoute les INSERT (nouveau message) et UPDATE (marquage lu) uniquement.
+    // Filtre aussi les chats par rôle pour ne réagir qu'aux changements pertinents.
     const channel = supabase
       .channel(`unread-count-${userId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, fetchCount)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "messages" }, fetchCount)
+      .on("postgres_changes", {
+        event: "UPDATE", schema: "public", table: "messages",
+        filter: `read=eq.true`,
+      }, fetchCount)
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [userId]);
+  }, [userId, activeRole]);
 
   return count;
 }

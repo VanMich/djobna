@@ -1,8 +1,10 @@
 // src/screens/VerificationPendingScreen.jsx
 import { CommonActions } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { colors, spacing } from "../theme";
+import { SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Button } from "../components/ui";
+import Icon from "../components/ui/Icon";
+import { colors, spacing, radius } from "../theme";
 
 export default function VerificationPendingScreen({ navigation }) {
   return (
@@ -15,7 +17,7 @@ export default function VerificationPendingScreen({ navigation }) {
 
       <View style={styles.body}>
         <View style={styles.iconWrap}>
-          <Text style={styles.icon}>⏳</Text>
+          <Icon name="hourglass" size={48} color={colors.primary} weight="duotone" />
         </View>
 
         <Text style={styles.title}>Dossier soumis !</Text>
@@ -49,57 +51,48 @@ export default function VerificationPendingScreen({ navigation }) {
           </Text>
         </View>
 
-        <TouchableOpacity
-          style={styles.btn}
+        <Button
+          title="Continuer en mode Client →"
           onPress={() =>
             navigation.dispatch(
               CommonActions.reset({ index: 0, routes: [{ name: "MainApp" }] })
             )
           }
-          activeOpacity={0.85}
-        >
-          <Text style={styles.btnText}>Continuer en mode Client →</Text>
-        </TouchableOpacity>
+          style={{ marginTop: "auto" }}
+        />
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background },
+  safeArea: { flex: 1, backgroundColor: colors.headerBg },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.md },
   brand: { fontSize: 18, fontWeight: "800", color: colors.primary },
-  body: { flex: 1, backgroundColor: "#fff", padding: spacing.lg, gap: spacing.md, alignItems: "center" },
+  body: { flex: 1, backgroundColor: colors.background, padding: spacing.lg, gap: spacing.md, alignItems: "center" },
   iconWrap: {
     width: 100, height: 100, borderRadius: 30,
-    backgroundColor: "#F0FAF6", alignItems: "center", justifyContent: "center",
+    backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center",
     marginTop: spacing.lg,
   },
   icon: { fontSize: 48 },
-  title: { fontSize: 26, fontWeight: "700", color: colors.textDark, textAlign: "center" },
-  subtitle: { fontSize: 14, color: colors.textGray, textAlign: "center", lineHeight: 22 },
+  title: { fontSize: 26, fontWeight: "700", color: colors.textPrimary, textAlign: "center" },
+  subtitle: { fontSize: 14, color: colors.textSecondary, textAlign: "center", lineHeight: 22 },
   infoCard: {
-    width: "100%", backgroundColor: "#F8F8F8", borderRadius: 16,
-    padding: spacing.md, gap: 12, borderWidth: 1, borderColor: "#E8E8E8",
+    width: "100%", backgroundColor: colors.surface, borderRadius: radius.lg,
+    padding: spacing.md, gap: 12, borderWidth: 1, borderColor: colors.border,
   },
-  infoTitle: { fontSize: 13, fontWeight: "700", color: colors.textDark, marginBottom: 4 },
+  infoTitle: { fontSize: 13, fontWeight: "700", color: colors.textPrimary, marginBottom: 4 },
   infoStep: { flexDirection: "row", alignItems: "flex-start", gap: 12 },
   infoStepNum: {
     width: 24, height: 24, borderRadius: 12,
-    backgroundColor: colors.primary, color: "#fff",
+    backgroundColor: colors.primary, color: colors.textInverse,
     fontSize: 12, fontWeight: "700", textAlign: "center", lineHeight: 24,
   },
-  infoStepText: { flex: 1, fontSize: 13, color: colors.textGray, lineHeight: 20 },
+  infoStepText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 20 },
   noteBox: {
-    width: "100%", backgroundColor: "#F0FAF6", borderRadius: 12,
-    padding: 14, borderWidth: 1, borderColor: "#9FE1CB",
+    width: "100%", backgroundColor: colors.primaryLight, borderRadius: radius.md,
+    padding: 14, borderWidth: 1, borderColor: colors.green200,
   },
-  noteText: { fontSize: 13, color: "#0F6E56", textAlign: "center", lineHeight: 20 },
-  btn: {
-    width: "100%", backgroundColor: colors.primary, borderRadius: 14,
-    padding: 16, alignItems: "center", marginTop: "auto",
-    shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 }, elevation: 4,
-  },
-  btnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
+  noteText: { fontSize: 13, color: colors.primaryDark, textAlign: "center", lineHeight: 20 },
 });

@@ -9,6 +9,7 @@
 
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { Star } from "phosphor-react-native";
 
 // Formate un nombre en milliers si > 1 000 (ex: 15 000 → "15K")
 function formatNumber(n) {
@@ -24,8 +25,11 @@ export default function StatsBar({ stats, isAvailable }) {
       label: "Aujourd'hui",
     },
     {
-      // rating peut être un objet { global, ... } ou un nombre — on garde la compatibilité
-      value: stats.rating > 0 ? `${stats.rating.toFixed(1)} ⭐` : "–",
+      // rating peut être un objet { global, ... } ou un nombre — on normalise
+      value: (() => {
+        const r = typeof stats.rating === "object" ? stats.rating?.global : stats.rating;
+        return r > 0 ? Number(r).toFixed(1) : "–";
+      })(), hasIcon: true,
       label: "Note",
     },
     {
@@ -47,9 +51,12 @@ export default function StatsBar({ stats, isAvailable }) {
           key={item.label}
           style={[styles.card, !isAvailable && styles.cardOff]}
         >
-          <Text style={[styles.value, !isAvailable && styles.valueOff]}>
-            {item.value}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+            <Text style={[styles.value, !isAvailable && styles.valueOff]}>
+              {item.value}
+            </Text>
+            {item.hasIcon && <Star size={12} color="#F59E0B" weight="fill" />}
+          </View>
           <Text style={[styles.label, !isAvailable && styles.labelOff]}>
             {item.label}
           </Text>

@@ -10,9 +10,10 @@ import React from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SERVICES } from "../../constants/services";
+import Icon from "../ui/Icon";
 import { colors } from "../../theme";
 
-export default function MissionCard({ mission, onPress, onComplete }) {
+function MissionCard({ mission, onPress, onComplete }) {
   // Correction bug : le champ exposé par mapRequest s'appelle "service", pas "serviceType"
   const svc = SERVICES.find((s) => s.id === mission.service);
 
@@ -52,7 +53,7 @@ export default function MissionCard({ mission, onPress, onComplete }) {
       >
         {/* Icône du service */}
         <View style={styles.iconWrap}>
-          <Text style={styles.icon}>{svc?.icon || "🔧"}</Text>
+          <Icon name={svc?.icon || "wrench"} size={20} color={colors.primary} weight="duotone" />
         </View>
 
         {/* Titre et méta */}
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  icon: { fontSize: 20 },
+  // icon style removed — now uses Phosphor Icon component
 
   info: { flex: 1, gap: 3 },
   title: { fontSize: 13, fontWeight: "700", color: "#111" },
@@ -169,3 +170,5 @@ const styles = StyleSheet.create({
     color: "#0F6E56",
   },
 });
+
+export default React.memo(MissionCard);

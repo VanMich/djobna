@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../theme";
 
-export default function DevisCard({ message, isMe, onRespond, onCancel, userRole }) {
+function DevisCard({ message, isMe, onRespond, onCancel, userRole }) {
   const { devis } = message;
   const isPending = devis?.status === "pending";
   const isAccepted = devis?.status === "accepted";
@@ -53,7 +53,7 @@ export default function DevisCard({ message, isMe, onRespond, onCancel, userRole
             {devis.lines.map((line, i) => (
               <View key={i} style={s.lineRow}>
                 <Text style={[s.lineLabel, isCancelled && s.lineCancelled]} numberOfLines={1}>{line.label}</Text>
-                <Text style={[s.lineAmount, isCancelled && s.lineCancelled]}>{line.amount.toLocaleString("fr-FR")} F</Text>
+                <Text style={[s.lineAmount, isCancelled && s.lineCancelled]}>{Number(line.amount || 0).toLocaleString("fr-FR")} F</Text>
               </View>
             ))}
             <View style={s.lineSeparator} />
@@ -66,7 +66,7 @@ export default function DevisCard({ message, isMe, onRespond, onCancel, userRole
           </View>
         ) : (
           <Text style={[s.price, isCancelled && s.totalCancelled]}>
-            {devis?.price?.toLocaleString("fr-FR") ?? devis?.total?.toLocaleString("fr-FR")} FCFA
+            {Number(devis?.price ?? devis?.total ?? 0).toLocaleString("fr-FR")} FCFA
           </Text>
         )}
 
@@ -192,3 +192,5 @@ const s = StyleSheet.create({
   metaMe: { flexDirection: "row-reverse" },
   time: { fontSize: 10, color: "#AAB0B7" },
 });
+
+export default React.memo(DevisCard);

@@ -21,7 +21,7 @@ export default function PortfolioTab({ provider }) {
           {lastJobs.map((job, i) => (
             <MenuItem
               key={`${job.name}-${job.date}-${i}`}
-              icon="✓"
+              icon="check-circle"
               iconBg="#F0FAF6"
               label={job.name}
               sublabel={job.date}

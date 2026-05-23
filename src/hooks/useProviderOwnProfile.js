@@ -24,8 +24,8 @@ export function useProviderOwnProfile() {
 
   // Récupère l'uid au montage — remplace auth.currentUser (synchrone Firebase)
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data?.user?.id ?? "");  // "" = non connecté, null = chargement en cours
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUserId(session?.user?.id ?? "");  // "" = non connecté, null = chargement en cours
     });
   }, []);
 

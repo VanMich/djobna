@@ -20,6 +20,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Icon from "../ui/Icon";
 import { colors, radius } from "../../theme";
 
 // Libellés associés à chaque note globale
@@ -27,10 +28,10 @@ const RATING_LABELS = ["", "Mauvais", "Passable", "Bien", "Très bien", "Excelle
 
 // Critères de notation (§15.2)
 const CRITERIA = [
-  { key: "punctuality",   label: "Ponctualité",           icon: "⏱" },
-  { key: "quality",       label: "Qualité du travail",     icon: "🔧" },
-  { key: "communication", label: "Communication",          icon: "💬" },
-  { key: "valueForMoney", label: "Rapport qualité/prix",   icon: "💰" },
+  { key: "punctuality",   label: "Ponctualité",           icon: "timer" },
+  { key: "quality",       label: "Qualité du travail",     icon: "wrench" },
+  { key: "communication", label: "Communication",          icon: "chat-circle" },
+  { key: "valueForMoney", label: "Rapport qualité/prix",   icon: "hand-coins" },
 ];
 
 // ─── Sélecteur d'étoiles ──────────────────────────────────────────────────────
@@ -158,7 +159,7 @@ export default function RatingModal({ visible, onClose, onSubmit, providerName, 
           </Text>
           {CRITERIA.map((c) => (
             <View key={c.key} style={styles.criteriaRow}>
-              <Text style={styles.criteriaIcon}>{c.icon}</Text>
+              <Icon name={c.icon} size={16} color={colors.primary} weight="duotone" />
               <Text style={styles.criteriaLabel}>{c.label}</Text>
               <StarSelector
                 value={criteriaValues[c.key]}
@@ -224,7 +225,6 @@ const styles = StyleSheet.create({
 
   // Ligne critère : icône + libellé + étoiles
   criteriaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  criteriaIcon:  { fontSize: 16, width: 24, textAlign: "center" },
   criteriaLabel: { fontSize: 13, color: "#555", flex: 1 },
 
   commentInput: {

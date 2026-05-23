@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { AVATAR_COLORS } from "../../constants/services";
 import { colors } from "../../theme";
 
-export default function ConversationItem({ conversation, onPress }) {
+function ConversationItem({ conversation, onPress }) {
   const { otherUser, lastMessage, lastMessageAt, lastSenderIsMe, unreadCount } = conversation;
   const hasUnread = unreadCount > 0;
 
@@ -103,3 +103,5 @@ const s = StyleSheet.create({
   },
   badgeText: { fontSize: 11, fontWeight: "800", color: "#fff" },
 });
+
+export default React.memo(ConversationItem);

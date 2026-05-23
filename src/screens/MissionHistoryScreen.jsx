@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -15,7 +16,8 @@ import { StatusBar } from "expo-status-bar";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../config/supabase";
 import { SERVICES } from "../constants/services";
-import { colors } from "../theme";
+import Icon from "../components/ui/Icon";
+import { colors, radius } from "../theme";
 
 const STATUS_CONFIG = {
   pending:     { label: "En attente",  color: "#F59E0B", bg: "#FFF8E8" },
@@ -41,7 +43,7 @@ function MissionItem({ item }) {
       <View style={styles.cardTop}>
         <View style={styles.cardLeft}>
           <View style={styles.svcIcon}>
-            <Text style={{ fontSize: 18 }}>{svc?.icon || "📋"}</Text>
+            <Icon name={svc?.icon || "clipboard-text"} size={18} color={colors.primary} weight="duotone" />
           </View>
           <View style={styles.cardInfo}>
             <Text style={styles.cardTitle} numberOfLines={1}>
@@ -75,7 +77,8 @@ export default function MissionHistoryScreen({ navigation }) {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) { setLoading(false); return; }
 
       const { data: userData } = await supabase
@@ -121,15 +124,17 @@ export default function MissionHistoryScreen({ navigation }) {
     <View style={styles.root}>
       <StatusBar style="light" />
 
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-          <Ionicons name="chevron-back" size={20} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Historique des missions</Text>
-        <View style={styles.countBadge}>
-          <Text style={styles.countBadgeText}>{missions.length}</Text>
+      <SafeAreaView style={styles.headerSafe}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
+            <Ionicons name="chevron-back" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Historique des missions</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countBadgeText}>{missions.length}</Text>
+          </View>
         </View>
-      </View>
+      </SafeAreaView>
 
       {/* Filtres */}
       <View style={styles.filtersRow}>
@@ -170,11 +175,12 @@ export default function MissionHistoryScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: colors.surface },
   loader: {
     flex: 1, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
   },
+  headerSafe: { backgroundColor: colors.headerBg },
   header: {
     flexDirection: "row", alignItems: "center",
     paddingHorizontal: 16, paddingBottom: 14, paddingTop: 12, gap: 12,
@@ -184,56 +190,56 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.1)",
     alignItems: "center", justifyContent: "center",
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: "700", color: "#fff" },
+  headerTitle: { flex: 1, fontSize: 17, fontWeight: "700", color: colors.headerText },
   countBadge: {
     minWidth: 22, height: 22, borderRadius: 11,
     backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center", justifyContent: "center",
     paddingHorizontal: 6,
   },
-  countBadgeText: { fontSize: 11, fontWeight: "800", color: "#fff" },
+  countBadgeText: { fontSize: 11, fontWeight: "800", color: colors.headerText },
 
   filtersRow: {
     flexDirection: "row",
     gap: 8, paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: "#F4F6F5",
+    backgroundColor: colors.surface,
   },
   filterChip: {
     paddingVertical: 6, paddingHorizontal: 12,
-    borderRadius: 20, backgroundColor: "#fff",
-    borderWidth: 1.5, borderColor: "#E8E8E8",
+    borderRadius: 20, backgroundColor: colors.card,
+    borderWidth: 1.5, borderColor: colors.border,
   },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterText: { fontSize: 12, fontWeight: "600", color: "#555" },
-  filterTextActive: { color: "#fff" },
+  filterText: { fontSize: 12, fontWeight: "600", color: colors.textSecondary },
+  filterTextActive: { color: colors.textInverse },
 
   list: { padding: 16, gap: 10, paddingBottom: 30 },
 
   card: {
-    backgroundColor: "#fff", borderRadius: 14,
+    backgroundColor: colors.card, borderRadius: radius.md,
     padding: 14, gap: 10,
-    borderWidth: 1, borderColor: "#EEF0EF",
+    borderWidth: 1, borderColor: colors.borderLight,
   },
   cardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   cardLeft: { flexDirection: "row", alignItems: "center", gap: 10, flex: 1 },
   svcIcon: {
-    width: 42, height: 42, borderRadius: 12,
-    backgroundColor: "#F0FAF6", alignItems: "center", justifyContent: "center",
+    width: 42, height: 42, borderRadius: radius.md,
+    backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center",
   },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: "#111" },
-  cardSub: { fontSize: 12, color: "#888", marginTop: 2 },
+  cardTitle: { fontSize: 14, fontWeight: "700", color: colors.textPrimary },
+  cardSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   badge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 20, flexShrink: 0 },
   badgeText: { fontSize: 11, fontWeight: "700" },
   cardBottom: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-    borderTopWidth: 1, borderTopColor: "#F5F5F5", paddingTop: 8,
+    borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: 8,
   },
-  cardDate: { fontSize: 11, color: "#AAB0B7" },
+  cardDate: { fontSize: 11, color: colors.textMuted },
   cardBudget: { fontSize: 12, fontWeight: "700", color: colors.primary },
 
   empty: { alignItems: "center", paddingTop: 80, gap: 12, paddingHorizontal: 32 },
-  emptyTitle: { fontSize: 16, fontWeight: "700", color: "#333" },
-  emptySub: { fontSize: 13, color: "#888", textAlign: "center", lineHeight: 20 },
+  emptyTitle: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },
+  emptySub: { fontSize: 13, color: colors.textSecondary, textAlign: "center", lineHeight: 20 },
 });

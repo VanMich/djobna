@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useCallback, useState } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet, FlatList,
-  KeyboardAvoidingView, Platform, Alert, Animated,
+  KeyboardAvoidingView, Platform, Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { StatusBar } from "expo-status-bar";
@@ -12,6 +12,8 @@ import MessageBubble from "../components/chat/MessageBubble";
 import DevisCard from "../components/chat/DevisCard";
 import ChatInput from "../components/chat/ChatInput";
 import RatingModal from "../components/reviews/RatingModal";
+import { SkeletonChatBubbles } from "../components/ui";
+import Icon from "../components/ui/Icon";
 import { supabase } from "../config/supabase";
 import { colors } from "../theme";
 
@@ -32,28 +34,31 @@ export default function ChatScreen({ navigation, route }) {
   const { submitReview } = useReviews(providerId);
 
   useEffect(() => {
+    let active = true;
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (user && active) {
         const { data: myData } = await supabase.from("users")
           .select("active_role").eq("id", user.id).single();
-        if (myData) setUserRole(myData.active_role);
+        if (active && myData) setUserRole(myData.active_role);
         const { data: provSub } = await supabase.from("providers")
           .select("subscription_plan").eq("id", user.id).maybeSingle();
-        if (provSub) setIsPremium(provSub.subscription_plan === "premium");
+        if (active && provSub) setIsPremium(provSub.subscription_plan === "premium");
       }
-      if (!otherUserId) return;
-      const { data: otherData } = await supabase.from("users")
+      if (!otherUserId || !active) return;
+      const { data: otherData } = await supabase.from("public_users")
         .select("display_name, photo_url, role").eq("id", otherUserId).single();
-      const { data: providerData } = await supabase.from("providers")
+      const { data: providerData } = await supabase.from("public_providers")
         .select("services").eq("id", otherUserId).maybeSingle();
-      if (otherData) {
+      if (active && otherData) {
         setOtherUser({
           displayName: otherData.display_name, photoURL: otherData.photo_url,
           services: providerData?.services || null, role: otherData.role,
         });
       }
     })();
+    return () => { active = false; };
   }, [otherUserId]);
 
   const {
@@ -74,22 +79,36 @@ export default function ChatScreen({ navigation, route }) {
   }, [messages.length]);
 
   const handleConfirmAndRate = useCallback(async () => {
-    await confirmComplete();
-    if (providerId) setRatingModalVisible(true);
+    try {
+      await confirmComplete();
+      if (providerId) setRatingModalVisible(true);
+    } catch (err) {
+      console.error("Erreur confirmation mission:", err);
+      Alert.alert("Erreur", "Impossible de confirmer la fin de la mission. Réessayez.");
+    }
   }, [confirmComplete, providerId]);
 
   const handleSubmitRating = useCallback(async (ratingData) => {
-    if (!currentUserId || !requestId) return;
+    if (!currentUserId || !requestId) {
+      Alert.alert("Erreur", "Données manquantes pour soumettre l'avis. Réessayez plus tard.");
+      return;
+    }
     setRatingLoading(true);
-    const { data: userData } = await supabase.from("users")
-      .select("display_name").eq("id", currentUserId).single();
-    const result = await submitReview({
-      ...ratingData, requestId, clientId: currentUserId,
-      authorName: userData?.display_name || "Client",
-    });
-    setRatingLoading(false);
-    if (result.success) { setRatingModalVisible(false); Alert.alert("Merci !", "Votre avis a été publié."); }
-    else Alert.alert("Erreur", "Impossible de publier l'avis.");
+    try {
+      const { data: userData } = await supabase.from("users")
+        .select("display_name").eq("id", currentUserId).single();
+      const result = await submitReview({
+        ...ratingData, requestId, clientId: currentUserId,
+        authorName: userData?.display_name || "Client",
+      });
+      setRatingLoading(false);
+      if (result.success) { setRatingModalVisible(false); Alert.alert("Merci !", "Votre avis a été publié."); }
+      else Alert.alert("Erreur", "Impossible de publier l'avis. Réessayez.");
+    } catch (err) {
+      console.error("Erreur soumission avis:", err);
+      setRatingLoading(false);
+      Alert.alert("Erreur", "Impossible de publier l'avis. Réessayez.");
+    }
   }, [submitReview, requestId, currentUserId]);
 
   const scrollToBottom = () => flatListRef.current?.scrollToEnd({ animated: true });
@@ -173,27 +192,31 @@ export default function ChatScreen({ navigation, route }) {
         behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={0}
       >
         <View style={st.flex}>
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            keyExtractor={(item) => item.id}
-            renderItem={renderMessage}
-            contentContainerStyle={st.list}
-            showsVerticalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={200}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-            ListEmptyComponent={!loading && (
-              <View style={st.emptyChat}>
-                <View style={st.emptyChatBubble}>
-                  <Text style={st.emptyEmoji}>💬</Text>
+          {loading ? (
+            <SkeletonChatBubbles />
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              keyExtractor={(item) => item.id}
+              renderItem={renderMessage}
+              contentContainerStyle={st.list}
+              showsVerticalScrollIndicator={false}
+              onScroll={handleScroll}
+              scrollEventThrottle={200}
+              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
+              ListEmptyComponent={
+                <View style={st.emptyChat}>
+                  <View style={st.emptyChatBubble}>
+                    <Icon name="chat-teardrop-dots" size={36} color="#CCC" weight="duotone" />
+                  </View>
+                  <Text style={st.emptyText}>Envoyez un message pour commencer</Text>
                 </View>
-                <Text style={st.emptyText}>Envoyez un message pour commencer</Text>
-              </View>
-            )}
-          />
+              }
+            />
+          )}
 
-          {showScrollBtn && (
+          {showScrollBtn && !loading && (
             <TouchableOpacity style={st.scrollBtn} onPress={scrollToBottom} activeOpacity={0.8}>
               <Ionicons name="chevron-down" size={20} color="#fff" />
             </TouchableOpacity>
@@ -260,7 +283,6 @@ const st = StyleSheet.create({
     width: 80, height: 80, borderRadius: 40,
     backgroundColor: "rgba(255,255,255,0.8)", alignItems: "center", justifyContent: "center",
   },
-  emptyEmoji: { fontSize: 36 },
   emptyText: { fontSize: 13, color: "#888" },
 
   scrollBtn: {

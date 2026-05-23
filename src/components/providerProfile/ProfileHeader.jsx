@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { AVATAR_COLORS, SERVICES } from "../../constants/services";
+import Icon from "../ui/Icon";
 import { colors } from "../../theme";
 
 function getRating(provider) {
@@ -34,17 +35,19 @@ export default function ProfileHeader({
   const serviceLabels = (provider?.services || [])
     .map((id) => SERVICES.find((s) => s.id === id))
     .filter(Boolean)
-    .map((s) => `${s.icon} ${s.label}`)
+    .map((s) => s.label)
     .join(" · ");
 
   const rating = getRating(provider);
 
   const stats = [
-    { value: rating > 0 ? `${rating.toFixed(1)} ⭐` : "-", label: "Note" },
+    { value: rating > 0 ? `${rating.toFixed(1)}` : "-", label: "Note", hasIcon: true },
     { value: provider?.reviewCount || 0, label: "Avis" },
     { value: provider?.completedJobs || 0, label: "Missions" },
     {
-      value: provider?.yearsOfExperience ? `${provider.yearsOfExperience} ans` : "-",
+      value: provider?.yearsOfExperience
+        ? `${provider.yearsOfExperience} ${provider.yearsOfExperience > 1 ? "ans" : "an"}`
+        : "-",
       label: "Expér.",
     },
   ];
@@ -107,10 +110,13 @@ export default function ProfileHeader({
           {serviceLabels ? (
             <Text style={styles.services} numberOfLines={1}>{serviceLabels}</Text>
           ) : null}
-          <Text style={styles.location}>
-            📍 {provider?.quartier || "Douala"}
-            {isVerified ? " · ✓ Vérifié" : ""}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Icon name="map-pin" size={12} color={colors.headerSubtext} weight="fill" />
+            <Text style={styles.location}>
+              {provider?.quartier || "Douala"}
+              {isVerified ? " · Vérifié" : ""}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -133,7 +139,10 @@ export default function ProfileHeader({
             key={s.label}
             style={[styles.statItem, i < arr.length - 1 && styles.statItemBorder]}
           >
-            <Text style={styles.statValue}>{s.value}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+              <Text style={styles.statValue}>{s.value}</Text>
+              {s.hasIcon && <Icon name="star" size={12} color="#F59E0B" weight="fill" />}
+            </View>
             <Text style={styles.statLabel}>{s.label}</Text>
           </View>
         ))}
@@ -144,7 +153,7 @@ export default function ProfileHeader({
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.headerBg,
     paddingHorizontal: 16,
     paddingTop: 6,
     paddingBottom: 12,

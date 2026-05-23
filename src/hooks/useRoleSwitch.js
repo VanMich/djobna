@@ -20,8 +20,8 @@ export function useRoleSwitch() {
   useEffect(() => {
     let active = true;
 
-    supabase.auth.getUser().then(({ data }) => {
-      const uid = data?.user?.id;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const uid = session?.user?.id;
       if (!uid) { setProviderStatus(null); return; }
 
       const fetchStatus = () =>
@@ -67,7 +67,8 @@ export function useRoleSwitch() {
   const switchRole = async (role) => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return { success: false };
 
       const { error } = await supabase

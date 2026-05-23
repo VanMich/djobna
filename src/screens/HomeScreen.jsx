@@ -13,9 +13,11 @@ import {
   View,
 } from "react-native";
 import { supabase } from "../config/supabase";
-import { AVATAR_COLORS, PRICE_RANGES, SERVICES, QUARTIERS_DOUALA } from "../constants/services";
+import { PRICE_RANGES, SERVICES, QUARTIERS_DOUALA } from "../constants/services";
 import { useProviders } from "../hooks/useProviders";
-import { colors, radius, spacing } from "../theme";
+import { Avatar, SkeletonList, EmptyState, PremiumBadge, VerifiedBadge, StatusDot } from "../components/ui";
+import Icon from "../components/ui/Icon";
+import { colors, radius, spacing, shadows, typography } from "../theme";
 
 const PANEL_H = 290;
 const RATING_OPTIONS = [0, 3, 4, 4.5];
@@ -57,25 +59,23 @@ export default function HomeScreen({ navigation }) {
     searchQuery,
   });
 
-  // ── Infos utilisateur ─────────────────────────────────
-  // Remplace auth.currentUser (synchrone Firebase) + user.displayName
-  // display_name est stocké dans la table users, pas dans supabase.auth
+  // ── Infos utilisateur (getSession au lieu de getUser) ──
   const [firstName, setFirstName] = useState("vous");
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) return;
       const { data } = await supabase
         .from("users")
         .select("display_name")
-        .eq("id", user.id)
+        .eq("id", session.user.id)
         .single();
       if (data?.display_name) setFirstName(data.display_name.split(" ")[0]);
     })();
   }, []);
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Bonjour 👋" : hour < 18 ? "Bon après-midi 👋" : "Bonsoir 👋";
+  const greetingText =
+    hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
   // ── Animations ─────────────────────────────────────────
   const panelHeight  = useRef(new Animated.Value(0)).current;
@@ -83,7 +83,6 @@ export default function HomeScreen({ navigation }) {
   const listAnim     = useRef(new Animated.Value(0)).current;
   const badgeScale   = useRef(new Animated.Value(1)).current;
 
-  // Animation d'entrée de la liste quand le chargement termine
   useEffect(() => {
     if (!loading) {
       listAnim.setValue(0);
@@ -96,7 +95,6 @@ export default function HomeScreen({ navigation }) {
     }
   }, [loading, providers.length]);
 
-  // Animation du badge quand les filtres changent
   useEffect(() => {
     if (activeFilterCount > 0) {
       Animated.sequence([
@@ -151,11 +149,14 @@ export default function HomeScreen({ navigation }) {
           {/* Ligne salutation + cloche */}
           <View style={styles.topRow}>
             <View>
-              <Text style={styles.greetingText}>{greeting}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Text style={styles.greetingText}>{greetingText}</Text>
+                <Icon name="hand-waving" size={14} color={colors.headerSubtext} weight="fill" />
+              </View>
               <Text style={styles.userNameText}>{firstName}</Text>
             </View>
             <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8}>
-              <Ionicons name="notifications" size={20} color={colors.textLight} />
+              <Ionicons name="notifications" size={20} color={colors.headerIcon} />
               <View style={styles.notifBadge}>
                 <Text style={styles.notifBadgeText}>2</Text>
               </View>
@@ -169,14 +170,14 @@ export default function HomeScreen({ navigation }) {
               <TextInput
                 style={styles.searchInput}
                 placeholder="Rechercher un prestataire…"
-                placeholderTextColor="rgba(159,225,203,0.5)"
+                placeholderTextColor={colors.headerMuted}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 returnKeyType="search"
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Ionicons name="close-circle" size={16} color={colors.textLight} />
+                  <Ionicons name="close-circle" size={16} color={colors.headerIcon} />
                 </TouchableOpacity>
               )}
             </View>
@@ -187,7 +188,7 @@ export default function HomeScreen({ navigation }) {
               activeOpacity={0.85}
             >
               <Animated.View style={{ transform: [{ rotate: iconRotation }] }}>
-                <Ionicons name="options" size={20} color={filterOpen ? "#fff" : colors.textLight} />
+                <Ionicons name="options" size={20} color={filterOpen ? colors.textInverse : colors.headerIcon} />
               </Animated.View>
               {activeFilterCount > 0 && (
                 <Animated.View style={[styles.filterBadge, { transform: [{ scale: badgeScale }] }]}>
@@ -212,7 +213,10 @@ export default function HomeScreen({ navigation }) {
               <TouchableOpacity
                 style={[styles.chip, !activeService && styles.chipActive]}
                 onPress={() => setActiveService(null)} activeOpacity={0.8}>
-                <Text style={[styles.chipText, !activeService && styles.chipTextActive]}>🌟 Tous</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Icon name="sparkle" size={14} color={!activeService ? "#fff" : "#555"} weight="fill" />
+                  <Text style={[styles.chipText, !activeService && styles.chipTextActive]}>Tous</Text>
+                </View>
               </TouchableOpacity>
               {SERVICES.map((svc) => (
                 <TouchableOpacity
@@ -220,9 +224,12 @@ export default function HomeScreen({ navigation }) {
                   style={[styles.chip, activeService === svc.id && styles.chipActive]}
                   onPress={() => setActiveService(activeService === svc.id ? null : svc.id)}
                   activeOpacity={0.8}>
-                  <Text style={[styles.chipText, activeService === svc.id && styles.chipTextActive]}>
-                    {svc.icon} {svc.label.split(" ")[0]}
-                  </Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                    <Icon name={svc.icon} size={14} color={activeService === svc.id ? "#fff" : "#555"} weight="duotone" />
+                    <Text style={[styles.chipText, activeService === svc.id && styles.chipTextActive]}>
+                      {svc.label.split(" ")[0]}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -233,7 +240,10 @@ export default function HomeScreen({ navigation }) {
               <TouchableOpacity
                 style={[styles.chip, !activeQuartier && styles.chipActive]}
                 onPress={() => setActiveQuartier(null)} activeOpacity={0.8}>
-                <Text style={[styles.chipText, !activeQuartier && styles.chipTextActive]}>📍 Tous</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Icon name="map-pin" size={14} color={!activeQuartier ? "#fff" : "#555"} weight="fill" />
+                  <Text style={[styles.chipText, !activeQuartier && styles.chipTextActive]}>Tous</Text>
+                </View>
               </TouchableOpacity>
               {QUARTIERS_DOUALA.map((q) => (
                 <TouchableOpacity
@@ -262,7 +272,7 @@ export default function HomeScreen({ navigation }) {
                   style={[styles.ratingChip, activeRating === val && styles.ratingChipActive]}
                   onPress={() => setActiveRating(val)}
                   activeOpacity={0.8}>
-                  {val > 0 && <Ionicons name="star" size={11} color={activeRating === val ? "#fff" : colors.star} />}
+                  {val > 0 && <Ionicons name="star" size={11} color={activeRating === val ? colors.textInverse : colors.star} />}
                   <Text style={[styles.ratingChipText, activeRating === val && styles.ratingChipTextActive]}>
                     {RATING_LABELS[i]}
                   </Text>
@@ -291,8 +301,8 @@ export default function HomeScreen({ navigation }) {
           </View>
           {activeService && (
             <TouchableOpacity style={styles.activeTag} onPress={() => setActiveService(null)} activeOpacity={0.8}>
+              <Icon name={SERVICES.find((s) => s.id === activeService)?.icon || "wrench"} size={12} color={colors.primary} weight="duotone" />
               <Text style={styles.activeTagText}>
-                {SERVICES.find((s) => s.id === activeService)?.icon}{" "}
                 {SERVICES.find((s) => s.id === activeService)?.label.split(" ")[0]}
               </Text>
               <Ionicons name="close" size={11} color={colors.primary} />
@@ -300,13 +310,15 @@ export default function HomeScreen({ navigation }) {
           )}
           {activeQuartier && (
             <TouchableOpacity style={styles.activeTag} onPress={() => setActiveQuartier(null)} activeOpacity={0.8}>
-              <Text style={styles.activeTagText}>📍 {activeQuartier}</Text>
+              <Icon name="map-pin" size={12} color={colors.primary} weight="fill" />
+              <Text style={styles.activeTagText}>{activeQuartier}</Text>
               <Ionicons name="close" size={11} color={colors.primary} />
             </TouchableOpacity>
           )}
           {activeRating > 0 && (
             <TouchableOpacity style={styles.activeTag} onPress={() => setActiveRating(0)} activeOpacity={0.8}>
-              <Text style={styles.activeTagText}>⭐ {activeRating}+</Text>
+              <Icon name="star" size={12} color={colors.primary} weight="fill" />
+              <Text style={styles.activeTagText}>{activeRating}+</Text>
               <Ionicons name="close" size={11} color={colors.primary} />
             </TouchableOpacity>
           )}
@@ -324,9 +336,13 @@ export default function HomeScreen({ navigation }) {
 
         {/* Liste */}
         {loading ? (
-          <SkeletonList />
+          <SkeletonList count={3} />
         ) : providers.length === 0 ? (
-          <EmptyState />
+          <EmptyState
+            icon="magnifying-glass"
+            title="Aucun prestataire trouvé"
+            subtitle="Essayez d'autres filtres ou revenez plus tard."
+          />
         ) : (
           <Animated.View style={{ opacity: listAnim, transform: [{ translateY: listTranslate }] }}>
             {providers.map((provider, index) => (
@@ -349,7 +365,6 @@ function ProviderCard({ provider, index, onPress }) {
   const anim  = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(1)).current;
 
-  // Entrée décalée (stagger) selon l'index
   useEffect(() => {
     Animated.spring(anim, {
       toValue: 1,
@@ -362,10 +377,6 @@ function ProviderCard({ provider, index, onPress }) {
 
   const onPressIn  = () => Animated.spring(scale, { toValue: 0.97, useNativeDriver: true, tension: 300 }).start();
   const onPressOut = () => Animated.spring(scale, { toValue: 1,    useNativeDriver: true, tension: 300 }).start();
-
-  const avatarColor = AVATAR_COLORS[provider.services?.[0]] || colors.primary;
-  const initials = (provider.displayName || "??")
-    .split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 
   const mainService = SERVICES.find((s) => s.id === provider.services?.[0]);
   const extraCount  = (provider.services?.length || 1) - 1;
@@ -385,12 +396,15 @@ function ProviderCard({ provider, index, onPress }) {
         onPressOut={onPressOut}
         activeOpacity={1}
       >
-        {/* Avatar */}
+        {/* Avatar — utilise le composant partagé */}
         <View style={styles.avatarWrap}>
-          <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
-          <View style={styles.availDot} />
+          <Avatar
+            name={provider.displayName}
+            photoURL={provider.photoURL}
+            size={54}
+            service={provider.services?.[0]}
+          />
+          <StatusDot status="online" size={13} style={styles.availDot} />
         </View>
 
         {/* Contenu */}
@@ -399,26 +413,23 @@ function ProviderCard({ provider, index, onPress }) {
           <View style={styles.cardNameRow}>
             <Text style={styles.cardName} numberOfLines={1}>{provider.displayName}</Text>
             <View style={styles.badgesRow}>
-              {isPremium && (
-                <View style={styles.badgePremium}>
-                  <Text style={styles.badgePremiumText}>⭐ Pro</Text>
-                </View>
-              )}
+              {isPremium && <PremiumBadge />}
               {provider.verificationStatus === "approved" && !isPremium && (
-                <View style={styles.badgeVerified}>
-                  <Text style={styles.badgeVerifiedText}>✓</Text>
-                </View>
+                <VerifiedBadge size={18} />
               )}
             </View>
           </View>
 
           {/* Service + quartier */}
-          <Text style={styles.cardSub} numberOfLines={1}>
-            {mainService?.icon} {mainService?.label}
-            {extraCount > 0 ? `  +${extraCount}` : ""}
-            {"  ·  "}
-            <Text style={styles.cardQuartier}>{provider.quartier || "Douala"}</Text>
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            {mainService?.icon && <Icon name={mainService.icon} size={12} color={colors.primary} weight="duotone" />}
+            <Text style={styles.cardSub} numberOfLines={1}>
+              {mainService?.label}
+              {extraCount > 0 ? `  +${extraCount}` : ""}
+              {"  ·  "}
+              <Text style={styles.cardQuartier}>{provider.quartier || "Douala"}</Text>
+            </Text>
+          </View>
 
           {/* Note + prix */}
           <View style={styles.cardFooter}>
@@ -430,8 +441,8 @@ function ProviderCard({ provider, index, onPress }) {
               </View>
             ) : (
               <View style={styles.ratingPill}>
-                <Ionicons name="star-outline" size={10} color="#CCC" />
-                <Text style={[styles.ratingVal, { color: "#CCC" }]}>Nouveau</Text>
+                <Ionicons name="star-outline" size={10} color={colors.textMuted} />
+                <Text style={[styles.ratingVal, { color: colors.textMuted }]}>Nouveau</Text>
               </View>
             )}
             <View style={styles.pricePill}>
@@ -440,70 +451,16 @@ function ProviderCard({ provider, index, onPress }) {
           </View>
         </View>
 
-        <Ionicons name="chevron-forward" size={16} color="#DDD" />
+        <Ionicons name="chevron-forward" size={16} color={colors.disabled} />
       </TouchableOpacity>
     </Animated.View>
-  );
-}
-
-// ── Skeleton de chargement ─────────────────────────────
-function SkeletonCard() {
-  const shimmer = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-
-  const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.4, 0.85] });
-  return (
-    <Animated.View style={[styles.skeletonCard, { opacity }]}>
-      <View style={styles.skeletonAvatar} />
-      <View style={styles.skeletonBody}>
-        <View style={styles.skeletonLine} />
-        <View style={[styles.skeletonLine, { width: "60%", marginTop: 8 }]} />
-        <View style={[styles.skeletonLine, { width: "40%", marginTop: 8 }]} />
-      </View>
-    </Animated.View>
-  );
-}
-
-function SkeletonList() {
-  return (
-    <View style={{ gap: 12 }}>
-      {[1, 2, 3].map((i) => <SkeletonCard key={i} />)}
-    </View>
-  );
-}
-
-// ── État vide ──────────────────────────────────────────
-function EmptyState() {
-  const bounce = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(bounce, { toValue: -8, duration: 700, useNativeDriver: true }),
-        Animated.timing(bounce, { toValue: 0,  duration: 700, useNativeDriver: true }),
-      ])
-    ).start();
-  }, []);
-
-  return (
-    <View style={styles.empty}>
-      <Animated.Text style={[styles.emptyIcon, { transform: [{ translateY: bounce }] }]}>🔍</Animated.Text>
-      <Text style={styles.emptyTitle}>Aucun prestataire trouvé</Text>
-      <Text style={styles.emptySub}>Essayez d'autres filtres ou revenez plus tard.</Text>
-    </View>
   );
 }
 
 // ── Styles ─────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  headerSafe: { backgroundColor: colors.background },
+  headerSafe: { backgroundColor: colors.headerBg },
 
   header: {
     paddingHorizontal: spacing.md,
@@ -511,11 +468,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
-  greetingText: { fontSize: 12, color: colors.green300, fontWeight: "600", letterSpacing: 0.3 },
-  userNameText: { fontSize: 24, fontWeight: "800", color: "#fff", letterSpacing: -0.5 },
+  greetingText: { fontSize: 12, color: colors.headerSubtext, fontWeight: "600", letterSpacing: 0.3 },
+  userNameText: { fontSize: 24, fontWeight: "800", color: colors.headerText, letterSpacing: -0.5 },
 
   notifBtn: {
-    width: 44, height: 44, borderRadius: 14,
+    width: 44, height: 44, borderRadius: radius.md,
     backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center", justifyContent: "center",
   },
@@ -524,22 +481,22 @@ const styles = StyleSheet.create({
     width: 14, height: 14, borderRadius: 7,
     backgroundColor: colors.error,
     alignItems: "center", justifyContent: "center",
-    borderWidth: 1.5, borderColor: colors.background,
+    borderWidth: 1.5, borderColor: colors.headerBg,
   },
-  notifBadgeText: { fontSize: 7, fontWeight: "800", color: "#fff" },
+  notifBadgeText: { fontSize: 7, fontWeight: "800", color: colors.textInverse },
 
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   searchWrap: {
     flex: 1, flexDirection: "row", alignItems: "center", gap: 10,
     backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: 14, paddingHorizontal: 14, height: 48,
+    borderRadius: radius.md, paddingHorizontal: 14, height: 48,
     borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
   },
   searchIcon: { opacity: 0.8 },
-  searchInput: { flex: 1, fontSize: 14, color: "#fff", fontWeight: "500" },
+  searchInput: { flex: 1, fontSize: 14, color: colors.headerText, fontWeight: "500" },
 
   filterBtn: {
-    width: 48, height: 48, borderRadius: 14,
+    width: 48, height: 48, borderRadius: radius.md,
     backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
     alignItems: "center", justifyContent: "center",
@@ -550,9 +507,9 @@ const styles = StyleSheet.create({
     width: 18, height: 18, borderRadius: 9,
     backgroundColor: colors.error,
     alignItems: "center", justifyContent: "center",
-    borderWidth: 2, borderColor: colors.background,
+    borderWidth: 2, borderColor: colors.headerBg,
   },
-  filterBadgeText: { fontSize: 9, fontWeight: "800", color: "#fff" },
+  filterBadgeText: { fontSize: 9, fontWeight: "800", color: colors.textInverse },
 
   filterPanel: {
     backgroundColor: "rgba(255,255,255,0.04)",
@@ -561,7 +518,7 @@ const styles = StyleSheet.create({
   },
   filterScroll: { flex: 1 },
   filterScrollContent: { paddingHorizontal: spacing.md, paddingTop: 14, paddingBottom: 16, gap: 8 },
-  filterLabel: { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.35)", letterSpacing: 0.8 },
+  filterLabel: { fontSize: 10, fontWeight: "700", color: colors.headerMuted, letterSpacing: 0.8 },
   chipsRow: { flexDirection: "row", gap: 7, paddingRight: 16 },
   chip: {
     paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20,
@@ -570,10 +527,10 @@ const styles = StyleSheet.create({
   },
   chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
   chipText: { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.7)" },
-  chipTextActive: { color: "#fff" },
+  chipTextActive: { color: colors.textInverse },
 
   ratingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  resetBtn: { fontSize: 12, color: colors.textLight, fontWeight: "600" },
+  resetBtn: { fontSize: 12, color: colors.headerSubtext, fontWeight: "600" },
   ratingBtns: { flexDirection: "row", gap: 8 },
   ratingChip: {
     flexDirection: "row", alignItems: "center", gap: 4,
@@ -583,20 +540,20 @@ const styles = StyleSheet.create({
   },
   ratingChipActive: { backgroundColor: colors.star, borderColor: colors.star },
   ratingChipText: { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.7)" },
-  ratingChipTextActive: { color: "#fff" },
+  ratingChipTextActive: { color: colors.textInverse },
 
-  body: { flex: 1, backgroundColor: "#F2F4F3" },
+  body: { flex: 1, backgroundColor: colors.surface },
   bodyContent: { padding: spacing.md, paddingBottom: 40, gap: 10 },
 
   statsRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 2 },
   statPill: {
     flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: "#fff", borderRadius: 20,
+    backgroundColor: colors.card, borderRadius: 20,
     paddingVertical: 6, paddingHorizontal: 12,
-    borderWidth: 1, borderColor: "#E8EDE8",
+    borderWidth: 1, borderColor: colors.borderLight,
   },
   statDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary },
-  statText: { fontSize: 12, color: "#555" },
+  statText: { fontSize: 12, color: colors.textSecondary },
   statNum: { fontWeight: "700", color: colors.primary },
   activeTag: {
     flexDirection: "row", alignItems: "center", gap: 5,
@@ -607,75 +564,40 @@ const styles = StyleSheet.create({
   activeTagText: { fontSize: 11, fontWeight: "600", color: colors.primary },
 
   sectionHeader: { marginBottom: 2 },
-  sectionTitle: { fontSize: 17, fontWeight: "800", color: "#111", letterSpacing: -0.3 },
+  sectionTitle: { ...typography.h3, letterSpacing: -0.3 },
 
   cardWrap: { marginBottom: 2 },
   card: {
-    backgroundColor: "#fff", borderRadius: 20,
+    backgroundColor: colors.card, borderRadius: radius.xl,
     padding: 14, flexDirection: "row", alignItems: "center", gap: 13,
-    borderWidth: 1, borderColor: "#EEF0EF",
-    shadowColor: "#000", shadowOpacity: 0.06,
-    shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    borderWidth: 1, borderColor: colors.borderLight,
+    ...shadows.sm,
   },
   avatarWrap: { position: "relative" },
-  avatar: {
-    width: 54, height: 54, borderRadius: 16,
-    alignItems: "center", justifyContent: "center",
-  },
-  avatarText: { fontSize: 18, fontWeight: "800", color: "#fff" },
   availDot: {
     position: "absolute", bottom: 0, right: 0,
-    width: 13, height: 13, borderRadius: 7,
-    backgroundColor: "#22C55E",
-    borderWidth: 2, borderColor: "#fff",
+    borderColor: colors.card,
   },
 
   cardBody: { flex: 1, gap: 3 },
   cardNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  cardName: { fontSize: 14, fontWeight: "700", color: "#111", flex: 1 },
+  cardName: { fontSize: 14, fontWeight: "700", color: colors.textPrimary, flex: 1 },
   badgesRow: { flexDirection: "row", gap: 4 },
-  badgePremium: {
-    backgroundColor: "#FFFBEB", borderRadius: 6,
-    paddingVertical: 2, paddingHorizontal: 6,
-    borderWidth: 1, borderColor: "#FCD34D",
-  },
-  badgePremiumText: { fontSize: 9, fontWeight: "700", color: "#B45309" },
-  badgeVerified: {
-    width: 18, height: 18, borderRadius: 9,
-    backgroundColor: colors.green100,
-    alignItems: "center", justifyContent: "center",
-  },
-  badgeVerifiedText: { fontSize: 10, fontWeight: "800", color: colors.primary },
 
-  cardSub: { fontSize: 12, color: "#888" },
-  cardQuartier: { color: "#666" },
+  cardSub: { fontSize: 12, color: colors.textSecondary },
+  cardQuartier: { color: colors.textSecondary },
   cardFooter: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 2 },
 
   ratingPill: {
     flexDirection: "row", alignItems: "center", gap: 3,
-    backgroundColor: "#FFFBEB", borderRadius: 8,
+    backgroundColor: colors.premiumBg, borderRadius: radius.sm,
     paddingVertical: 3, paddingHorizontal: 7,
   },
   ratingVal: { fontSize: 11, fontWeight: "700", color: "#B45309" },
-  ratingCount: { fontSize: 10, color: "#888" },
+  ratingCount: { fontSize: 10, color: colors.textSecondary },
   pricePill: {
-    backgroundColor: "#F0FAF6", borderRadius: 8,
+    backgroundColor: colors.primaryLight, borderRadius: radius.sm,
     paddingVertical: 3, paddingHorizontal: 7,
   },
   priceText: { fontSize: 10, fontWeight: "600", color: colors.primaryDark },
-
-  skeletonCard: {
-    backgroundColor: "#fff", borderRadius: 20, padding: 14,
-    flexDirection: "row", gap: 13,
-    borderWidth: 1, borderColor: "#EEF0EF",
-  },
-  skeletonAvatar: { width: 54, height: 54, borderRadius: 16, backgroundColor: "#E8E8E8" },
-  skeletonBody: { flex: 1, justifyContent: "center" },
-  skeletonLine: { height: 12, borderRadius: 6, backgroundColor: "#E8E8E8", width: "80%" },
-
-  empty: { alignItems: "center", paddingTop: 60, gap: 12 },
-  emptyIcon: { fontSize: 52 },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: "#333" },
-  emptySub: { fontSize: 13, color: "#888", textAlign: "center", lineHeight: 20, paddingHorizontal: 30 },
 });

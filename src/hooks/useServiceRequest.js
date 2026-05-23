@@ -9,9 +9,7 @@
 //   camelCase Firestore               → snake_case PostgreSQL
 
 import { useState } from "react";
-import { supabase } from "../config/supabase";
-
-const PUSH_URL = "https://bvxrsytdbvhnmnqzcqev.supabase.co/functions/v1/send-push";
+import { supabase, pushNotify } from "../config/supabase";
 
 export function useServiceRequest() {
   const [loading, setLoading] = useState(false);
@@ -32,7 +30,8 @@ export function useServiceRequest() {
 
     try {
       // Remplace auth.currentUser (synchrone Firebase)
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error("Non connecté");
 
       // Récupère le nom et quartier du client
@@ -64,15 +63,7 @@ export function useServiceRequest() {
       if (insertError) throw insertError;
 
       // Notifie le prestataire (fire & forget)
-      fetch(PUSH_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipientId: providerId,
-          title: "🔔 Nouvelle demande",
-          body: `${userData?.display_name || "Un client"} a besoin de vous`,
-        }),
-      }).catch(() => {});
+      pushNotify(providerId, "🔔 Nouvelle demande", `${userData?.display_name || "Un client"} a besoin de vous`);
 
       return { success: true };
     } catch (err) {
