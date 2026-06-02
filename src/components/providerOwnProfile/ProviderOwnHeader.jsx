@@ -1,19 +1,14 @@
 // src/components/providerOwnProfile/ProviderOwnHeader.jsx
+// Partie "body" du header (avatar + infos + stats) — intégrée dans le ScrollView.
+// La topRow (titre + settings) est maintenant gérée directement dans le screen.
 import React from "react";
-import {
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { SERVICES } from "../../constants/services";
 import Icon from "../ui/Icon";
-import { colors } from "../../theme";
+import { colors, fonts, shadows } from "../../theme";
 
-export default function ProviderOwnHeader({ profile, provider, onSettings, onEditPhoto }) {
+export default function ProviderOwnHeader({ profile, provider, onEditPhoto }) {
   const initials = (profile?.displayName || "XX")
     .split(" ")
     .map((n) => n[0])
@@ -41,105 +36,69 @@ export default function ProviderOwnHeader({ profile, provider, onSettings, onEdi
   ];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <View style={styles.topRow}>
-          <Text style={styles.pageTitle}>Mon profil</Text>
-          <TouchableOpacity
-            style={styles.settingsBtn}
-            onPress={onSettings}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="settings-outline" size={20} color="#9FE1CB" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.avatarRow}>
-          <TouchableOpacity
-            style={styles.avatarWrap}
-            onPress={onEditPhoto}
-            activeOpacity={onEditPhoto ? 0.8 : 1}
-          >
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
-            {onEditPhoto && (
-              <View style={styles.editBtn}>
-                <Ionicons name="camera" size={10} color="#555" />
-              </View>
-            )}
-            {provider?.isVerified && !onEditPhoto && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark" size={10} color="#fff" />
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.infoBlock}>
-            <Text style={styles.name}>{profile?.displayName}</Text>
-            {serviceLabels ? (
-              <Text style={styles.services} numberOfLines={1}>
-                {serviceLabels}
-              </Text>
-            ) : null}
-            <Text style={styles.phone}>
-              {profile?.phoneNumber || "+237 -- -- -- -- --"}
-            </Text>
+    <View style={styles.header}>
+      <View style={styles.avatarRow}>
+        <TouchableOpacity
+          style={styles.avatarWrap}
+          onPress={onEditPhoto}
+          activeOpacity={onEditPhoto ? 0.8 : 1}
+        >
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
-        </View>
-
-        <View style={styles.statsBar}>
-          {stats.map((s, i, arr) => (
-            <View
-              key={s.label}
-              style={[
-                styles.statItem,
-                i < arr.length - 1 && styles.statItemBorder,
-              ]}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
-                <Text style={styles.statValue}>{s.value}</Text>
-                {s.hasIcon && <Icon name="star" size={12} color="#F59E0B" weight="fill" />}
-              </View>
-              <Text style={styles.statLabel}>{s.label}</Text>
+          {onEditPhoto && (
+            <View style={styles.editBtn}>
+              <Icon name="camera" size={10} color={colors.ink500} />
             </View>
-          ))}
+          )}
+          {provider?.isVerified && !onEditPhoto && (
+            <View style={styles.verifiedBadge}>
+              <Icon name="check" size={10} color={colors.textInverse} />
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.infoBlock}>
+          <Text style={styles.name}>{profile?.displayName}</Text>
+          {serviceLabels ? (
+            <Text style={styles.services} numberOfLines={1}>
+              {serviceLabels}
+            </Text>
+          ) : null}
+          <Text style={styles.phone}>
+            {profile?.phoneNumber || "+237 -- -- -- -- --"}
+          </Text>
         </View>
       </View>
-    </SafeAreaView>
+
+      <View style={styles.statsBar}>
+        {stats.map((s, i, arr) => (
+          <View
+            key={s.label}
+            style={[
+              styles.statItem,
+              i < arr.length - 1 && styles.statItemBorder,
+            ]}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
+              <Text style={styles.statValue}>{s.value}</Text>
+              {s.hasIcon && <Icon name="star" size={12} color={colors.mango} />}
+            </View>
+            <Text style={styles.statLabel}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.headerBg },
   header: {
-    backgroundColor: colors.headerBg,
+    backgroundColor: colors.background,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    paddingTop: 6,
+    paddingTop: 10,
     gap: 14,
-  },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#fff",
-    letterSpacing: -0.5,
-  },
-  settingsBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,.1)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,.08)",
   },
   avatarRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   avatarWrap: { position: "relative", flexShrink: 0 },
@@ -151,7 +110,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 24, fontWeight: "800", color: "#fff" },
+  avatarText: { fontSize: 24, fontFamily: fonts.extraBold, color: colors.textInverse },
   verifiedBadge: {
     position: "absolute",
     bottom: -3,
@@ -172,25 +131,21 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    ...shadows.sm,
   },
   infoBlock: { flex: 1, gap: 4 },
-  name: { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
-  services: { fontSize: 11, color: "#5DCAA5", fontWeight: "600" },
-  phone: { fontSize: 11, color: "rgba(255,255,255,.4)" },
+  name: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.ink900, letterSpacing: -0.3 },
+  services: { fontSize: 11, color: colors.primary, fontFamily: fonts.semiBold },
+  phone: { fontSize: 11, color: colors.ink300, fontFamily: fonts.medium },
   statsBar: {
     flexDirection: "row",
-    backgroundColor: "rgba(29,158,117,.18)",
+    backgroundColor: colors.primarySoft,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(29,158,117,.2)",
+    borderColor: colors.green200,
     overflow: "hidden",
   },
   statItem: {
@@ -201,13 +156,13 @@ const styles = StyleSheet.create({
   },
   statItemBorder: {
     borderRightWidth: 1,
-    borderRightColor: "rgba(29,158,117,.2)",
+    borderRightColor: colors.green200,
   },
-  statValue: { fontSize: 14, fontWeight: "800", color: "#5DCAA5" },
+  statValue: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primaryDark },
   statLabel: {
     fontSize: 9,
-    fontWeight: "600",
-    color: "rgba(29,158,117,.7)",
+    fontFamily: fonts.semiBold,
+    color: colors.ink500,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },

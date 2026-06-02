@@ -14,6 +14,15 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { supabase } from "../config/supabase";
+import { SERVICES } from "../constants/services";
+import { normalizeText } from "../utils/text";
+
+// Index id de service → texte cherchable (label FR + synonymes), pré-normalisé.
+// Permet de matcher "plombier"/"plomberie"/"fuite" sur un pro dont services=["plumber"].
+const SERVICE_SEARCH_INDEX = SERVICES.reduce((acc, s) => {
+  acc[s.id] = normalizeText([s.label, ...(s.keywords || [])].join(" "));
+  return acc;
+}, {});
 
 // Mappe une ligne provider (snake_case PostgreSQL) vers camelCase pour les screens
 function mapProvider(p) {
@@ -52,31 +61,36 @@ export function useProviders(filters = {}) {
   const { service, quartier, minRating = 0, searchQuery = "" } = filters;
   const [rawProviders, setRawProviders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const activeRef = useRef(false);
+
+  const fetchProviders = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    supabase
+      .from("public_providers")
+      .select("*")
+      .eq("availability", true)
+      .eq("verification_status", "approved")
+      .then(({ data, error: fetchError }) => {
+        if (!activeRef.current) return;
+        if (fetchError) {
+          setError(fetchError);
+          console.error("Erreur chargement prestataires:", fetchError);
+        } else {
+          setRawProviders((data || []).map(mapProvider));
+        }
+        setLoading(false);
+      });
+  }, []);
 
   // Fetch au montage + à chaque fois que l'écran reprend le focus (onglets)
   useFocusEffect(
     useCallback(() => {
       activeRef.current = true;
-      setLoading(true);
-
-      supabase
-        .from("public_providers")
-        .select("*")
-        .eq("availability", true)
-        .eq("verification_status", "approved")
-        .then(({ data, error }) => {
-          if (!activeRef.current) return;
-          if (error) {
-            console.error("Erreur chargement prestataires:", error);
-          } else {
-            setRawProviders((data || []).map(mapProvider));
-          }
-          setLoading(false);
-        });
-
+      fetchProviders();
       return () => { activeRef.current = false; };
-    }, []),
+    }, [fetchProviders]),
   );
 
   // Filtrage côté client : service, quartier, note, recherche textuelle
@@ -99,17 +113,32 @@ export function useProviders(filters = {}) {
     }
 
     if (searchQuery.trim()) {
-      const term = searchQuery.toLowerCase().trim();
+      const term = normalizeText(searchQuery);
       result = result.filter((p) => {
-        const name = (p.displayName || "").toLowerCase();
-        const bio = (p.bio || "").toLowerCase();
-        const services = (p.services || []).join(" ").toLowerCase();
-        return name.includes(term) || bio.includes(term) || services.includes(term);
+        // On construit un "haystack" normalisé (sans accents) regroupant tout
+        // ce sur quoi on accepte de matcher : nom, bio, quartier, et surtout
+        // le label FR + synonymes du métier (et non plus l'ID anglais brut).
+        const haystack = normalizeText([
+          p.displayName,
+          p.bio,
+          p.quartier,
+          ...(p.services || []).map((id) => SERVICE_SEARCH_INDEX[id] || id),
+        ].join(" "));
+        return haystack.includes(term);
       });
     }
+
+    // Tri "confiance" : meilleure note d'abord, puis plus d'avis.
+    // Les pros sans note ("Nouveau") restent visibles, en bas de liste.
+    result = [...result].sort((a, b) => {
+      const ra = a.rating?.global ?? 0;
+      const rb = b.rating?.global ?? 0;
+      if (rb !== ra) return rb - ra;
+      return (b.reviewCount ?? 0) - (a.reviewCount ?? 0);
+    });
 
     return result;
   }, [rawProviders, service, quartier, minRating, searchQuery]);
 
-  return { providers, loading };
+  return { providers, loading, error, refetch: fetchProviders };
 }

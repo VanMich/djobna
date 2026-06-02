@@ -1,4 +1,4 @@
-// src/screens/PhoneScreen.jsx
+﻿// src/screens/PhoneScreen.jsx
 // Écran de saisie du numéro de téléphone
 // → envoie un SMS OTP via Supabase (qui appelle Twilio en arrière-plan)
 //
@@ -22,7 +22,7 @@ import { StatusBar } from "expo-status-bar";
 import { useAuth } from "../hooks/useAuth";
 import { Input, Button } from "../components/ui";
 import Icon from "../components/ui/Icon";
-import { colors, spacing, radius, typography } from "../theme";
+import { colors, spacing, radius, typography, fonts } from "../theme";
 
 export default function PhoneScreen({ navigation }) {
   const [phone, setPhone] = useState("");
@@ -42,7 +42,7 @@ export default function PhoneScreen({ navigation }) {
   const handleSendOTP = async () => {
     const cleaned = phone.replace(/\s/g, "");
     if (cleaned.length !== 9 || !/^\d{9}$/.test(cleaned)) {
-      Alert.alert("Erreur", "Entrez un numéro valide à 9 chiffres");
+      Alert.alert("Numéro invalide", "Entre un numéro valide à 9 chiffres.");
       return;
     }
 
@@ -55,7 +55,7 @@ export default function PhoneScreen({ navigation }) {
         Alert.alert("Erreur", result.message);
       }
     } catch (err) {
-      Alert.alert("Erreur", "Impossible d'envoyer le SMS. Réessayez.");
+      Alert.alert("Oups", "Impossible d'envoyer le SMS. Réessaye.");
     } finally {
       setLoading(false);
     }
@@ -66,13 +66,13 @@ export default function PhoneScreen({ navigation }) {
       style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       <View style={styles.header}>
         <Text style={styles.brand}>Djobna</Text>
-        <Text style={styles.title}>Entrez votre{"\n"}numéro de téléphone</Text>
+        <Text style={styles.title}>Entre ton{"\n"}numéro de téléphone</Text>
         <Text style={styles.subtitle}>
-          Un SMS vous sera envoyé pour confirmer
+          Un SMS te sera envoyé pour confirmer
         </Text>
       </View>
 
@@ -121,8 +121,8 @@ const styles = StyleSheet.create({
     paddingTop: 60,
     gap: spacing.sm,
   },
-  brand: { fontSize: 22, fontWeight: "800", color: colors.primary },
-  title: { fontSize: 24, fontWeight: "700", color: colors.headerText, lineHeight: 32 },
+  brand: { fontSize: 22, fontFamily: fonts.extraBold, color: colors.primary },
+  title: { fontSize: 24, fontFamily: fonts.bold, color: colors.headerText, lineHeight: 32 },
   subtitle: { fontSize: 14, color: colors.headerSubtext },
   body: {
     flex: 1,
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     backgroundColor: colors.background,
   },
-  countryText: { fontSize: 15, fontWeight: "600", color: colors.textPrimary },
+  countryText: { fontSize: 15, fontFamily: fonts.semiBold, color: colors.textPrimary },
   infoBox: {
     backgroundColor: colors.primaryLight,
     borderRadius: radius.md,

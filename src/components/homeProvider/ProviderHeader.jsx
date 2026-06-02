@@ -1,103 +1,70 @@
-// src/components/homeProvider/ProviderHeader.js
+// src/components/homeProvider/ProviderHeader.jsx
 import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import AvailabilityToggle from "./AvailabilityToggle";
-import StatsBar from "./StatsBar";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Icon from "../ui/Icon";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
-export default function ProviderHeader({
-  provider,
-  isAvailable,
-  stats,
-  requestCount,
-  onToggle,
-  onNotif,
-}) {
+export default function ProviderHeader({ provider, requestCount, onNotif }) {
   const hour = new Date().getHours();
   const greetingText =
     hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
-
-  const firstName = provider?.displayName?.split(" ")[0] || "vous";
+  const firstName = provider?.displayName?.split(" ")[0] || "toi";
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        {/* Ligne 1 : Salutation + Notif */}
-        <View style={styles.topRow}>
-          <View style={styles.greetBlock}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Text style={styles.greeting}>{greetingText}</Text>
-              <Icon name="hand-waving" size={14} color="#5DCAA5" weight="fill" />
-            </View>
-            <Text style={styles.name}>{firstName}</Text>
+    <View style={styles.header}>
+      <View style={styles.topRow}>
+        <View style={styles.greetBlock}>
+          <View style={styles.greetRow}>
+            <Text style={styles.greeting}>{greetingText}</Text>
+            <Icon name="hand" size={14} color={colors.primary} />
           </View>
-          <TouchableOpacity
-            style={styles.notifBtn}
-            onPress={onNotif}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="notifications" size={20} color="#9FE1CB" />
-            {/* Badge si demandes non lues */}
-            {requestCount > 0 && (
-              <View style={styles.notifBadge}>
-                <Text style={styles.notifBadgeText}>
-                  {requestCount > 9 ? "9+" : requestCount}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
+          <Text style={styles.name}>{firstName}</Text>
         </View>
-
-        {/* Toggle disponibilité */}
-        <AvailabilityToggle
-          isAvailable={isAvailable}
-          onToggle={onToggle}
-          requestCount={requestCount}
-        />
-
-        {/* Stats du jour */}
-        <StatsBar stats={stats} isAvailable={isAvailable} />
+        <TouchableOpacity
+          style={styles.notifBtn}
+          onPress={onNotif}
+          activeOpacity={0.8}
+        >
+          <Icon name="bell" size={20} color={colors.ink700} />
+          {requestCount > 0 && (
+            <View style={styles.notifBadge}>
+              <Text style={styles.notifBadgeText}>
+                {requestCount > 9 ? "9+" : requestCount}
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.headerBg },
   header: {
-    backgroundColor: colors.headerBg,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    paddingTop: 6,
-    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 6,
   },
   greetBlock: { gap: 2 },
-  greeting: { fontSize: 13, color: "#5DCAA5", fontWeight: "500" },
+  greetRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  greeting: { fontSize: 13, fontFamily: fonts.medium, color: colors.primary, letterSpacing: 0.3 },
   name: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#fff",
+    fontSize: 24,
+    fontFamily: fonts.extraBold,
+    color: colors.ink900,
     letterSpacing: -0.5,
   },
   notifBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 13,
-    backgroundColor: "rgba(255,255,255,.1)",
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.ink50,
+    borderWidth: 1,
+    borderColor: colors.ink100,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -106,15 +73,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 7,
     right: 7,
-    minWidth: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "#E24B4A",
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.error,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: colors.background,
     paddingHorizontal: 2,
   },
-  notifBadgeText: { fontSize: 7, fontWeight: "800", color: "#fff" },
+  notifBadgeText: { fontSize: 8, fontFamily: fonts.extraBold, color: colors.textInverse },
 });

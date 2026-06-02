@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, Animated, StyleSheet } from "react-native";
 import Button from "./Button";
 import Icon from "./Icon";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 /**
  * EmptyState — état vide réutilisable avec icône animée (Phosphor Icons)
@@ -13,7 +13,7 @@ import { colors } from "../../theme";
  *     icon="chat-circle-dots"
  *     title="Pas de messages"
  *     subtitle="Démarrez une conversation"
- *     actionLabel="Trouver un prestataire"
+ *     actionLabel="Trouver un pro"
  *     onAction={() => navigation.navigate("Home")}
  *   />
  */
@@ -47,7 +47,7 @@ export default function EmptyState({
   return (
     <View style={[styles.container, style]}>
       <Animated.View style={{ transform: [{ translateY: bounce }] }}>
-        <Icon name={icon} size={52} color="#CCC" weight="duotone" />
+        <Icon name={icon} size={52} color={colors.ink300} weight="duotone" />
       </Animated.View>
       <Text style={styles.title}>{title}</Text>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     color: colors.textPrimary,
     textAlign: "center",
   },

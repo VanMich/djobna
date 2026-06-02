@@ -1,23 +1,24 @@
-import React, { useCallback, useMemo, useState } from "react";
+﻿import React, { useCallback, useMemo, useState } from "react";
 import { View, StyleSheet, FlatList, ActivityIndicator, Text } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "../components/ui/Icon";
 import { useChatList } from "../hooks/useChatList";
+import ErrorState from "../components/ui/ErrorState";
 import ChatListHeader from "../components/chatList/ChatListHeader";
 import ConversationItem from "../components/chatList/ConversationItem";
-import { colors } from "../theme";
+import { normalizeText } from "../utils/text";
+import { colors, fonts } from "../theme";
 
 export default function ChatListScreen({ navigation }) {
-  const { conversations, loading } = useChatList();
+  const { conversations, loading, error, refetch } = useChatList();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = useMemo(() => {
-    if (!searchQuery) return conversations;
-    const q = searchQuery.toLowerCase().trim();
+    const q = normalizeText(searchQuery);
     if (!q) return conversations;
     return conversations.filter((c) =>
-      c.otherUser?.displayName?.toLowerCase().includes(q) ||
-      c.lastMessage?.toLowerCase().includes(q)
+      normalizeText(c.otherUser?.displayName).includes(q) ||
+      normalizeText(c.lastMessage).includes(q)
     );
   }, [conversations, searchQuery]);
 
@@ -40,13 +41,15 @@ export default function ChatListScreen({ navigation }) {
 
   return (
     <View style={st.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <ChatListHeader searchQuery={searchQuery} onSearchChange={setSearchQuery} />
 
       {loading ? (
         <View style={st.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
+      ) : error ? (
+        <ErrorState onRetry={refetch} message="Impossible de charger tes conversations. Vérifie ta connexion et réessaie." />
       ) : (
         <FlatList
           data={filtered}
@@ -60,18 +63,18 @@ export default function ChatListScreen({ navigation }) {
             <View style={st.empty}>
               {searchQuery ? (
                 <>
-                  <Ionicons name="search-outline" size={44} color="#CCC" />
+                  <Icon name="search-outline" size={44} color={colors.ink300} />
                   <Text style={st.emptyTitle}>Aucun résultat</Text>
                   <Text style={st.emptySub}>Aucune conversation ne correspond à "{searchQuery}"</Text>
                 </>
               ) : (
                 <>
                   <View style={st.emptyIcon}>
-                    <Ionicons name="chatbubbles-outline" size={48} color="#CCC" />
+                    <Icon name="chatbubbles-outline" size={48} color={colors.ink300} />
                   </View>
                   <Text style={st.emptyTitle}>Aucune conversation</Text>
                   <Text style={st.emptySub}>
-                    Contactez un prestataire depuis son profil pour commencer.
+                    Contacte un pro depuis son profil pour commencer.
                   </Text>
                 </>
               )}
@@ -85,15 +88,15 @@ export default function ChatListScreen({ navigation }) {
 
 const st = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  list: { flex: 1, backgroundColor: "#fff" },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#fff" },
+  list: { flex: 1, backgroundColor: colors.card },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.card },
   emptyContainer: { flex: 1 },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: 40, gap: 10 },
   emptyIcon: {
     width: 80, height: 80, borderRadius: 40,
-    backgroundColor: "#F5F5F5", alignItems: "center", justifyContent: "center",
+    backgroundColor: colors.ink50, alignItems: "center", justifyContent: "center",
     marginBottom: 6,
   },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: "#333" },
-  emptySub: { fontSize: 13, color: "#888", textAlign: "center", lineHeight: 20 },
+  emptyTitle: { fontSize: 17, fontFamily: fonts.bold, color: colors.ink700 },
+  emptySub: { fontSize: 13, color: colors.ink500, textAlign: "center", lineHeight: 20 },
 });

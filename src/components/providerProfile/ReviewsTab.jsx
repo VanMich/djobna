@@ -1,4 +1,4 @@
-// src/components/providerProfile/ReviewsTab.jsx
+﻿// src/components/providerProfile/ReviewsTab.jsx
 //
 // Onglet "Avis" du profil public prestataire (§15).
 //
@@ -10,11 +10,10 @@
 
 import { useState } from "react";
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 import MenuSection from "../clientProfile/MenuSection";
 import Icon from "../ui/Icon";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 // Extrait la note globale depuis un objet rating ou un nombre brut
 function getGlobalRating(provider) {
@@ -69,17 +68,17 @@ function ReviewItem({ review, isLast, isOwnProfile, onReply }) {
       </View>
       <View style={{ flexDirection: "row", gap: 2, marginBottom: 5 }}>
         {Array.from({ length: Math.min(review.rating || 0, 5) }).map((_, i) => (
-          <Icon key={i} name="star" size={12} color="#F59E0B" weight="fill" />
+          <Icon key={i} name="star" size={12} color={colors.mango} weight="fill" />
         ))}
       </View>
       {review.comment ? (
         <Text style={styles.reviewText}>{review.comment}</Text>
       ) : null}
 
-      {/* Réponse existante du prestataire */}
+      {/* Réponse existante du pro */}
       {review.providerReply ? (
         <View style={styles.replyBlock}>
-          <Text style={styles.replyLabel}>Réponse du prestataire</Text>
+          <Text style={styles.replyLabel}>Réponse du pro</Text>
           <Text style={styles.replyText}>{review.providerReply}</Text>
         </View>
       ) : isOwnProfile ? (
@@ -87,8 +86,8 @@ function ReviewItem({ review, isLast, isOwnProfile, onReply }) {
           <View style={styles.replyForm}>
             <TextInput
               style={styles.replyInput}
-              placeholder="Votre réponse publique…"
-              placeholderTextColor="#C0C0C0"
+              placeholder="Ta réponse publique…"
+              placeholderTextColor={colors.ink100}
               value={replyText}
               onChangeText={setReplyText}
               multiline
@@ -109,7 +108,7 @@ function ReviewItem({ review, isLast, isOwnProfile, onReply }) {
           </View>
         ) : (
           <TouchableOpacity style={styles.replyOpenBtn} onPress={() => setReplying(true)}>
-            <Ionicons name="return-down-forward-outline" size={13} color={colors.primary} />
+            <Icon name="return-down-forward-outline" size={13} color={colors.primary} />
             <Text style={styles.replyOpenText}>Répondre</Text>
           </TouchableOpacity>
         )
@@ -132,11 +131,11 @@ export default function ReviewsTab({ provider, reviews = [], canReview = false, 
       {canReview && (
         <TouchableOpacity style={styles.rateCard} onPress={onRate} activeOpacity={0.85}>
           <View style={styles.rateCardLeft}>
-            <Text style={styles.rateCardTitle}>Vous avez travaillé ensemble</Text>
-            <Text style={styles.rateCardSub}>Partagez votre expérience pour aider la communauté</Text>
+            <Text style={styles.rateCardTitle}>Tu as fait appel à ce pro</Text>
+            <Text style={styles.rateCardSub}>Partage ton expérience pour aider la communauté</Text>
           </View>
           <View style={styles.rateCardBtn}>
-            <Ionicons name="star-outline" size={18} color="#fff" />
+            <Icon name="star-outline" size={18} color={colors.textInverse} />
             <Text style={styles.rateCardBtnText}>Noter</Text>
           </View>
         </TouchableOpacity>
@@ -152,7 +151,7 @@ export default function ReviewsTab({ provider, reviews = [], canReview = false, 
             </Text>
             <View style={{ flexDirection: "row", gap: 2, marginTop: 3 }}>
               {Array.from({ length: Math.round(globalRating) }).map((_, i) => (
-                <Icon key={i} name="star" size={12} color="#F59E0B" weight="fill" />
+                <Icon key={i} name="star" size={12} color={colors.mango} weight="fill" />
               ))}
             </View>
             <Text style={styles.bigCount}>{reviewCount} avis</Text>
@@ -199,7 +198,7 @@ export default function ReviewsTab({ provider, reviews = [], canReview = false, 
           ))
         ) : (
           <View style={styles.emptyReviews}>
-            <Icon name="star" size={36} color="#DDD" weight="duotone" />
+            <Icon name="star" size={36} color={colors.ink100} weight="duotone" />
             <Text style={styles.emptyText}>Pas encore d'avis</Text>
             <Text style={styles.emptySubtext}>
               Les avis apparaîtront ici après chaque mission terminée.
@@ -227,14 +226,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   rateCardLeft: { flex: 1, gap: 3 },
-  rateCardTitle: { fontSize: 13, fontWeight: "700", color: "#fff" },
-  rateCardSub:   { fontSize: 11, color: "rgba(255,255,255,0.75)", lineHeight: 16 },
+  rateCardTitle: { fontSize: 13, fontFamily: fonts.bold, color: colors.textInverse },
+  rateCardSub:   { fontSize: 11, fontFamily: fonts.medium, color: "rgba(255,255,255,0.75)", lineHeight: 16 },
   rateCardBtn: {
     flexDirection: "row", alignItems: "center", gap: 5,
     backgroundColor: "rgba(255,255,255,0.2)",
     borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12,
   },
-  rateCardBtnText: { fontSize: 13, fontWeight: "700", color: "#fff" },
+  rateCardBtnText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textInverse },
 
   // Résumé global
   summary: {
@@ -245,52 +244,52 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   bigNote:  { alignItems: "center", minWidth: 64 },
-  bigVal:   { fontSize: 36, fontWeight: "800", color: "#111", lineHeight: 40 },
+  bigVal:   { fontSize: 36, fontFamily: fonts.extraBold, color: colors.ink900, lineHeight: 40 },
   bigStars: { fontSize: 12, marginTop: 3 },
-  bigCount: { fontSize: 10, color: "#888", marginTop: 2 },
+  bigCount: { fontSize: 10, fontFamily: fonts.medium, color: colors.ink500, marginTop: 2 },
 
   // Barres de distribution étoiles
   bars:   { flex: 1, gap: 5 },
   barRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  barNum: { fontSize: 10, color: "#888", width: 8, textAlign: "right" },
-  barBg:  { flex: 1, height: 5, backgroundColor: "#F0F0F0", borderRadius: 3, overflow: "hidden" },
-  barFill:{ height: 5, backgroundColor: "#F59E0B", borderRadius: 3 },
+  barNum: { fontSize: 10, fontFamily: fonts.medium, color: colors.ink500, width: 8, textAlign: "right" },
+  barBg:  { flex: 1, height: 5, backgroundColor: colors.ink50, borderRadius: 3, overflow: "hidden" },
+  barFill:{ height: 5, backgroundColor: colors.mango, borderRadius: 3 },
 
   // Critères
   criteriaBlock: { paddingHorizontal: 14, paddingBottom: 14, gap: 12 },
   criteriaRow:   { flexDirection: "row", alignItems: "center", gap: 8 },
   criteriaIcon:  { fontSize: 14, width: 20, textAlign: "center" },
-  criteriaLabel: { fontSize: 12, color: "#555", flex: 1 },
-  criteriaBarBg: { width: 80, height: 5, backgroundColor: "#F0F0F0", borderRadius: 3, overflow: "hidden" },
+  criteriaLabel: { fontSize: 12, fontFamily: fonts.medium, color: colors.ink500, flex: 1 },
+  criteriaBarBg: { width: 80, height: 5, backgroundColor: colors.ink50, borderRadius: 3, overflow: "hidden" },
   criteriaBarFill:{ height: 5, backgroundColor: colors.primary, borderRadius: 3 },
-  criteriaVal:   { fontSize: 11, fontWeight: "700", color: colors.primary, width: 28, textAlign: "right" },
+  criteriaVal:   { fontSize: 11, fontFamily: fonts.bold, color: colors.primary, width: 28, textAlign: "right" },
 
   // Items d'avis
   review: {
     paddingHorizontal: 14, paddingVertical: 12,
-    borderBottomWidth: 0.5, borderBottomColor: "#F5F5F5",
+    borderBottomWidth: 0.5, borderBottomColor: colors.borderLight,
   },
   reviewLast: { borderBottomWidth: 0, paddingBottom: 14 },
   reviewTop:  { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 4 },
-  reviewName: { fontSize: 13, fontWeight: "700", color: "#111" },
-  reviewDate: { fontSize: 10, color: "#AAB0B7" },
+  reviewName: { fontSize: 13, fontFamily: fonts.bold, color: colors.ink900 },
+  reviewDate: { fontSize: 10, fontFamily: fonts.medium, color: colors.ink300 },
   reviewStars:{ fontSize: 11, marginBottom: 5 },
-  reviewText: { fontSize: 12, color: "#666", lineHeight: 18 },
+  reviewText: { fontSize: 12, fontFamily: fonts.regular, color: colors.ink500, lineHeight: 18 },
 
   // État vide
   emptyReviews: { alignItems: "center", paddingVertical: 24, gap: 8, paddingHorizontal: 20 },
   emptyIcon:    { fontSize: 36 },
-  emptyText:    { fontSize: 14, fontWeight: "700", color: "#333" },
-  emptySubtext: { fontSize: 12, color: "#AAB0B7", textAlign: "center" },
+  emptyText:    { fontSize: 14, fontFamily: fonts.bold, color: colors.ink700 },
+  emptySubtext: { fontSize: 12, fontFamily: fonts.medium, color: colors.ink300, textAlign: "center" },
 
-  // Réponse du prestataire — affichage
+  // Réponse du pro — affichage
   replyBlock: {
-    marginTop: 8, backgroundColor: "#F0FAF6", borderRadius: 10,
+    marginTop: 8, backgroundColor: colors.primarySoft, borderRadius: 10,
     paddingVertical: 8, paddingHorizontal: 12, gap: 3,
     borderLeftWidth: 3, borderLeftColor: colors.primary,
   },
-  replyLabel: { fontSize: 10, fontWeight: "700", color: colors.primary, textTransform: "uppercase" },
-  replyText:  { fontSize: 12, color: "#444", lineHeight: 18 },
+  replyLabel: { fontSize: 10, fontFamily: fonts.bold, color: colors.primary, textTransform: "uppercase" },
+  replyText:  { fontSize: 12, fontFamily: fonts.regular, color: colors.ink700, lineHeight: 18 },
 
   // Bouton "Répondre"
   replyOpenBtn: {
@@ -299,21 +298,21 @@ const styles = StyleSheet.create({
     paddingVertical: 4, paddingHorizontal: 10,
     borderRadius: 8, borderWidth: 1, borderColor: colors.primary,
   },
-  replyOpenText: { fontSize: 12, color: colors.primary, fontWeight: "600" },
+  replyOpenText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.primary },
 
   // Formulaire de réponse inline
   replyForm: { marginTop: 8, gap: 8 },
   replyInput: {
-    borderWidth: 1.5, borderColor: "#E0E0E0", borderRadius: 10,
+    borderWidth: 1.5, borderColor: colors.borderLight, borderRadius: 10,
     paddingVertical: 8, paddingHorizontal: 12,
-    fontSize: 13, color: "#111", maxHeight: 80,
-    backgroundColor: "#FAFAFA",
+    fontSize: 13, fontFamily: fonts.regular, color: colors.ink900, maxHeight: 80,
+    backgroundColor: colors.ink50,
   },
   replyBtns: { flexDirection: "row", justifyContent: "flex-end", gap: 12, alignItems: "center" },
-  replyCancelText: { fontSize: 13, color: "#AAB0B7" },
+  replyCancelText: { fontSize: 13, fontFamily: fonts.medium, color: colors.ink300 },
   replySubmitBtn: {
     backgroundColor: colors.primary, borderRadius: 8,
     paddingVertical: 6, paddingHorizontal: 14,
   },
-  replySubmitText: { fontSize: 13, fontWeight: "700", color: "#fff" },
+  replySubmitText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textInverse },
 });

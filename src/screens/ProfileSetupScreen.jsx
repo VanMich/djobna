@@ -1,4 +1,4 @@
-// src/screens/ProfileSetupScreen.jsx
+﻿// src/screens/ProfileSetupScreen.jsx
 // Formulaire de création du profil — affiché une seule fois après la première connexion.
 //
 // Remplace Firebase :
@@ -24,7 +24,7 @@ import { QUARTIERS_PAR_VILLE } from "../constants/services";
 import { useProfile } from "../hooks/useProfile";
 import { Input, Select, Button } from "../components/ui";
 import Icon from "../components/ui/Icon";
-import { colors, radius, spacing, typography } from "../theme";
+import { colors, radius, spacing, typography, fonts } from "../theme";
 
 export default function ProfileSetupScreen({ navigation }) {
   const [displayName, setDisplayName] = useState("");
@@ -45,7 +45,7 @@ export default function ProfileSetupScreen({ navigation }) {
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission refusée", "Nous avons besoin d'accéder à vos photos.");
+      Alert.alert("Permission refusée", "Nous avons besoin d'accéder à tes photos.");
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -59,19 +59,19 @@ export default function ProfileSetupScreen({ navigation }) {
 
   const handleSubmit = async () => {
     if (!displayName.trim()) {
-      Alert.alert("Erreur", "Entrez votre nom complet");
+      Alert.alert("Champ requis", "Entre ton nom complet");
       return;
     }
     if (!ville.trim()) {
-      Alert.alert("Erreur", "Entrez votre ville");
+      Alert.alert("Champ requis", "Entre ta ville");
       return;
     }
     if (!quartier) {
-      Alert.alert("Erreur", "Choisissez votre quartier");
+      Alert.alert("Champ requis", "Choisis ton quartier");
       return;
     }
     if (!pays.trim()) {
-      Alert.alert("Erreur", "Entrez votre pays");
+      Alert.alert("Champ requis", "Entre ton pays");
       return;
     }
 
@@ -86,7 +86,7 @@ export default function ProfileSetupScreen({ navigation }) {
     if (result.success) {
       navigation.replace("MainApp");
     } else {
-      Alert.alert("Erreur", "Impossible de créer le profil. Réessayez.");
+      Alert.alert("Oups", "Impossible de créer le profil. Réessaye.");
     }
   };
 
@@ -103,12 +103,12 @@ export default function ProfileSetupScreen({ navigation }) {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       <View style={styles.header}>
         <Text style={styles.brand}>Djobna</Text>
-        <Text style={styles.title}>Créez votre profil</Text>
-        <Text style={styles.subtitle}>Ces informations seront visibles sur votre compte</Text>
+        <Text style={styles.title}>Crée ton profil</Text>
+        <Text style={styles.subtitle}>Ces informations seront visibles sur ton compte</Text>
       </View>
 
       <ScrollView
@@ -141,14 +141,14 @@ export default function ProfileSetupScreen({ navigation }) {
               {photoUri ? (
                 <Image source={{ uri: photoUri }} style={styles.photoImage} />
               ) : (
-                <Icon name="camera" size={28} color="#CCC" weight="duotone" />
+                <Icon name="camera" size={28} color={colors.ink300} weight="duotone" />
               )}
             </TouchableOpacity>
             <TouchableOpacity style={styles.photoBtn} onPress={pickImage} activeOpacity={0.8}>
               <Text style={styles.photoBtnText}>
                 {photoUri ? "Changer la photo" : "Choisir une photo"}
               </Text>
-              <Text style={styles.photoBtnSub}>Depuis votre galerie</Text>
+              <Text style={styles.photoBtnSub}>Depuis ta galerie</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -171,9 +171,9 @@ export default function ProfileSetupScreen({ navigation }) {
           value={quartier}
           options={quartiersForVille}
           onSelect={setQuartier}
-          placeholder="Choisissez votre quartier"
+          placeholder="Choisis ton quartier"
           allowCustom={quartiersForVille.length === 0}
-          customPlaceholder="Entrez votre quartier"
+          customPlaceholder="Entre ton quartier"
           searchable={quartiersForVille.length > 10}
         />
 
@@ -213,8 +213,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     gap: 6,
   },
-  brand: { fontSize: 18, fontWeight: "800", color: colors.primary },
-  title: { fontSize: 26, fontWeight: "700", color: colors.headerText, lineHeight: 34 },
+  brand: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.primary },
+  title: { fontSize: 26, fontFamily: fonts.bold, color: colors.headerText, lineHeight: 34 },
   subtitle: { fontSize: 13, color: colors.headerSubtext },
   scroll: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: spacing.lg, paddingBottom: 40, gap: spacing.md },
@@ -246,6 +246,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     gap: 2,
   },
-  photoBtnText: { fontSize: 13, color: colors.textPrimary, fontWeight: "600" },
+  photoBtnText: { fontSize: 13, color: colors.textPrimary, fontFamily: fonts.semiBold },
   photoBtnSub: { fontSize: 11, color: colors.textSecondary },
 });

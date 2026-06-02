@@ -1,5 +1,4 @@
-// src/screens/RequestDetailScreen.jsx
-import { Ionicons } from "@expo/vector-icons";
+﻿// src/screens/RequestDetailScreen.jsx
 import { StatusBar } from "expo-status-bar";
 import { useCallback } from "react";
 import {
@@ -15,12 +14,12 @@ import {
 import { SERVICES } from "../constants/services";
 import { Avatar, Badge } from "../components/ui";
 import Icon from "../components/ui/Icon";
-import { colors, radius, shadows } from "../theme";
+import { colors, radius, shadows, fonts } from "../theme";
 import { useProviderDashboard } from "../hooks/useProviderDashboard";
 import { supabase } from "../config/supabase";
 
 const STATUS_CONFIG = {
-  pending:     { label: "Nouveau",    color: "#F59E0B", bg: "#FFF8E8" },
+  pending:     { label: "Nouveau",    color: colors.mango, bg: "#FFF8E8" },
   in_progress: { label: "En cours",   color: "#3B82F6", bg: "#EFF6FF" },
   completed:   { label: "Terminée",   color: "#10B981", bg: "#ECFDF5" },
   declined:    { label: "Déclinée",   color: "#9CA3AF", bg: "#F3F4F6" },
@@ -52,7 +51,7 @@ function InfoRow({ icon, text }) {
   return (
     <View style={styles.infoRow}>
       <View style={styles.infoIconWrap}>
-        <Ionicons name={icon} size={15} color={colors.primary} />
+        <Icon name={icon} size={15} color={colors.primary} />
       </View>
       <Text style={styles.infoText}>{text}</Text>
     </View>
@@ -83,14 +82,14 @@ export default function RequestDetailScreen({ navigation, route }) {
       navigation.goBack();
       navigation.navigate("Chat", { clientId: request.clientId, clientName: request.clientName, requestId: request.id, chatId: result.chatId });
     } else {
-      Alert.alert("Erreur", "Impossible d'accepter la demande. Réessayez.");
+      Alert.alert("Erreur", "Impossible d'accepter la demande. Réessaye.");
     }
   }, [navigation, acceptRequest, request]);
 
   const handleDecline = useCallback(() => {
     Alert.alert(
       "Décliner la demande ?",
-      "Le client sera informé que vous n'êtes pas disponible.",
+      "Le client sera informé que tu n'es pas disponible.",
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -101,7 +100,7 @@ export default function RequestDetailScreen({ navigation, route }) {
             if (result.success) {
               navigation.goBack();
             } else {
-              Alert.alert("Erreur", "Impossible de décliner. Réessayez.");
+              Alert.alert("Erreur", "Impossible de décliner. Réessaye.");
             }
           },
         },
@@ -147,7 +146,7 @@ export default function RequestDetailScreen({ navigation, route }) {
               });
             } catch (err) {
               console.error("Erreur ouverture chat:", err);
-              Alert.alert("Erreur", "Impossible d'ouvrir le chat. Réessayez.");
+              Alert.alert("Erreur", "Impossible d'ouvrir le chat. Réessaye.");
             }
           },
         },
@@ -165,13 +164,13 @@ export default function RequestDetailScreen({ navigation, route }) {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* ── Header ── */}
       <SafeAreaView style={styles.headerSafe}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color="#fff" />
+            <Icon name="chevron-back" size={20} color={colors.ink700} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Détail de la demande</Text>
           {(() => {
@@ -204,7 +203,7 @@ export default function RequestDetailScreen({ navigation, route }) {
             <View style={styles.clientMeta}>
               {request.quartier ? (
                 <>
-                  <Ionicons name="location" size={12} color="#AAB0B7" />
+                  <Icon name="location" size={12} color={colors.ink300} />
                   <Text style={styles.clientMetaText}>{request.quartier}</Text>
                   <Text style={styles.dot}>·</Text>
                 </>
@@ -274,17 +273,17 @@ export default function RequestDetailScreen({ navigation, route }) {
       {/* ── Actions ── */}
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.btnDecline} onPress={handleDecline} activeOpacity={0.85}>
-          <Ionicons name="close" size={16} color="#888" />
+          <Icon name="close" size={16} color={colors.ink500} />
           <Text style={styles.btnDeclineText}>Décliner</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.btnPropose} onPress={handleProposeOtherTime} activeOpacity={0.85}>
-          <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+          <Icon name="calendar-outline" size={16} color={colors.primary} />
           <Text style={styles.btnProposeText}>Créneau</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.btnAccept} onPress={handleAccept} activeOpacity={0.85}>
-          <Ionicons name="checkmark" size={16} color="#fff" />
+          <Icon name="checkmark" size={16} color={colors.textInverse} />
           <Text style={styles.btnAcceptText}>Accepter</Text>
         </TouchableOpacity>
       </View>
@@ -311,18 +310,18 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: radius.sm,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: colors.ink50,
     alignItems: "center",
     justifyContent: "center",
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: "700", color: colors.headerText },
+  headerTitle: { flex: 1, fontSize: 17, fontFamily: fonts.bold, color: colors.headerText },
   statusBadge: {
     backgroundColor: colors.primaryLight,
     borderRadius: 20,
     paddingVertical: 4,
     paddingHorizontal: 10,
   },
-  statusBadgeText: { fontSize: 11, fontWeight: "700", color: colors.primaryDark },
+  statusBadgeText: { fontSize: 11, fontFamily: fonts.bold, color: colors.primaryDark },
 
   // Corps
   body: { flex: 1 },
@@ -341,7 +340,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   clientInfo: { flex: 1, gap: 4 },
-  clientName: { fontSize: 15, fontWeight: "700", color: colors.textPrimary },
+  clientName: { fontSize: 15, fontFamily: fonts.bold, color: colors.textPrimary },
   clientMeta: { flexDirection: "row", alignItems: "center", gap: 4 },
   clientMetaText: { fontSize: 12, color: colors.textMuted },
   dot: { fontSize: 12, color: colors.textMuted },
@@ -355,12 +354,12 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     flexShrink: 0,
   },
-  serviceChipText: { fontSize: 11, fontWeight: "700", color: colors.primary },
+  serviceChipText: { fontSize: 11, fontFamily: fonts.bold, color: colors.primary },
 
   // Titre
   requestTitle: {
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: fonts.extraBold,
     color: colors.textPrimary,
     lineHeight: 28,
     letterSpacing: -0.3,
@@ -371,7 +370,7 @@ const styles = StyleSheet.create({
   section: { gap: 8 },
   sectionTitle: {
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     color: colors.textMuted,
     letterSpacing: 0.8,
     textTransform: "uppercase",
@@ -451,7 +450,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  btnDeclineText: { fontSize: 13, fontWeight: "700", color: colors.textSecondary },
+  btnDeclineText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textSecondary },
 
   btnPropose: {
     flex: 1,
@@ -465,7 +464,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.green200,
   },
-  btnProposeText: { fontSize: 13, fontWeight: "700", color: colors.primary },
+  btnProposeText: { fontSize: 13, fontFamily: fonts.bold, color: colors.primary },
 
   btnAccept: {
     flex: 1.4,
@@ -482,5 +481,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
   },
-  btnAcceptText: { fontSize: 13, fontWeight: "700", color: colors.textInverse },
+  btnAcceptText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textInverse },
 });

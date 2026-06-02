@@ -1,10 +1,9 @@
-// src/components/homeProvider/RequestCard.jsx
+﻿// src/components/homeProvider/RequestCard.jsx
 import React from "react";
-import { Ionicons } from "@expo/vector-icons";
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SERVICES } from "../../constants/services";
 import Icon from "../ui/Icon";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 function timeAgo(timestamp) {
   if (!timestamp) return "";
@@ -36,7 +35,7 @@ function RequestCard({ request, onAccept, onDecline, onProposeOtherTime, onViewD
   const handleDecline = () => {
     Alert.alert(
       "Décliner la demande ?",
-      "Le client sera informé que vous n'êtes pas disponible.",
+      "Le client sera informé que tu n'es pas disponible.",
       [
         { text: "Annuler", style: "cancel" },
         { text: "Décliner", style: "destructive", onPress: () => onDecline(request.id, request.clientId) },
@@ -71,7 +70,7 @@ function RequestCard({ request, onAccept, onDecline, onProposeOtherTime, onViewD
           <View style={styles.metaRow}>
             {request.quartier ? (
               <>
-                <Ionicons name="location" size={10} color="#AAB0B7" />
+                <Icon name="location" size={10} color={colors.ink300} />
                 <Text style={styles.metaText}>{request.quartier}</Text>
                 <Text style={styles.metaDot}>·</Text>
               </>
@@ -125,19 +124,19 @@ function RequestCard({ request, onAccept, onDecline, onProposeOtherTime, onViewD
       <View style={styles.detailsRow}>
         {request.location ? (
           <View style={styles.detailItem}>
-            <Ionicons name="location-outline" size={12} color="#888" />
+            <Icon name="location-outline" size={12} color={colors.ink500} />
             <Text style={styles.detailText} numberOfLines={1}>{request.location}</Text>
           </View>
         ) : null}
         {request.scheduledDate ? (
           <View style={styles.detailItem}>
-            <Ionicons name="calendar-outline" size={12} color="#888" />
+            <Icon name="calendar-outline" size={12} color={colors.ink500} />
             <Text style={styles.detailText}>{formatDate(request.scheduledDate)}</Text>
           </View>
         ) : null}
         {request.budget ? (
           <View style={styles.detailItem}>
-            <Ionicons name="cash-outline" size={12} color="#888" />
+            <Icon name="cash-outline" size={12} color={colors.ink500} />
             <Text style={styles.detailText}>
               {Number(request.budget).toLocaleString("fr-FR")} FCFA
             </Text>
@@ -152,7 +151,7 @@ function RequestCard({ request, onAccept, onDecline, onProposeOtherTime, onViewD
           onPress={() => onAccept(request.id, request.clientId, request.clientName)}
           activeOpacity={0.85}
         >
-          <Ionicons name="checkmark" size={14} color="#fff" />
+          <Icon name="checkmark" size={14} color={colors.textInverse} />
           <Text style={styles.btnAcceptText}>Accepter</Text>
         </TouchableOpacity>
 
@@ -161,14 +160,14 @@ function RequestCard({ request, onAccept, onDecline, onProposeOtherTime, onViewD
           onPress={handleDecline}
           activeOpacity={0.85}
         >
-          <Ionicons name="close" size={14} color="#888" />
+          <Icon name="close" size={14} color={colors.ink500} />
           <Text style={styles.btnDeclineText}>Décliner</Text>
         </TouchableOpacity>
       </View>
 
       {/* ── Proposer un autre créneau ── */}
       <TouchableOpacity style={styles.proposeBtn} onPress={handleProposeOtherTime} activeOpacity={0.8}>
-        <Ionicons name="calendar-outline" size={13} color={colors.primary} />
+        <Icon name="calendar-outline" size={13} color={colors.primary} />
         <Text style={styles.proposeBtnText}>Proposer un autre créneau</Text>
       </TouchableOpacity>
     </TouchableOpacity>
@@ -177,13 +176,13 @@ function RequestCard({ request, onAccept, onDecline, onProposeOtherTime, onViewD
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#FAFFFE",
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 14,
     gap: 10,
     borderWidth: 1.5,
     borderColor: colors.primary,
-    shadowColor: colors.primary,
+    shadowColor: colors.brandDeep,
     shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
@@ -199,43 +198,43 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  avatarText: { fontSize: 14, fontWeight: "800", color: "#fff" },
+  avatarText: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.textInverse },
   info: { flex: 1, gap: 3 },
-  clientName: { fontSize: 13, fontWeight: "700", color: "#111" },
+  clientName: { fontSize: 13, fontFamily: fonts.bold, color: colors.ink900 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  metaText: { fontSize: 10, color: "#AAB0B7" },
-  metaDot: { fontSize: 10, color: "#AAB0B7" },
+  metaText: { fontSize: 10, fontFamily: fonts.medium, color: colors.ink300 },
+  metaDot: { fontSize: 10, color: colors.ink300 },
   badge: {
-    backgroundColor: "#E8F5F0",
+    backgroundColor: colors.primarySoft,
     borderRadius: 20,
     paddingVertical: 3,
     paddingHorizontal: 8,
   },
-  badgeText: { fontSize: 9, fontWeight: "700", color: "#0F6E56" },
+  badgeText: { fontSize: 9, fontFamily: fonts.bold, color: colors.primaryDark },
 
   serviceTag: {
     alignSelf: "flex-start",
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.primarySoft,
     borderRadius: 20,
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: "#C8EDDF",
+    borderColor: colors.green200,
   },
-  serviceTagText: { fontSize: 11, fontWeight: "700", color: colors.primary },
+  serviceTagText: { fontSize: 11, fontFamily: fonts.bold, color: colors.primary },
 
-  title: { fontSize: 14, fontWeight: "700", color: "#111", lineHeight: 20 },
+  title: { fontSize: 14, fontFamily: fonts.bold, color: colors.ink900, lineHeight: 20 },
 
   descBox: {
-    backgroundColor: "#F8F8F8",
+    backgroundColor: colors.ink50,
     borderRadius: 10,
     padding: 10,
   },
-  descText: { fontSize: 12, color: "#555", lineHeight: 18 },
+  descText: { fontSize: 12, fontFamily: fonts.regular, color: colors.ink500, lineHeight: 18 },
 
   detailsRow: { gap: 5 },
   detailItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  detailText: { fontSize: 11, color: "#777", flex: 1 },
+  detailText: { fontSize: 11, fontFamily: fonts.medium, color: colors.ink500, flex: 1 },
 
   actions: { flexDirection: "row", gap: 8 },
   btn: {
@@ -249,12 +248,12 @@ const styles = StyleSheet.create({
   },
   btnAccept: { backgroundColor: colors.primary },
   btnDecline: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: colors.ink50,
     borderWidth: 1,
-    borderColor: "#E8E8E8",
+    borderColor: colors.borderLight,
   },
-  btnAcceptText: { fontSize: 13, fontWeight: "700", color: "#fff" },
-  btnDeclineText: { fontSize: 13, fontWeight: "700", color: "#888" },
+  btnAcceptText: { fontSize: 13, fontFamily: fonts.bold, color: colors.textInverse },
+  btnDeclineText: { fontSize: 13, fontFamily: fonts.bold, color: colors.ink500 },
 
   photoStrip: { marginHorizontal: -2 },
   photoStripContent: { gap: 6, paddingHorizontal: 2 },
@@ -262,7 +261,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 10,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: colors.ink50,
   },
 
   proposeBtn: {
@@ -273,10 +272,10 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 11,
     borderWidth: 1,
-    borderColor: "#C8EDDF",
-    backgroundColor: "#F0FAF6",
+    borderColor: colors.green200,
+    backgroundColor: colors.primarySoft,
   },
-  proposeBtnText: { fontSize: 12, fontWeight: "700", color: colors.primary },
+  proposeBtnText: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
 });
 
 export default React.memo(RequestCard);

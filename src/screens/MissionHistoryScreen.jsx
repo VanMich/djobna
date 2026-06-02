@@ -1,4 +1,4 @@
-// src/screens/MissionHistoryScreen.jsx
+﻿// src/screens/MissionHistoryScreen.jsx
 // Historique des missions du client (§17).
 // Affiche toutes les demandes liées à l'utilisateur connecté, triées par date.
 
@@ -13,18 +13,17 @@ import {
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../config/supabase";
 import { SERVICES } from "../constants/services";
 import Icon from "../components/ui/Icon";
-import { colors, radius } from "../theme";
+import { colors, radius, fonts } from "../theme";
 
 const STATUS_CONFIG = {
-  pending:     { label: "En attente",  color: "#F59E0B", bg: "#FFF8E8" },
-  in_progress: { label: "En cours",    color: "#3B82F6", bg: "#EFF6FF" },
-  completed:   { label: "Terminée",    color: "#10B981", bg: "#ECFDF5" },
-  declined:    { label: "Déclinée",    color: "#9CA3AF", bg: "#F3F4F6" },
-  cancelled:   { label: "Annulée",     color: "#EF4444", bg: "#FEF2F2" },
+  pending:     { label: "En attente",  color: colors.mangoDark, bg: colors.mangoSoft },
+  in_progress: { label: "En cours",    color: colors.info, bg: colors.infoLight },
+  completed:   { label: "Terminée",    color: colors.primary, bg: colors.successSoft },
+  declined:    { label: "Déclinée",    color: colors.ink500, bg: colors.ink50 },
+  cancelled:   { label: "Annulée",     color: colors.error, bg: colors.errorLight },
 };
 
 function formatDate(val) {
@@ -114,7 +113,7 @@ export default function MissionHistoryScreen({ navigation }) {
   if (loading) {
     return (
       <View style={styles.loader}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -122,12 +121,12 @@ export default function MissionHistoryScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       <SafeAreaView style={styles.headerSafe}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={20} color="#fff" />
+            <Icon name="chevron-back" size={20} color={colors.ink700} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Historique des missions</Text>
           <View style={styles.countBadge}>
@@ -160,11 +159,11 @@ export default function MissionHistoryScreen({ navigation }) {
         renderItem={({ item }) => <MissionItem item={item} />}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons name="time-outline" size={52} color="#DDD" />
+            <Icon name="time-outline" size={52} color={colors.ink100} />
             <Text style={styles.emptyTitle}>Aucune mission</Text>
             <Text style={styles.emptySub}>
               {filter === "all"
-                ? "Vos missions apparaîtront ici une fois que vous aurez fait des demandes."
+                ? "Tes missions apparaîtront ici une fois que tu auras fait des demandes."
                 : "Aucune mission ne correspond à ce filtre."}
             </Text>
           </View>
@@ -187,17 +186,17 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     width: 36, height: 36, borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: colors.ink50,
     alignItems: "center", justifyContent: "center",
   },
-  headerTitle: { flex: 1, fontSize: 17, fontWeight: "700", color: colors.headerText },
+  headerTitle: { flex: 1, fontSize: 17, fontFamily: fonts.bold, color: colors.headerText },
   countBadge: {
     minWidth: 22, height: 22, borderRadius: 11,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: colors.primarySoft,
     alignItems: "center", justifyContent: "center",
     paddingHorizontal: 6,
   },
-  countBadgeText: { fontSize: 11, fontWeight: "800", color: colors.headerText },
+  countBadgeText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.primary },
 
   filtersRow: {
     flexDirection: "row",
@@ -211,7 +210,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5, borderColor: colors.border,
   },
   filterChipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterText: { fontSize: 12, fontWeight: "600", color: colors.textSecondary },
+  filterText: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.textSecondary },
   filterTextActive: { color: colors.textInverse },
 
   list: { padding: 16, gap: 10, paddingBottom: 30 },
@@ -228,18 +227,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight, alignItems: "center", justifyContent: "center",
   },
   cardInfo: { flex: 1 },
-  cardTitle: { fontSize: 14, fontWeight: "700", color: colors.textPrimary },
+  cardTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary },
   cardSub: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
   badge: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 20, flexShrink: 0 },
-  badgeText: { fontSize: 11, fontWeight: "700" },
+  badgeText: { fontSize: 11, fontFamily: fonts.bold },
   cardBottom: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
     borderTopWidth: 1, borderTopColor: colors.divider, paddingTop: 8,
   },
   cardDate: { fontSize: 11, color: colors.textMuted },
-  cardBudget: { fontSize: 12, fontWeight: "700", color: colors.primary },
+  cardBudget: { fontSize: 12, fontFamily: fonts.bold, color: colors.primary },
 
   empty: { alignItems: "center", paddingTop: 80, gap: 12, paddingHorizontal: 32 },
-  emptyTitle: { fontSize: 16, fontWeight: "700", color: colors.textPrimary },
+  emptyTitle: { fontSize: 16, fontFamily: fonts.bold, color: colors.textPrimary },
   emptySub: { fontSize: 13, color: colors.textSecondary, textAlign: "center", lineHeight: 20 },
 });

@@ -38,9 +38,10 @@ export function useProviderOwnProfile() {
 
     // Fonction réutilisée à l'init et à chaque notification Realtime
     const fetchData = async () => {
-      const [{ data: userData }, { data: providerData }] = await Promise.all([
+      const [{ data: userData }, { data: providerData }, { data: privData }] = await Promise.all([
         supabase.from("users").select("*").eq("id", userId).single(),
         supabase.from("providers").select("*").eq("id", userId).maybeSingle(),
+        supabase.from("user_private").select("phone_number").eq("id", userId).maybeSingle(),
       ]);
 
       if (userData) {
@@ -49,7 +50,7 @@ export function useProviderOwnProfile() {
           id: userId,
           displayName: userData.display_name,
           photoURL: userData.photo_url,
-          phoneNumber: userData.phone_number,
+          phoneNumber: privData?.phone_number,
           role: userData.role,
           activeRole: userData.active_role,
           ville: userData.ville,

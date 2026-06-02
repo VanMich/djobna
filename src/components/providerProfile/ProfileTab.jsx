@@ -5,7 +5,7 @@ import MenuItem from "../clientProfile/MenuItem";
 import MenuSection from "../clientProfile/MenuSection";
 import Icon from "../ui/Icon";
 import { SERVICES } from "../../constants/services";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 export default function ProfileTab({ provider }) {
   const serviceLabels = (provider?.services || [])
@@ -90,14 +90,14 @@ const styles = StyleSheet.create({
   container: { paddingBottom: 10 },
   bio: {
     fontSize: 13,
-    color: "#555",
+    color: colors.ink500,
     lineHeight: 21,
     paddingHorizontal: 14,
     paddingBottom: 14,
   },
   emptyText: {
     fontSize: 12,
-    color: "#AAB0B7",
+    color: colors.ink300,
     paddingHorizontal: 14,
     paddingBottom: 14,
   },
@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E8DDFD",
   },
-  zoneTagText: { fontSize: 12, color: "#7C4DFF", fontWeight: "600" },
+  zoneTagText: { fontSize: 12, color: "#7C4DFF", fontFamily: fonts.semiBold },
   langTag: {
     flexDirection: "row",
     alignItems: "center",
@@ -131,5 +131,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#C8E0FF",
   },
-  langTagText: { fontSize: 12, color: "#185FA5", fontWeight: "600" },
+  langTagText: { fontSize: 12, color: "#185FA5", fontFamily: fonts.semiBold },
 });

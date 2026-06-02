@@ -33,6 +33,8 @@ function mapRequest(r) {
     photos: r.photos || [],
     status: r.status,
     quartier: r.quartier,
+    // null tant que le prestataire n'a pas déclaré la fin (double confirmation)
+    providerCompletedAt: r.provider_completed_at ? new Date(r.provider_completed_at).getTime() : null,
     // Convertit l'ISO string en millisecondes pour la fonction timeAgo de RequestCard
     createdAt: r.created_at ? new Date(r.created_at).getTime() : null,
   };
@@ -258,7 +260,7 @@ export function useProviderDashboard() {
           created_at: now,
         });
 
-        pushNotify(clientId, "✅ Demande acceptée", "Votre demande a été acceptée ! Consultez vos messages.");
+        pushNotify(clientId, "✅ Demande acceptée", "Votre demande a été acceptée ! Consultez vos messages.", { persist: true, type: "request_accepted", relatedId: requestId });
 
         return { success: true, chatId: chatRow.id };
       } catch (err) {
@@ -280,7 +282,7 @@ export function useProviderDashboard() {
           .eq("id", requestId);
 
         if (clientId) {
-          pushNotify(clientId, "❌ Demande déclinée", "Votre demande a été déclinée. Essayez un autre prestataire.");
+          pushNotify(clientId, "❌ Demande déclinée", "Votre demande a été déclinée. Essayez un autre prestataire.", { persist: true, type: "request_declined", relatedId: requestId });
         }
 
         return { success: true };
@@ -292,24 +294,22 @@ export function useProviderDashboard() {
     [userId],
   );
 
-  // ── Marquer une mission comme terminée (§13.1) ─────────────────────────────
-  // Le prestataire appuie sur "Marquer comme terminée" → status passe à "completed".
-  // Note : selon le flux §11.4, c'est normalement le CLIENT qui confirme la fin.
-  // Ici on permet au prestataire de le signaler ; la confirmation client peut
-  // être ajoutée ultérieurement via un message système dans le chat.
+  // ── Déclarer une mission terminée (double confirmation, §11.4) ─────────────
+  // Le prestataire DÉCLARE avoir fini → on horodate provider_completed_at.
+  // Le statut reste "in_progress" : c'est le CLIENT qui clôture en confirmant.
   const completeRequest = useCallback(
-    async (requestId) => {
+    async (requestId, clientId) => {
       if (!userId) return { success: false };
       try {
         const now = new Date().toISOString();
-        await supabase
+        const { error } = await supabase
           .from("requests")
           .update({
-            status: "completed",
-            completed_at: now,
+            provider_completed_at: now,
             updated_at: now,
           })
           .eq("id", requestId);
+        if (error) throw error;
 
         // Message système dans le chat lié à cette demande
         const { data: chatData } = await supabase
@@ -327,11 +327,17 @@ export function useProviderDashboard() {
             read: false,
             created_at: now,
           });
+          await supabase
+            .from("chats")
+            .update({ last_message: "Prestation terminée", last_message_at: now })
+            .eq("id", chatData.id);
         }
+
+        if (clientId) pushNotify(clientId, "Mission terminée ?", "Le prestataire indique avoir terminé. Confirme pour clôturer.", { persist: true, type: "mission_complete", relatedId: requestId });
 
         return { success: true };
       } catch (err) {
-        console.error("Erreur complétion mission:", err);
+        console.error("Erreur déclaration fin de mission:", err);
         return { success: false };
       }
     },
@@ -349,6 +355,6 @@ export function useProviderDashboard() {
     toggleAvailability,
     acceptRequest,
     declineRequest,
-    completeRequest,     // nouveau — "Marquer comme terminée" (§13.1)
+    completeRequest,     // "J'ai terminé" → déclare la fin (le client confirme)
   };
 }

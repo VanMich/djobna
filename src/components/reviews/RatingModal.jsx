@@ -21,7 +21,7 @@ import {
   View,
 } from "react-native";
 import Icon from "../ui/Icon";
-import { colors, radius } from "../../theme";
+import { colors, radius, fonts } from "../../theme";
 
 // Libellés associés à chaque note globale
 const RATING_LABELS = ["", "Mauvais", "Passable", "Bien", "Très bien", "Excellent !"];
@@ -35,16 +35,16 @@ const CRITERIA = [
 ];
 
 // ─── Sélecteur d'étoiles ──────────────────────────────────────────────────────
-// Tap sur une étoile pour choisir la note (1 à 5).
-// La couleur dorée remplie jusqu'à la valeur sélectionnée.
 function StarSelector({ value, onChange, size = 30 }) {
   return (
     <View style={starStyles.row}>
       {[1, 2, 3, 4, 5].map((n) => (
         <TouchableOpacity key={n} onPress={() => onChange(n)} activeOpacity={0.7}>
-          <Text style={{ fontSize: size, color: n <= value ? "#F59E0B" : "#E0E0E0" }}>
-            ★
-          </Text>
+          <Icon
+            name="star"
+            size={size}
+            color={n <= value ? colors.mango : colors.ink100}
+          />
         </TouchableOpacity>
       ))}
     </View>
@@ -57,17 +57,13 @@ const starStyles = StyleSheet.create({
 
 // ─── Modal principal ──────────────────────────────────────────────────────────
 export default function RatingModal({ visible, onClose, onSubmit, providerName, loading }) {
-  // Note globale (obligatoire)
   const [globalRating,   setGlobalRating]   = useState(0);
-  // Critères détaillés (optionnels — si non renseignés, on utilise globalRating)
   const [punctuality,    setPunctuality]    = useState(0);
   const [quality,        setQuality]        = useState(0);
   const [communication,  setCommunication]  = useState(0);
   const [valueForMoney,  setValueForMoney]  = useState(0);
-  // Commentaire libre (optionnel)
   const [comment,        setComment]        = useState("");
 
-  // Réinitialise le formulaire à chaque ouverture du modal
   useEffect(() => {
     if (visible) {
       setGlobalRating(0);
@@ -85,10 +81,9 @@ export default function RatingModal({ visible, onClose, onSubmit, providerName, 
 
   const handleSubmit = () => {
     if (globalRating === 0) {
-      Alert.alert("Note requise", "Sélectionnez au moins une note globale (1 à 5 étoiles).");
+      Alert.alert("Note requise", "Sélectionne au moins une note globale (1 à 5 étoiles).");
       return;
     }
-    // Si un critère n'est pas renseigné, on utilise la note globale par défaut
     onSubmit({
       globalRating,
       punctuality:   punctuality   || globalRating,
@@ -99,7 +94,6 @@ export default function RatingModal({ visible, onClose, onSubmit, providerName, 
     });
   };
 
-  // Correspondance clé → état + setter (pour l'affichage dynamique des critères)
   const criteriaValues  = { punctuality, quality, communication, valueForMoney };
   const criteriaSetters = {
     punctuality:   setPunctuality,
@@ -142,11 +136,10 @@ export default function RatingModal({ visible, onClose, onSubmit, providerName, 
           {/* ── Section 1 : Note globale ── */}
           <View style={styles.globalSection}>
             <Text style={styles.providerName}>{providerName}</Text>
-            <Text style={styles.globalHint}>Comment s'est passée votre prestation ?</Text>
+            <Text style={styles.globalHint}>Comment s'est passée ta prestation ?</Text>
             <StarSelector value={globalRating} onChange={setGlobalRating} size={42} />
-            {/* Libellé dynamique selon la note choisie */}
             <Text style={styles.ratingLabel}>
-              {RATING_LABELS[globalRating] || "Tapez une étoile pour commencer"}
+              {RATING_LABELS[globalRating] || "Tape une étoile pour commencer"}
             </Text>
           </View>
 
@@ -155,11 +148,11 @@ export default function RatingModal({ visible, onClose, onSubmit, providerName, 
           {/* ── Section 2 : Critères détaillés ── */}
           <Text style={styles.sectionLabel}>CRITÈRES DÉTAILLÉS (optionnel)</Text>
           <Text style={styles.sectionSub}>
-            Laissez vide pour utiliser votre note globale sur chaque critère.
+            Laisse vide pour utiliser ta note globale sur chaque critère.
           </Text>
           {CRITERIA.map((c) => (
             <View key={c.key} style={styles.criteriaRow}>
-              <Icon name={c.icon} size={16} color={colors.primary} weight="duotone" />
+              <Icon name={c.icon} size={16} color={colors.primary} />
               <Text style={styles.criteriaLabel}>{c.label}</Text>
               <StarSelector
                 value={criteriaValues[c.key]}
@@ -177,8 +170,8 @@ export default function RatingModal({ visible, onClose, onSubmit, providerName, 
             style={styles.commentInput}
             value={comment}
             onChangeText={setComment}
-            placeholder="Décrivez votre expérience avec ce prestataire…"
-            placeholderTextColor="#AAB0B7"
+            placeholder="Raconte ton expérience avec ce pro…"
+            placeholderTextColor={colors.ink300}
             multiline
             numberOfLines={4}
             maxLength={500}
@@ -193,47 +186,46 @@ export default function RatingModal({ visible, onClose, onSubmit, providerName, 
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#fff" },
+  root: { flex: 1, backgroundColor: colors.surface },
 
   header: {
     paddingHorizontal: 16, paddingBottom: 12,
-    borderBottomWidth: 1, borderBottomColor: "#EEF0EF",
+    borderBottomWidth: 1, borderBottomColor: colors.ink100,
   },
   handle: {
-    width: 40, height: 4, borderRadius: 2, backgroundColor: "#DDD",
+    width: 40, height: 4, borderRadius: 2, backgroundColor: colors.ink300,
     alignSelf: "center", marginTop: 8, marginBottom: 12,
   },
   headerRow: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
   },
-  title:      { fontSize: 16, fontWeight: "700", color: "#111" },
-  cancelBtn:  { fontSize: 14, color: "#888", fontWeight: "500" },
-  submitBtn:  { fontSize: 14, color: colors.primary, fontWeight: "700" },
+  title:      { fontSize: 16, fontFamily: fonts.bold, color: colors.ink900 },
+  cancelBtn:  { fontSize: 14, color: colors.ink500, fontFamily: fonts.medium },
+  submitBtn:  { fontSize: 14, color: colors.primary, fontFamily: fonts.bold },
   disabled:   { opacity: 0.5 },
 
   content: { padding: 24, gap: 16 },
 
-  // Note globale — centrée et grande
   globalSection: { alignItems: "center", gap: 10, paddingVertical: 8 },
-  providerName:  { fontSize: 15, fontWeight: "700", color: "#111" },
-  globalHint:    { fontSize: 13, color: "#888" },
-  ratingLabel:   { fontSize: 15, fontWeight: "700", color: "#F59E0B", minHeight: 22 },
+  providerName:  { fontSize: 15, fontFamily: fonts.bold, color: colors.ink900 },
+  globalHint:    { fontSize: 13, color: colors.ink500, fontFamily: fonts.medium },
+  ratingLabel:   { fontSize: 15, fontFamily: fonts.bold, color: colors.mango, minHeight: 22 },
 
-  separator:    { height: 1, backgroundColor: "#F0F0F0" },
-  sectionLabel: { fontSize: 10, fontWeight: "800", color: colors.primary, letterSpacing: 1 },
-  sectionSub:   { fontSize: 11, color: "#AAB0B7", lineHeight: 16, marginTop: -10 },
+  separator:    { height: 1, backgroundColor: colors.ink100 },
+  sectionLabel: { fontSize: 10, fontFamily: fonts.extraBold, color: colors.primary, letterSpacing: 1 },
+  sectionSub:   { fontSize: 11, color: colors.ink300, lineHeight: 16, marginTop: -10, fontFamily: fonts.medium },
 
-  // Ligne critère : icône + libellé + étoiles
-  criteriaRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  criteriaLabel: { fontSize: 13, color: "#555", flex: 1 },
+  criteriaRow:   { flexDirection: "row", alignItems: "center", gap: 8 },
+  criteriaLabel: { fontSize: 13, color: colors.ink500, flex: 1, fontFamily: fonts.medium },
 
   commentInput: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: colors.ink50,
     borderRadius: radius.md,
     padding: 14,
-    fontSize: 14, color: "#111",
-    borderWidth: 1.5, borderColor: "#E8E8E8",
+    fontSize: 14, color: colors.ink900,
+    fontFamily: fonts.medium,
+    borderWidth: 1.5, borderColor: colors.ink100,
     height: 120,
   },
-  charCount: { fontSize: 11, color: "#AAB0B7", textAlign: "right", marginTop: -8 },
+  charCount: { fontSize: 11, color: colors.ink300, textAlign: "right", marginTop: -8, fontFamily: fonts.medium },
 });

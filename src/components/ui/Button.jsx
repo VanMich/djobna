@@ -1,4 +1,4 @@
-import React, { useRef, useCallback } from "react";
+﻿import React, { useRef, useCallback } from "react";
 import {
   TouchableOpacity,
   Text,
@@ -7,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { colors, radius, shadows } from "../../theme";
+import { colors, radius, shadows, fonts } from "../../theme";
 
 /**
  * Button universel — Uber/Yango style
@@ -18,7 +18,7 @@ import { colors, radius, shadows } from "../../theme";
  * Usage:
  *   <Button title="Accepter" onPress={fn} />
  *   <Button title="Décliner" variant="outline" size="sm" />
- *   <Button title="Enregistrer" loading icon={<Ionicons … />} />
+ *   <Button title="Enregistrer" loading icon={<Icon … />} />
  *   <Button title="Supprimer" variant="danger" />
  */
 export default function Button({
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
   },
   text: {
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   disabled: {
     opacity: 0.85,

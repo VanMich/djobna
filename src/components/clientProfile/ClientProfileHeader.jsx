@@ -1,21 +1,15 @@
-// src/components/clientProfile/ClientProfileHeader.js
+// src/components/clientProfile/ClientProfileHeader.jsx
+// Partie "body" du header (avatar + infos + stats) — intégrée dans le ScrollView.
+// La topRow (titre + settings) est maintenant gérée directement dans le screen.
 import React from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Icon from "../ui/Icon";
-import { colors } from "../../theme";
+import { colors, fonts, shadows } from "../../theme";
 
 export default function ClientProfileHeader({
   profile,
   stats,
   onEditPhoto,
-  onSettings,
 }) {
   const initials = (profile?.displayName || "XX")
     .split(" ")
@@ -25,103 +19,64 @@ export default function ClientProfileHeader({
     .toUpperCase();
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        {/* Ligne titre + settings */}
-        <View style={styles.topRow}>
-          <Text style={styles.pageTitle}>Mon profil</Text>
+    <View style={styles.header}>
+      {/* Avatar + infos */}
+      <View style={styles.avatarRow}>
+        <View style={styles.avatarWrap}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
+          </View>
           <TouchableOpacity
-            style={styles.settingsBtn}
-            onPress={onSettings}
+            style={styles.editBtn}
+            onPress={onEditPhoto}
             activeOpacity={0.8}
           >
-            <Ionicons name="settings-outline" size={20} color="#9FE1CB" />
+            <Icon name="camera" size={10} color={colors.ink500} />
           </TouchableOpacity>
         </View>
 
-        {/* Avatar + infos */}
-        <View style={styles.avatarRow}>
-          <View style={styles.avatarWrap}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{initials}</Text>
-            </View>
-            {/* Bouton éditer photo */}
-            <TouchableOpacity
-              style={styles.editBtn}
-              onPress={onEditPhoto}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="camera" size={10} color="#555" />
-            </TouchableOpacity>
+        <View style={styles.infoBlock}>
+          <Text style={styles.name}>{profile?.displayName}</Text>
+          <Text style={styles.phone}>
+            {profile?.phoneNumber || "+237 — — — — — —"}
+          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Icon name="map-pin" size={12} color={colors.ink500} />
+            <Text style={styles.quartier}>{profile?.quartier || "Douala"}</Text>
           </View>
-
-          <View style={styles.infoBlock}>
-            <Text style={styles.name}>{profile?.displayName}</Text>
-            <Text style={styles.phone}>
-              {profile?.phoneNumber || "+237 — — — — — —"}
-            </Text>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-              <Icon name="map-pin" size={12} color={colors.headerSubtext} weight="fill" />
-              <Text style={styles.quartier}>{profile?.quartier || "Douala"}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Stats rapides */}
-        <View style={styles.statsRow}>
-          {[
-            { value: stats?.missionsCount ?? 0, label: "Missions" },
-            { value: stats?.favoritesCount ?? 0, label: "Favoris" },
-            { value: stats?.reviewsGiven ?? 0, label: "Avis donnés" },
-          ].map((s, i, arr) => (
-            <View
-              key={s.label}
-              style={[
-                styles.statCard,
-                i < arr.length - 1 && styles.statCardBorder,
-              ]}
-            >
-              <Text style={styles.statValue}>{s.value}</Text>
-              <Text style={styles.statLabel}>{s.label}</Text>
-            </View>
-          ))}
         </View>
       </View>
-    </SafeAreaView>
+
+      {/* Stats rapides */}
+      <View style={styles.statsRow}>
+        {[
+          { value: stats?.missionsCount ?? 0, label: "Missions" },
+          { value: stats?.favoritesCount ?? 0, label: "Favoris" },
+          { value: stats?.reviewsGiven ?? 0, label: "Avis donnés" },
+        ].map((s, i, arr) => (
+          <View
+            key={s.label}
+            style={[
+              styles.statCard,
+              i < arr.length - 1 && styles.statCardBorder,
+            ]}
+          >
+            <Text style={styles.statValue}>{s.value}</Text>
+            <Text style={styles.statLabel}>{s.label}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.headerBg },
   header: {
-    backgroundColor: colors.headerBg,
+    backgroundColor: colors.background,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    paddingTop: 6,
+    paddingTop: 10,
     gap: 14,
-  },
-
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  pageTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#fff",
-    letterSpacing: -0.5,
-  },
-  settingsBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,.1)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,.08)",
   },
 
   avatarRow: {
@@ -138,7 +93,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 24, fontWeight: "800", color: "#fff" },
+  avatarText: { fontSize: 24, fontFamily: fonts.extraBold, color: colors.textInverse },
   editBtn: {
     position: "absolute",
     bottom: -3,
@@ -146,27 +101,23 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    ...shadows.sm,
   },
 
   infoBlock: { flex: 1, gap: 4 },
-  name: { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.3 },
-  phone: { fontSize: 12, color: "#9FE1CB" },
-  quartier: { fontSize: 11, color: "rgba(255,255,255,.4)" },
+  name: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.ink900, letterSpacing: -0.3 },
+  phone: { fontSize: 12, color: colors.ink500, fontFamily: fonts.medium },
+  quartier: { fontSize: 11, color: colors.ink300, fontFamily: fonts.medium },
 
   statsRow: {
     flexDirection: "row",
-    backgroundColor: "rgba(29,158,117,.18)",
+    backgroundColor: colors.primarySoft,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(29,158,117,.2)",
+    borderColor: colors.green200,
     overflow: "hidden",
   },
   statCard: {
@@ -177,13 +128,13 @@ const styles = StyleSheet.create({
   },
   statCardBorder: {
     borderRightWidth: 1,
-    borderRightColor: "rgba(29,158,117,.2)",
+    borderRightColor: colors.green200,
   },
-  statValue: { fontSize: 16, fontWeight: "800", color: "#5DCAA5" },
+  statValue: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.primaryDark },
   statLabel: {
     fontSize: 9,
-    fontWeight: "600",
-    color: "rgba(29,158,117,.7)",
+    fontFamily: fonts.semiBold,
+    color: colors.ink500,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },

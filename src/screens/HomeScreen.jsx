@@ -1,27 +1,30 @@
 // src/screens/HomeScreen.jsx
-import { Ionicons } from "@expo/vector-icons";
+// Homepage client — header light, carrousel categories, quick actions, liste de pros.
+// Design System : fond creme, Manrope, forest-tinted neutrals, ombres Airbnb-like.
+
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
-  SafeAreaView,
+  FlatList,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { supabase } from "../config/supabase";
-import { PRICE_RANGES, SERVICES, QUARTIERS_DOUALA } from "../constants/services";
+import { PRICE_RANGES, SERVICES } from "../constants/services";
 import { useProviders } from "../hooks/useProviders";
-import { Avatar, SkeletonList, EmptyState, PremiumBadge, VerifiedBadge, StatusDot } from "../components/ui";
+import { Avatar, SkeletonList, EmptyState, PremiumBadge, VerifiedBadge } from "../components/ui";
 import Icon from "../components/ui/Icon";
-import { colors, radius, spacing, shadows, typography } from "../theme";
+import ErrorState from "../components/ui/ErrorState";
+import CategoryScroll from "../components/home/CategoryScroll";
+import QuickActions from "../components/home/QuickActions";
+import SearchModal from "../components/search/SearchModal";
+import { colors, radius, spacing, shadows, typography, fonts } from "../theme";
 
-const PANEL_H = 290;
-const RATING_OPTIONS = [0, 3, 4, 4.5];
-const RATING_LABELS  = ["Tous", "3+", "4+", "4.5+"];
 
 // ── Utilitaire prix ────────────────────────────────────
 function getPriceDisplay(provider) {
@@ -47,20 +50,17 @@ export default function HomeScreen({ navigation }) {
   const [activeService, setActiveService]   = useState(null);
   const [activeQuartier, setActiveQuartier] = useState(null);
   const [activeRating, setActiveRating]     = useState(0);
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
-  const activeFilterCount = [activeService, activeQuartier, activeRating > 0]
-    .filter(Boolean).length;
-
-  const { providers, loading } = useProviders({
+  const { providers, loading, error, refetch } = useProviders({
     service: activeService,
     quartier: activeQuartier,
     minRating: activeRating,
     searchQuery,
   });
 
-  // ── Infos utilisateur (getSession au lieu de getUser) ──
-  const [firstName, setFirstName] = useState("vous");
+  // ── Infos utilisateur ──
+  const [firstName, setFirstName] = useState("toi");
   useEffect(() => {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -78,10 +78,7 @@ export default function HomeScreen({ navigation }) {
     hour < 12 ? "Bonjour" : hour < 18 ? "Bon après-midi" : "Bonsoir";
 
   // ── Animations ─────────────────────────────────────────
-  const panelHeight  = useRef(new Animated.Value(0)).current;
-  const filterRotate = useRef(new Animated.Value(0)).current;
   const listAnim     = useRef(new Animated.Value(0)).current;
-  const badgeScale   = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (!loading) {
@@ -95,44 +92,6 @@ export default function HomeScreen({ navigation }) {
     }
   }, [loading, providers.length]);
 
-  useEffect(() => {
-    if (activeFilterCount > 0) {
-      Animated.sequence([
-        Animated.spring(badgeScale, { toValue: 1.4, useNativeDriver: true, tension: 200 }),
-        Animated.spring(badgeScale, { toValue: 1,   useNativeDriver: true, tension: 200 }),
-      ]).start();
-    }
-  }, [activeFilterCount]);
-
-  const toggleFilter = useCallback(() => {
-    const opening = !filterOpen;
-    setFilterOpen(opening);
-    Animated.parallel([
-      Animated.spring(panelHeight, {
-        toValue: opening ? PANEL_H : 0,
-        useNativeDriver: false,
-        tension: 80,
-        friction: 12,
-      }),
-      Animated.timing(filterRotate, {
-        toValue: opening ? 1 : 0,
-        duration: 250,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [filterOpen, panelHeight, filterRotate]);
-
-  const resetFilters = useCallback(() => {
-    setActiveService(null);
-    setActiveQuartier(null);
-    setActiveRating(0);
-  }, []);
-
-  const iconRotation = filterRotate.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "90deg"],
-  });
-
   const listTranslate = listAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [24, 0],
@@ -140,147 +99,46 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       {/* ══════════ HEADER ══════════ */}
-      <SafeAreaView style={styles.headerSafe}>
+      <SafeAreaView style={styles.headerSafe} edges={["top"]}>
         <View style={styles.header}>
-
           {/* Ligne salutation + cloche */}
           <View style={styles.topRow}>
             <View>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+              <View style={styles.greetRow}>
                 <Text style={styles.greetingText}>{greetingText}</Text>
-                <Icon name="hand-waving" size={14} color={colors.headerSubtext} weight="fill" />
+                <Icon name="hand" size={14} color={colors.primary} />
               </View>
               <Text style={styles.userNameText}>{firstName}</Text>
             </View>
-            <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8}>
-              <Ionicons name="notifications" size={20} color={colors.headerIcon} />
-              <View style={styles.notifBadge}>
-                <Text style={styles.notifBadgeText}>2</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Barre de recherche + bouton filtre */}
-          <View style={styles.searchRow}>
-            <View style={styles.searchWrap}>
-              <Ionicons name="search" size={16} color={colors.green300} style={styles.searchIcon} />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Rechercher un prestataire…"
-                placeholderTextColor={colors.headerMuted}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                returnKeyType="search"
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                  <Ionicons name="close-circle" size={16} color={colors.headerIcon} />
-                </TouchableOpacity>
-              )}
-            </View>
-
             <TouchableOpacity
-              style={[styles.filterBtn, filterOpen && styles.filterBtnActive]}
-              onPress={toggleFilter}
-              activeOpacity={0.85}
+              style={styles.notifBtn}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate("Notifications")}
             >
-              <Animated.View style={{ transform: [{ rotate: iconRotation }] }}>
-                <Ionicons name="options" size={20} color={filterOpen ? colors.textInverse : colors.headerIcon} />
-              </Animated.View>
-              {activeFilterCount > 0 && (
-                <Animated.View style={[styles.filterBadge, { transform: [{ scale: badgeScale }] }]}>
-                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-                </Animated.View>
-              )}
+              <Icon name="bell" size={20} color={colors.ink700} />
             </TouchableOpacity>
           </View>
-        </View>
 
-        {/* ══════════ PANNEAU DE FILTRES ══════════ */}
-        <Animated.View style={[styles.filterPanel, { height: panelHeight }]}>
-          <ScrollView
-            style={styles.filterScroll}
-            contentContainerStyle={styles.filterScrollContent}
-            showsVerticalScrollIndicator={false}
-            nestedScrollEnabled
+          {/* Barre de recherche (faux bouton → ouvre la modale) */}
+          <TouchableOpacity
+            style={styles.searchWrap}
+            onPress={() => setSearchOpen(true)}
+            activeOpacity={0.8}
           >
-            {/* — Service — */}
-            <Text style={styles.filterLabel}>SERVICE</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-              <TouchableOpacity
-                style={[styles.chip, !activeService && styles.chipActive]}
-                onPress={() => setActiveService(null)} activeOpacity={0.8}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Icon name="sparkle" size={14} color={!activeService ? "#fff" : "#555"} weight="fill" />
-                  <Text style={[styles.chipText, !activeService && styles.chipTextActive]}>Tous</Text>
-                </View>
+            <Icon name="search" size={18} color={colors.ink300} />
+            <Text style={styles.searchPlaceholder}>
+              {searchQuery || "Rechercher un pro..."}
+            </Text>
+            {searchQuery.length > 0 && (
+              <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Icon name="x" size={16} color={colors.ink500} />
               </TouchableOpacity>
-              {SERVICES.map((svc) => (
-                <TouchableOpacity
-                  key={svc.id}
-                  style={[styles.chip, activeService === svc.id && styles.chipActive]}
-                  onPress={() => setActiveService(activeService === svc.id ? null : svc.id)}
-                  activeOpacity={0.8}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                    <Icon name={svc.icon} size={14} color={activeService === svc.id ? "#fff" : "#555"} weight="duotone" />
-                    <Text style={[styles.chipText, activeService === svc.id && styles.chipTextActive]}>
-                      {svc.label.split(" ")[0]}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* — Quartier — */}
-            <Text style={[styles.filterLabel, { marginTop: 10 }]}>QUARTIER</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-              <TouchableOpacity
-                style={[styles.chip, !activeQuartier && styles.chipActive]}
-                onPress={() => setActiveQuartier(null)} activeOpacity={0.8}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                  <Icon name="map-pin" size={14} color={!activeQuartier ? "#fff" : "#555"} weight="fill" />
-                  <Text style={[styles.chipText, !activeQuartier && styles.chipTextActive]}>Tous</Text>
-                </View>
-              </TouchableOpacity>
-              {QUARTIERS_DOUALA.map((q) => (
-                <TouchableOpacity
-                  key={q}
-                  style={[styles.chip, activeQuartier === q && styles.chipActive]}
-                  onPress={() => setActiveQuartier(activeQuartier === q ? null : q)}
-                  activeOpacity={0.8}>
-                  <Text style={[styles.chipText, activeQuartier === q && styles.chipTextActive]}>{q}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-
-            {/* — Note — */}
-            <View style={styles.ratingRow}>
-              <Text style={styles.filterLabel}>NOTE MINIMALE</Text>
-              {activeFilterCount > 0 && (
-                <TouchableOpacity onPress={resetFilters}>
-                  <Text style={styles.resetBtn}>Réinitialiser</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            <View style={styles.ratingBtns}>
-              {RATING_OPTIONS.map((val, i) => (
-                <TouchableOpacity
-                  key={val}
-                  style={[styles.ratingChip, activeRating === val && styles.ratingChipActive]}
-                  onPress={() => setActiveRating(val)}
-                  activeOpacity={0.8}>
-                  {val > 0 && <Ionicons name="star" size={11} color={activeRating === val ? colors.textInverse : colors.star} />}
-                  <Text style={[styles.ratingChipText, activeRating === val && styles.ratingChipTextActive]}>
-                    {RATING_LABELS[i]}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        </Animated.View>
+            )}
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
 
       {/* ══════════ CORPS ══════════ */}
@@ -290,58 +148,49 @@ export default function HomeScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Barre de stats + filtres actifs */}
-        <View style={styles.statsRow}>
-          <View style={styles.statPill}>
-            <View style={styles.statDot} />
-            <Text style={styles.statText}>
-              <Text style={styles.statNum}>{providers.length} </Text>
-              prestataire{providers.length > 1 ? "s" : ""}
-            </Text>
-          </View>
-          {activeService && (
-            <TouchableOpacity style={styles.activeTag} onPress={() => setActiveService(null)} activeOpacity={0.8}>
-              <Icon name={SERVICES.find((s) => s.id === activeService)?.icon || "wrench"} size={12} color={colors.primary} weight="duotone" />
-              <Text style={styles.activeTagText}>
-                {SERVICES.find((s) => s.id === activeService)?.label.split(" ")[0]}
-              </Text>
-              <Ionicons name="close" size={11} color={colors.primary} />
-            </TouchableOpacity>
-          )}
-          {activeQuartier && (
-            <TouchableOpacity style={styles.activeTag} onPress={() => setActiveQuartier(null)} activeOpacity={0.8}>
-              <Icon name="map-pin" size={12} color={colors.primary} weight="fill" />
-              <Text style={styles.activeTagText}>{activeQuartier}</Text>
-              <Ionicons name="close" size={11} color={colors.primary} />
-            </TouchableOpacity>
-          )}
-          {activeRating > 0 && (
-            <TouchableOpacity style={styles.activeTag} onPress={() => setActiveRating(0)} activeOpacity={0.8}>
-              <Icon name="star" size={12} color={colors.primary} weight="fill" />
-              <Text style={styles.activeTagText}>{activeRating}+</Text>
-              <Ionicons name="close" size={11} color={colors.primary} />
-            </TouchableOpacity>
-          )}
-        </View>
+        {/* Carrousel categories */}
+        <CategoryScroll
+          services={SERVICES}
+          activeService={activeService}
+          onSelect={setActiveService}
+        />
 
+        {/* Quick actions */}
+        <QuickActions
+          requestCount={0}
+          onUrgency={() => {
+            setActiveService(null);
+            setActiveQuartier(null);
+            setActiveRating(0);
+          }}
+          onMyRequests={() => navigation.navigate("MyRequests")}
+        />
+
+        {/* Section header */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
             {activeService
               ? SERVICES.find((s) => s.id === activeService)?.label
               : searchQuery
               ? `Résultats pour "${searchQuery}"`
-              : "Près de vous"}
+              : "Près de toi"}
           </Text>
+          <View style={styles.sectionCount}>
+            <View style={styles.sectionDot} />
+            <Text style={styles.sectionCountText}>{providers.length} pro{providers.length > 1 ? "s" : ""}</Text>
+          </View>
         </View>
 
         {/* Liste */}
         {loading ? (
           <SkeletonList count={3} />
+        ) : error ? (
+          <ErrorState onRetry={refetch} message="Impossible de charger les prestataires. Vérifie ta connexion et réessaie." />
         ) : providers.length === 0 ? (
           <EmptyState
-            icon="magnifying-glass"
-            title="Aucun prestataire trouvé"
-            subtitle="Essayez d'autres filtres ou revenez plus tard."
+            icon="search"
+            title="Aucun pro trouvé"
+            subtitle="Essaie d'autres filtres ou reviens plus tard."
           />
         ) : (
           <Animated.View style={{ opacity: listAnim, transform: [{ translateY: listTranslate }] }}>
@@ -356,6 +205,21 @@ export default function HomeScreen({ navigation }) {
           </Animated.View>
         )}
       </ScrollView>
+
+      {/* ══════════ SEARCH MODAL ══════════ */}
+      <SearchModal
+        visible={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        onSelectProvider={(provider) => navigation.navigate("ProviderProfile", { providerId: provider.id })}
+        onSelectService={(serviceId) => {
+          setActiveService(serviceId);
+          setSearchQuery("");
+        }}
+        onSelectQuartier={(quartier) => {
+          setActiveQuartier(quartier);
+          setSearchQuery("");
+        }}
+      />
     </View>
   );
 }
@@ -396,7 +260,7 @@ function ProviderCard({ provider, index, onPress }) {
         onPressOut={onPressOut}
         activeOpacity={1}
       >
-        {/* Avatar — utilise le composant partagé */}
+        {/* Avatar */}
         <View style={styles.avatarWrap}>
           <Avatar
             name={provider.displayName}
@@ -404,7 +268,6 @@ function ProviderCard({ provider, index, onPress }) {
             size={54}
             service={provider.services?.[0]}
           />
-          <StatusDot status="online" size={13} style={styles.availDot} />
         </View>
 
         {/* Contenu */}
@@ -421,13 +284,13 @@ function ProviderCard({ provider, index, onPress }) {
           </View>
 
           {/* Service + quartier */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            {mainService?.icon && <Icon name={mainService.icon} size={12} color={colors.primary} weight="duotone" />}
+          <View style={styles.cardSubRow}>
+            {mainService?.icon && <Icon name={mainService.icon} size={13} color={colors.primary} weight="duotone" />}
             <Text style={styles.cardSub} numberOfLines={1}>
               {mainService?.label}
               {extraCount > 0 ? `  +${extraCount}` : ""}
               {"  ·  "}
-              <Text style={styles.cardQuartier}>{provider.quartier || "Douala"}</Text>
+              {provider.quartier || "Douala"}
             </Text>
           </View>
 
@@ -435,14 +298,14 @@ function ProviderCard({ provider, index, onPress }) {
           <View style={styles.cardFooter}>
             {rating > 0 ? (
               <View style={styles.ratingPill}>
-                <Ionicons name="star" size={10} color={colors.star} />
+                <Icon name="star" size={10} color={colors.star} />
                 <Text style={styles.ratingVal}>{rating.toFixed(1)}</Text>
                 <Text style={styles.ratingCount}>({provider.reviewCount || 0})</Text>
               </View>
             ) : (
-              <View style={styles.ratingPill}>
-                <Ionicons name="star-outline" size={10} color={colors.textMuted} />
-                <Text style={[styles.ratingVal, { color: colors.textMuted }]}>Nouveau</Text>
+              <View style={[styles.ratingPill, styles.ratingPillNew]}>
+                <Icon name="star" size={10} color={colors.ink300} />
+                <Text style={[styles.ratingVal, { color: colors.ink500 }]}>Nouveau</Text>
               </View>
             )}
             <View style={styles.pricePill}>
@@ -451,7 +314,7 @@ function ProviderCard({ provider, index, onPress }) {
           </View>
         </View>
 
-        <Ionicons name="chevron-forward" size={16} color={colors.disabled} />
+        <Icon name="chevron-right" size={16} color={colors.ink300} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -460,144 +323,145 @@ function ProviderCard({ provider, index, onPress }) {
 // ── Styles ─────────────────────────────────────────────
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  headerSafe: { backgroundColor: colors.headerBg },
+  headerSafe: { backgroundColor: colors.background },
 
+  // Header
   header: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.s5,
     paddingBottom: spacing.md,
     gap: spacing.md,
   },
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 },
-  greetingText: { fontSize: 12, color: colors.headerSubtext, fontWeight: "600", letterSpacing: 0.3 },
-  userNameText: { fontSize: 24, fontWeight: "800", color: colors.headerText, letterSpacing: -0.5 },
-
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  greetRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  greetingText: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    color: colors.primary,
+    letterSpacing: 0.3,
+  },
+  userNameText: {
+    fontSize: 26,
+    fontFamily: fonts.extraBold,
+    color: colors.ink900,
+    letterSpacing: -0.5,
+    marginTop: 2,
+  },
   notifBtn: {
-    width: 44, height: 44, borderRadius: radius.md,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    alignItems: "center", justifyContent: "center",
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.ink50,
+    borderWidth: 1,
+    borderColor: colors.ink100,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  notifBadge: {
-    position: "absolute", top: 8, right: 8,
-    width: 14, height: 14, borderRadius: 7,
-    backgroundColor: colors.error,
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 1.5, borderColor: colors.headerBg,
-  },
-  notifBadgeText: { fontSize: 7, fontWeight: "800", color: colors.textInverse },
 
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
+  // Search
   searchWrap: {
-    flex: 1, flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderRadius: radius.md, paddingHorizontal: 14, height: 48,
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: colors.ink50,
+    borderWidth: 1.5,
+    borderColor: colors.ink100,
+    borderRadius: radius.md,
+    paddingHorizontal: 14,
+    height: 48,
   },
-  searchIcon: { opacity: 0.8 },
-  searchInput: { flex: 1, fontSize: 14, color: colors.headerText, fontWeight: "500" },
+  searchPlaceholder: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.ink300,
+  },
+  // Body
+  body: { flex: 1 },
+  bodyContent: { paddingBottom: 40 },
 
-  filterBtn: {
-    width: 48, height: 48, borderRadius: radius.md,
-    backgroundColor: "rgba(255,255,255,0.08)",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
-    alignItems: "center", justifyContent: "center",
+  // Section header
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: spacing.s5,
+    marginBottom: 8,
   },
-  filterBtnActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  filterBadge: {
-    position: "absolute", top: -5, right: -5,
-    width: 18, height: 18, borderRadius: 9,
-    backgroundColor: colors.error,
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 2, borderColor: colors.headerBg,
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: fonts.bold,
+    color: colors.ink900,
+    letterSpacing: -0.3,
   },
-  filterBadgeText: { fontSize: 9, fontWeight: "800", color: colors.textInverse },
+  sectionCount: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: colors.ink50,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+  },
+  sectionDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: colors.primary,
+  },
+  sectionCountText: {
+    fontSize: 12,
+    fontFamily: fonts.semiBold,
+    color: colors.ink500,
+  },
 
-  filterPanel: {
-    backgroundColor: "rgba(255,255,255,0.04)",
-    overflow: "hidden",
-    borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.06)",
-  },
-  filterScroll: { flex: 1 },
-  filterScrollContent: { paddingHorizontal: spacing.md, paddingTop: 14, paddingBottom: 16, gap: 8 },
-  filterLabel: { fontSize: 10, fontWeight: "700", color: colors.headerMuted, letterSpacing: 0.8 },
-  chipsRow: { flexDirection: "row", gap: 7, paddingRight: 16 },
-  chip: {
-    paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20,
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.18)",
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
-  chipActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  chipText: { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.7)" },
-  chipTextActive: { color: colors.textInverse },
-
-  ratingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  resetBtn: { fontSize: 12, color: colors.headerSubtext, fontWeight: "600" },
-  ratingBtns: { flexDirection: "row", gap: 8 },
-  ratingChip: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20,
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.18)",
-    backgroundColor: "rgba(255,255,255,0.06)",
-  },
-  ratingChipActive: { backgroundColor: colors.star, borderColor: colors.star },
-  ratingChipText: { fontSize: 12, fontWeight: "600", color: "rgba(255,255,255,0.7)" },
-  ratingChipTextActive: { color: colors.textInverse },
-
-  body: { flex: 1, backgroundColor: colors.surface },
-  bodyContent: { padding: spacing.md, paddingBottom: 40, gap: 10 },
-
-  statsRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 2 },
-  statPill: {
-    flexDirection: "row", alignItems: "center", gap: 6,
-    backgroundColor: colors.card, borderRadius: 20,
-    paddingVertical: 6, paddingHorizontal: 12,
-    borderWidth: 1, borderColor: colors.borderLight,
-  },
-  statDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.primary },
-  statText: { fontSize: 12, color: colors.textSecondary },
-  statNum: { fontWeight: "700", color: colors.primary },
-  activeTag: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    backgroundColor: colors.green100, borderRadius: 20,
-    paddingVertical: 6, paddingHorizontal: 10,
-    borderWidth: 1, borderColor: colors.green200,
-  },
-  activeTagText: { fontSize: 11, fontWeight: "600", color: colors.primary },
-
-  sectionHeader: { marginBottom: 2 },
-  sectionTitle: { ...typography.h3, letterSpacing: -0.3 },
-
-  cardWrap: { marginBottom: 2 },
+  // Provider card
+  cardWrap: { paddingHorizontal: spacing.s5, marginBottom: 8 },
   card: {
-    backgroundColor: colors.card, borderRadius: radius.xl,
-    padding: 14, flexDirection: "row", alignItems: "center", gap: 13,
-    borderWidth: 1, borderColor: colors.borderLight,
+    backgroundColor: colors.card,
+    borderRadius: radius.xl,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    borderWidth: 1,
+    borderColor: colors.ink100,
     ...shadows.sm,
   },
   avatarWrap: { position: "relative" },
-  availDot: {
-    position: "absolute", bottom: 0, right: 0,
-    borderColor: colors.card,
-  },
-
   cardBody: { flex: 1, gap: 3 },
   cardNameRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  cardName: { fontSize: 14, fontWeight: "700", color: colors.textPrimary, flex: 1 },
+  cardName: {
+    fontSize: 15,
+    fontFamily: fonts.bold,
+    color: colors.ink900,
+    flex: 1,
+  },
   badgesRow: { flexDirection: "row", gap: 4 },
-
-  cardSub: { fontSize: 12, color: colors.textSecondary },
-  cardQuartier: { color: colors.textSecondary },
-  cardFooter: { flexDirection: "row", alignItems: "center", gap: 7, marginTop: 2 },
-
+  cardSubRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  cardSub: { fontSize: 12, fontFamily: fonts.medium, color: colors.ink500 },
+  cardFooter: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 3 },
   ratingPill: {
-    flexDirection: "row", alignItems: "center", gap: 3,
-    backgroundColor: colors.premiumBg, borderRadius: radius.sm,
-    paddingVertical: 3, paddingHorizontal: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    backgroundColor: colors.mangoSoft,
+    borderRadius: radius.xs,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
   },
-  ratingVal: { fontSize: 11, fontWeight: "700", color: "#B45309" },
-  ratingCount: { fontSize: 10, color: colors.textSecondary },
+  ratingPillNew: { backgroundColor: colors.ink50 },
+  ratingVal: { fontSize: 12, fontFamily: fonts.bold, color: colors.mangoDark },
+  ratingCount: { fontSize: 10, fontFamily: fonts.medium, color: colors.ink500, marginLeft: 1 },
   pricePill: {
-    backgroundColor: colors.primaryLight, borderRadius: radius.sm,
-    paddingVertical: 3, paddingHorizontal: 7,
+    backgroundColor: colors.primarySoft,
+    borderRadius: radius.xs,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
   },
-  priceText: { fontSize: 10, fontWeight: "600", color: colors.primaryDark },
+  priceText: { fontSize: 10, fontFamily: fonts.bold, color: colors.primaryDark },
 });

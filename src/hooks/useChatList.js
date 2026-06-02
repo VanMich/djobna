@@ -6,6 +6,7 @@ export function useChatList() {
   const [activeRole, setActiveRole] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const mountedRef = useRef(true);
 
   // ── 1. Récupérer userId + activeRole ──────────────────────────────────────
@@ -54,6 +55,7 @@ export function useChatList() {
     if (!userId || !activeRole) return;
 
     try {
+      setError(null);
       // Étape 1 : récupérer les chats filtrés par rôle actif
       const roleColumn = activeRole === "provider" ? "provider_id" : "client_id";
       const { data: chats, error: chatsError } = await supabase
@@ -64,7 +66,7 @@ export function useChatList() {
 
       if (chatsError) {
         console.warn("useChatList chats error:", chatsError.message);
-        setLoading(false);
+        if (mountedRef.current) { setError(chatsError); setLoading(false); }
         return;
       }
 
@@ -137,7 +139,7 @@ export function useChatList() {
       }
     } catch (err) {
       console.warn("useChatList unexpected error:", err);
-      if (mountedRef.current) setLoading(false);
+      if (mountedRef.current) { setError(err); setLoading(false); }
     }
   }, [userId, activeRole]);
 
@@ -166,5 +168,5 @@ export function useChatList() {
     return () => supabase.removeChannel(channel);
   }, [userId, activeRole, fetchConversations]);
 
-  return { conversations, loading };
+  return { conversations, loading, error, refetch: fetchConversations };
 }

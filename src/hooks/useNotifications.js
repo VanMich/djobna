@@ -59,11 +59,10 @@ export function useNotifications() {
       const user = session?.user;
       if (!user) return;
 
-      // Stocke le token en base pour l'envoi côté serveur
+      // Stocke le token dans la table privée pour l'envoi côté serveur
       await supabase
-        .from("users")
-        .update({ push_token: token })
-        .eq("id", user.id);
+        .from("user_private")
+        .upsert({ id: user.id, push_token: token, updated_at: new Date().toISOString() });
     })();
   }, []);
 }

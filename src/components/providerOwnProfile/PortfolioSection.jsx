@@ -1,4 +1,4 @@
-// src/components/providerOwnProfile/PortfolioSection.jsx
+﻿// src/components/providerOwnProfile/PortfolioSection.jsx
 //
 // Affiche les photos de réalisations du prestataire (§14.2).
 // Chaque item du tableau portfolio est un objet { uri, caption }.
@@ -24,9 +24,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "../../components/ui/Icon";
 
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 export default function PortfolioSection({
   portfolio,
@@ -72,7 +72,7 @@ export default function PortfolioSection({
           onPress: () => {
             Alert.alert(
               "Supprimer cette photo ?",
-              "Elle sera retirée définitivement de votre portfolio.",
+              "Elle sera retirée définitivement de ton portfolio.",
               [
                 { text: "Annuler", style: "cancel" },
                 { text: "Supprimer", style: "destructive", onPress: () => onRemove(item.uri) },
@@ -121,7 +121,7 @@ export default function PortfolioSection({
         {/* Bouton "Ajouter" (mode édition uniquement, limite 20 photos) */}
         {!readOnly && items.length < 20 && (
           <TouchableOpacity style={styles.addBtn} onPress={onAdd} activeOpacity={0.8}>
-            <Ionicons name="add" size={24} color={colors.primary} />
+            <Icon name="add" size={24} color={colors.primary} />
             <Text style={styles.addText}>Ajouter</Text>
           </TouchableOpacity>
         )}
@@ -129,11 +129,11 @@ export default function PortfolioSection({
         {/* État vide */}
         {items.length === 0 && (
           <View style={styles.empty}>
-            <Ionicons name="images-outline" size={24} color="#DDD" />
+            <Icon name="images-outline" size={24} color={colors.ink300} />
             <Text style={styles.emptyText}>
               {readOnly
-                ? "Ce prestataire n'a pas encore ajouté de photos"
-                : "Ajoutez des photos de vos travaux pour attirer plus de clients"}
+                ? "Ce pro n'a pas encore ajouté de photos"
+                : "Ajoute des photos de tes travaux pour attirer plus de clients"}
             </Text>
           </View>
         )}
@@ -155,7 +155,7 @@ export default function PortfolioSection({
               value={captionDraft}
               onChangeText={setCaptionDraft}
               placeholder="Ex : Installation électrique terminée"
-              placeholderTextColor="#AAB0B7"
+              placeholderTextColor={colors.ink300}
               maxLength={100}
               autoFocus
             />
@@ -198,11 +198,11 @@ const styles = StyleSheet.create({
   photo: {
     width: 80, height: 80,
     borderRadius: 12,
-    backgroundColor: "#F0F0F0",
+    backgroundColor: colors.ink50,
   },
 
   caption: {
-    fontSize: 9, color: "#555",
+    fontSize: 9, color: colors.ink500,
     lineHeight: 13,
     textAlign: "center",
   },
@@ -218,18 +218,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1.5, borderColor: "#D1F5E8",
     borderStyle: "dashed",
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.primarySoft,
     alignItems: "center", justifyContent: "center",
     gap: 2,
   },
-  addText: { fontSize: 9, fontWeight: "700", color: colors.primary },
+  addText: { fontSize: 9, fontFamily: fonts.bold, color: colors.primary },
 
   // État vide
   empty: {
     flexDirection: "row", alignItems: "center",
     gap: 8, padding: 4, maxWidth: 220,
   },
-  emptyText: { fontSize: 11, color: "#AAB0B7", lineHeight: 16, flex: 1 },
+  emptyText: { fontSize: 11, color: colors.ink300, lineHeight: 16, flex: 1 },
 
   // Modal légende
   modalOverlay: {
@@ -241,33 +241,33 @@ const styles = StyleSheet.create({
   },
   modalBox: {
     width: "100%",
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 18,
     padding: 20,
     gap: 12,
   },
-  modalTitle: { fontSize: 15, fontWeight: "700", color: "#111", textAlign: "center" },
+  modalTitle: { fontSize: 15, fontFamily: fonts.bold, color: colors.ink900, textAlign: "center" },
   modalInput: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: colors.ink50,
     borderRadius: 10,
     padding: 12,
-    fontSize: 14, color: "#111",
-    borderWidth: 1.5, borderColor: "#E8E8E8",
+    fontSize: 14, color: colors.ink900,
+    borderWidth: 1.5, borderColor: colors.borderLight,
   },
-  modalCount: { fontSize: 11, color: "#AAB0B7", textAlign: "right", marginTop: -8 },
+  modalCount: { fontSize: 11, color: colors.ink300, textAlign: "right", marginTop: -8 },
   modalActions: { flexDirection: "row", gap: 10 },
   modalCancel: {
     flex: 1, paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: colors.ink50,
     alignItems: "center",
   },
-  modalCancelText: { fontSize: 14, fontWeight: "600", color: "#888" },
+  modalCancelText: { fontSize: 14, fontFamily: fonts.semiBold, color: colors.ink500 },
   modalSave: {
     flex: 1, paddingVertical: 12,
     borderRadius: 10,
     backgroundColor: colors.primary,
     alignItems: "center",
   },
-  modalSaveText: { fontSize: 14, fontWeight: "700", color: "#fff" },
+  modalSaveText: { fontSize: 14, fontFamily: fonts.bold, color: colors.textInverse },
 });

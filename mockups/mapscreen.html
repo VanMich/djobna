@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Djobna — MapScreen Mockup v2 (Yango/Airbnb)</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #1D9E75;
+  --primary-dark: #0F6E56;
+  --primary-soft: #E4F4ED;
+  --brand-deep: #0D1F1A;
+  --mango: #F2A65A;
+  --mango-soft: #FFE7CC;
+  --mango-dark: #8A4A18;
+  --background: #FAFAF7;
+  --surface: #FFFFFF;
+  --card: #FFFFFF;
+  --ink-900: #0D1F1A;
+  --ink-700: #2A4138;
+  --ink-500: #5A6F66;
+  --ink-300: #B5C0BA;
+  --ink-100: #E4E8E6;
+  --ink-50: #F1F3F1;
+  --error: #E54848;
+  --info: #3B82F6;
+  --green-200: #A7E8D0;
+  --shadow-sm: 0 1px 3px rgba(13,31,26,0.06);
+  --shadow-md: 0 4px 12px rgba(13,31,26,0.08);
+  --shadow-lg: 0 12px 32px rgba(13,31,26,0.14);
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Manrope', sans-serif;
+  background: #E4E8E6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px 60px;
+  min-height: 100vh;
+}
+
+h1.title { font-size: 28px; font-weight: 800; color: var(--ink-900); text-align: center; margin-bottom: 8px; letter-spacing: -0.5px; }
+p.subtitle { font-size: 14px; font-weight: 500; color: var(--ink-500); text-align: center; margin-bottom: 40px; max-width: 600px; }
+
+.phones-row { display: flex; gap: 60px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+
+/* ═══ PHONE FRAME ═══ */
+.phone-wrap { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+.phone-label { font-size: 13px; font-weight: 700; color: var(--ink-700); text-transform: uppercase; letter-spacing: 1px; }
+.phone-desc { font-size: 12px; font-weight: 500; color: var(--ink-500); text-align: center; max-width: 320px; margin-top: -8px; }
+
+.phone {
+  width: 375px; height: 812px;
+  border-radius: 44px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(13,31,26,0.18), 0 0 0 11px #1a1a1a;
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.phone::before {
+  content: '';
+  position: absolute; top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 120px; height: 32px;
+  background: #1a1a1a;
+  border-radius: 0 0 18px 18px;
+  z-index: 200;
+}
+
+/* ═══ MAP BACKGROUND ═══ */
+.map-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 40%, #D1F5E8 0%, transparent 40%),
+    radial-gradient(ellipse at 70% 60%, #E3EEFD 0%, transparent 35%),
+    linear-gradient(180deg, #F0F4F2 0%, #E8ECE9 100%);
+  z-index: 0;
+}
+.map-bg::after {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(0deg, transparent 49.5%, #cdd5d0 49.5%, #cdd5d0 50.5%, transparent 50.5%),
+    linear-gradient(90deg, transparent 49.5%, #cdd5d0 49.5%, #cdd5d0 50.5%, transparent 50.5%),
+    linear-gradient(0deg, transparent 24%, #dde3df 24%, #dde3df 24.8%, transparent 24.8%),
+    linear-gradient(90deg, transparent 30%, #dde3df 30%, #dde3df 30.8%, transparent 30.8%),
+    linear-gradient(0deg, transparent 74%, #dde3df 74%, #dde3df 74.8%, transparent 74.8%),
+    linear-gradient(90deg, transparent 70%, #dde3df 70%, #dde3df 70.8%, transparent 70.8%);
+  opacity: 0.5;
+}
+
+/* ═══ FLOATING SEARCH ═══ */
+.floating-search {
+  position: absolute;
+  top: 58px; left: 0; right: 0;
+  z-index: 100;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.search-card {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 10px 14px;
+  box-shadow: var(--shadow-lg);
+  margin: 0 16px;
+}
+.search-card svg { width: 20px; height: 20px; stroke: var(--ink-300); fill: none; stroke-width: 2; flex-shrink: 0; }
+.search-card input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500;
+  color: var(--ink-900);
+}
+.search-card input::placeholder { color: var(--ink-300); }
+.search-filter-btn {
+  width: 40px; height: 40px; border-radius: var(--r-md);
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(29,158,117,0.3);
+  cursor: pointer;
+}
+.search-filter-btn svg { stroke: white; width: 18px; height: 18px; }
+
+/* ═══ CHIPS — FULL WIDTH ═══ */
+.chips-row {
+  display: flex; gap: 8px;
+  overflow-x: auto; scrollbar-width: none;
+  padding: 0 16px;
+  /* Full width — flush to edges */
+}
+.chips-row::-webkit-scrollbar { display: none; }
+.chip {
+  display: flex; align-items: center; gap: 5px;
+  background: var(--card);
+  border-radius: 20px;
+  padding: 8px 14px;
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.15s;
+  font-size: 12px; font-weight: 600; color: var(--ink-700);
+}
+.chip:hover { border-color: var(--ink-100); }
+.chip.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(29,158,117,0.25);
+}
+.chip svg { width: 14px; height: 14px; fill: none; stroke-width: 2; stroke: var(--ink-500); }
+.chip.active svg { stroke: white; }
+
+/* ═══ MAP MARKERS ═══ */
+.marker {
+  position: absolute;
+  display: flex; flex-direction: column; align-items: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+  z-index: 10;
+}
+.marker:hover { transform: scale(1.1); z-index: 20; }
+.marker-bubble {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  color: white;
+  font-size: 11px; font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  white-space: nowrap;
+  position: relative;
+}
+.marker-bubble svg { width: 14px; height: 14px; stroke: white; fill: none; stroke-width: 2; }
+.marker-tail {
+  width: 0; height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 7px solid currentColor;
+  margin-top: -1px;
+}
+.marker-premium {
+  position: absolute; top: -5px; right: -5px;
+  width: 16px; height: 16px; border-radius: 8px;
+  background: var(--mango);
+  border: 2px solid white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px; color: white; font-weight: 800;
+}
+/* Marker en cours de mission — pulsing ring */
+.marker.in-mission .marker-bubble {
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.3), 0 4px 12px rgba(0,0,0,0.2);
+  animation: marker-pulse 2s infinite;
+}
+@keyframes marker-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(29,158,117,0.3), 0 4px 12px rgba(0,0,0,0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(29,158,117,0.1), 0 4px 12px rgba(0,0,0,0.2); }
+}
+.marker-mission-badge {
+  position: absolute; top: -6px; left: -6px;
+  width: 18px; height: 18px; border-radius: 9px;
+  background: var(--primary);
+  border: 2px solid white;
+  display: flex; align-items: center; justify-content: center;
+}
+.marker-mission-badge svg { width: 10px; height: 10px; stroke: white; fill: none; stroke-width: 2.5; }
+
+/* ═══ USER DOT ═══ */
+.user-dot {
+  position: absolute;
+  top: 50%; left: 48%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+}
+.user-dot-inner {
+  width: 16px; height: 16px; border-radius: 8px;
+  background: #3B82F6;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.4);
+}
+.user-dot-pulse {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px; height: 40px; border-radius: 20px;
+  background: rgba(59,130,246,0.12);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% { transform: translate(-50%,-50%) scale(1); opacity: 1; } 50% { transform: translate(-50%,-50%) scale(1.3); opacity: 0.5; } }
+
+/* ═══ RECENTER BTN ═══ */
+.recenter-btn {
+  position: absolute;
+  right: 16px;
+  width: 44px; height: 44px;
+  border-radius: 22px;
+  background: var(--card);
+  box-shadow: var(--shadow-md);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  z-index: 30;
+  border: 1px solid var(--ink-100);
+}
+.recenter-btn svg { width: 20px; height: 20px; stroke: var(--ink-700); fill: none; stroke-width: 2; }
+
+/* ═══ BOTTOM CARD — Standard (no mission) ═══ */
+.bottom-card {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 14px 20px 34px;
+  box-shadow: 0 -8px 32px rgba(13,31,26,0.12);
+  z-index: 50;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.bottom-card-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--ink-100);
+  align-self: center;
+  margin-bottom: 2px;
+}
+.bottom-card-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+}
+.bottom-card-close {
+  width: 28px; height: 28px; border-radius: 14px;
+  background: var(--ink-50);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0;
+}
+.bottom-card-close svg { width: 14px; height: 14px; stroke: var(--ink-500); fill: none; stroke-width: 2.5; }
+
+.provider-row { display: flex; align-items: center; gap: 14px; flex: 1; }
+.provider-avatar {
+  width: 52px; height: 52px; border-radius: var(--r-lg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; color: white;
+  position: relative; flex-shrink: 0;
+}
+.provider-avatar .premium-dot {
+  position: absolute; bottom: -3px; right: -3px;
+  width: 18px; height: 18px; border-radius: 9px;
+  background: var(--mango); border: 2.5px solid white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px;
+}
+.provider-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.provider-name-row { display: flex; align-items: center; gap: 6px; }
+.provider-name { font-size: 15px; font-weight: 700; color: var(--ink-900); }
+.provider-verified {
+  width: 16px; height: 16px; border-radius: 8px;
+  background: var(--primary-soft);
+  display: flex; align-items: center; justify-content: center;
+}
+.provider-verified svg { width: 10px; height: 10px; stroke: var(--primary); fill: none; stroke-width: 2.5; }
+.provider-service { font-size: 12px; font-weight: 500; color: var(--ink-500); }
+.provider-meta { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+.provider-meta-item { display: flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; color: var(--ink-500); }
+.provider-meta-item svg { width: 12px; height: 12px; fill: none; stroke-width: 2; }
+
+.actions-row { display: flex; gap: 10px; }
+.btn-secondary {
+  flex: 1; padding: 13px;
+  border-radius: 14px;
+  border: 1.5px solid var(--primary);
+  background: transparent;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px; font-weight: 700; color: var(--primary);
+  text-align: center; cursor: pointer;
+}
+.btn-primary {
+  flex: 1; padding: 13px;
+  border-radius: 14px; border: none;
+  background: var(--primary);
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px; font-weight: 700; color: white;
+  text-align: center; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  box-shadow: 0 4px 16px rgba(29,158,117,0.35);
+}
+.btn-primary svg { width: 15px; height: 15px; stroke: white; fill: none; stroke-width: 2; }
+
+/* ═══ BOTTOM CARD — MISSION IN PROGRESS ═══ */
+.mission-card {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: var(--card);
+  border-radius: 24px 24px 0 0;
+  padding: 14px 20px 34px;
+  box-shadow: 0 -8px 32px rgba(13,31,26,0.12);
+  z-index: 50;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.mission-card .bottom-card-handle {
+  width: 36px; height: 4px; border-radius: 2px;
+  background: var(--ink-100); align-self: center; margin-bottom: 2px;
+}
+
+/* Mission status banner */
+.mission-status-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--primary-soft);
+  border: 1px solid var(--green-200);
+  border-radius: var(--r-md);
+  padding: 10px 14px;
+}
+.mission-status-icon {
+  width: 32px; height: 32px; border-radius: 16px;
+  background: var(--primary);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  animation: spin-slow 3s linear infinite;
+}
+@keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.mission-status-icon svg { width: 16px; height: 16px; stroke: white; fill: none; stroke-width: 2; }
+.mission-status-text { flex: 1; }
+.mission-status-label { font-size: 12px; font-weight: 700; color: var(--primary-dark); }
+.mission-status-sub { font-size: 11px; font-weight: 500; color: var(--ink-500); margin-top: 1px; }
+.mission-eta {
+  background: var(--card);
+  border-radius: var(--r-sm);
+  padding: 4px 10px;
+  font-size: 12px; font-weight: 800; color: var(--primary);
+  border: 1px solid var(--green-200);
+}
+
+/* Mission steps mini */
+.mission-steps {
+  display: flex; align-items: center; gap: 0;
+  padding: 4px 0;
+}
+.step-dot {
+  width: 10px; height: 10px; border-radius: 5px;
+  border: 2px solid var(--ink-100);
+  background: var(--card);
+  flex-shrink: 0;
+}
+.step-dot.done { background: var(--primary); border-color: var(--primary); }
+.step-dot.active { border-color: var(--primary); border-width: 3px; }
+.step-line { flex: 1; height: 2px; background: var(--ink-100); }
+.step-line.done { background: var(--primary); }
+
+/* Mission provider row */
+.mission-provider-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.mission-avatar {
+  width: 44px; height: 44px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; font-weight: 800; color: white; flex-shrink: 0;
+}
+.mission-info { flex: 1; }
+.mission-name { font-size: 14px; font-weight: 700; color: var(--ink-900); }
+.mission-service-label { font-size: 11px; font-weight: 500; color: var(--ink-500); }
+
+/* Mission action buttons */
+.mission-actions { display: flex; gap: 10px; }
+.btn-chat {
+  flex: 1; padding: 13px;
+  border-radius: 14px;
+  background: var(--primary-soft);
+  border: none;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px; font-weight: 700; color: var(--primary);
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer;
+}
+.btn-chat svg { width: 16px; height: 16px; stroke: var(--primary); fill: none; stroke-width: 2; }
+.btn-call {
+  flex: 1; padding: 13px;
+  border-radius: 14px;
+  background: var(--primary);
+  border: none;
+  font-family: 'Manrope', sans-serif;
+  font-size: 13px; font-weight: 700; color: white;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(29,158,117,0.35);
+}
+.btn-call svg { width: 16px; height: 16px; stroke: white; fill: none; stroke-width: 2; }
+
+/* ═══ LEGEND ═══ */
+.legend-row {
+  display: flex; gap: 24px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--ink-500); }
+.legend-swatch { width: 14px; height: 14px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<h1 class="title">Djobna — MapScreen v2</h1>
+<p class="subtitle">Style Yango / Airbnb — 2 etats : pro sans mission (solliciter) vs pro avec mission en cours (suivi + chat/appel). Filtres full-width.</p>
+
+<div class="legend-row">
+  <div class="legend-item"><div class="legend-swatch" style="background: var(--primary);"></div> Pro dispo (pas de mission)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background: var(--primary); box-shadow: 0 0 0 3px rgba(29,158,117,0.3);"></div> Mission en cours (pulse)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background: var(--mango);"></div> Premium</div>
+  <div class="legend-item"><div class="legend-swatch" style="background: var(--info);"></div> Ta position</div>
+</div>
+
+<div class="phones-row">
+
+<!-- ═══════════ PHONE 1 — Pro sans mission ═══════════ -->
+<div class="phone-wrap">
+  <div class="phone-label">Tap sur un pro (pas de mission)</div>
+  <div class="phone-desc">Bottom card classique : voir le profil ou solliciter</div>
+  <div class="phone">
+    <div class="map-bg"></div>
+    <div class="user-dot">
+      <div class="user-dot-pulse"></div>
+      <div class="user-dot-inner"></div>
+    </div>
+
+    <!-- Markers -->
+    <div class="marker" style="top: 30%; left: 22%; color: #1D9E75;">
+      <div class="marker-bubble" style="background: #1D9E75;">
+        <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        Eric
+      </div>
+      <div class="marker-tail"></div>
+    </div>
+    <div class="marker" style="top: 38%; left: 60%; color: #3C3489;">
+      <div class="marker-bubble" style="background: #3C3489;">
+        <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Alain
+        <div class="marker-premium">*</div>
+      </div>
+      <div class="marker-tail"></div>
+    </div>
+    <div class="marker" style="top: 55%; left: 32%; color: #BA7517;">
+      <div class="marker-bubble" style="background: #BA7517;">
+        <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><path d="M20 4L8.12 15.88"/><circle cx="6" cy="18" r="3"/></svg>
+        Fatou
+      </div>
+      <div class="marker-tail"></div>
+    </div>
+
+    <!-- Floating search -->
+    <div class="floating-search">
+      <div class="search-card">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Rechercher un pro...">
+        <div class="search-filter-btn">
+          <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="1.5" fill="white"/><circle cx="16" cy="12" r="1.5" fill="white"/><circle cx="10" cy="18" r="1.5" fill="white"/></svg>
+        </div>
+      </div>
+      <!-- FULL WIDTH chips -->
+      <div class="chips-row">
+        <div class="chip active">
+          <svg viewBox="0 0 24 24" stroke="currentColor"><path d="M12 3l1.5 4.5H18l-3.5 2.5 1.5 4.5L12 12l-4 2.5 1.5-4.5L6 7.5h4.5z"/></svg>
+          Tous
+        </div>
+        <div class="chip">
+          <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          Plombier
+        </div>
+        <div class="chip">
+          <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Electricien
+        </div>
+        <div class="chip">
+          <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><path d="M20 4L8.12 15.88"/><circle cx="6" cy="18" r="3"/></svg>
+          Coiffeur
+        </div>
+        <div class="chip">Peintre</div>
+      </div>
+    </div>
+
+    <!-- Recenter -->
+    <div class="recenter-btn" style="bottom: 210px;">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+    </div>
+
+    <!-- Bottom card — standard -->
+    <div class="bottom-card">
+      <div class="bottom-card-handle"></div>
+      <div class="bottom-card-header">
+        <div class="provider-row">
+          <div class="provider-avatar" style="background: #3C3489;">AE<div class="premium-dot">*</div></div>
+          <div class="provider-info">
+            <div class="provider-name-row">
+              <span class="provider-name">Alain Ekambi</span>
+              <div class="provider-verified"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            </div>
+            <span class="provider-service">Electricien  ·  Makepe</span>
+            <div class="provider-meta">
+              <span class="provider-meta-item">
+                <svg viewBox="0 0 24 24" stroke="var(--mango)"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="var(--mango)"/></svg>
+                4.6 (31)
+              </span>
+              <span class="provider-meta-item">
+                <svg viewBox="0 0 24 24" stroke="var(--ink-300)"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+                ~800m
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="bottom-card-close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+      </div>
+      <div class="actions-row">
+        <button class="btn-secondary">Voir le profil</button>
+        <button class="btn-primary">
+          <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Solliciter
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ PHONE 2 — Mission en cours ═══════════ -->
+<div class="phone-wrap">
+  <div class="phone-label">Tap sur un pro (mission en cours)</div>
+  <div class="phone-desc">Suivi en direct : etapes, ETA, boutons chat et appel</div>
+  <div class="phone">
+    <div class="map-bg"></div>
+    <div class="user-dot">
+      <div class="user-dot-pulse"></div>
+      <div class="user-dot-inner"></div>
+    </div>
+
+    <!-- Marker in mission (pulsing) -->
+    <div class="marker in-mission" style="top: 38%; left: 42%; color: #1D9E75;">
+      <div class="marker-bubble" style="background: #1D9E75;">
+        <div class="marker-mission-badge"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Jean-Marc
+      </div>
+      <div class="marker-tail"></div>
+    </div>
+
+    <!-- Other markers (faded) -->
+    <div class="marker" style="top: 25%; left: 68%; color: #BA7517; opacity: 0.4;">
+      <div class="marker-bubble" style="background: #BA7517;">
+        <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/></svg>
+        Fatou
+      </div>
+      <div class="marker-tail"></div>
+    </div>
+    <div class="marker" style="top: 60%; left: 22%; color: #185FA5; opacity: 0.4;">
+      <div class="marker-bubble" style="background: #185FA5;">
+        <svg viewBox="0 0 24 24"><path d="M12 2v6l3-3M12 8l-3-3"/></svg>
+        Eric
+      </div>
+      <div class="marker-tail"></div>
+    </div>
+
+    <!-- Floating search (dimmed during mission view) -->
+    <div class="floating-search" style="opacity: 0.6;">
+      <div class="search-card">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Rechercher un pro..." disabled>
+        <div class="search-filter-btn">
+          <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="1.5" fill="white"/><circle cx="16" cy="12" r="1.5" fill="white"/><circle cx="10" cy="18" r="1.5" fill="white"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recenter -->
+    <div class="recenter-btn" style="bottom: 290px;">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
+    </div>
+
+    <!-- Bottom card — MISSION -->
+    <div class="mission-card">
+      <div class="bottom-card-handle"></div>
+
+      <!-- Status banner -->
+      <div class="mission-status-banner">
+        <div class="mission-status-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
+        <div class="mission-status-text">
+          <div class="mission-status-label">En route vers toi</div>
+          <div class="mission-status-sub">Plomberie - Fuite robinet</div>
+        </div>
+        <div class="mission-eta">~8 min</div>
+      </div>
+
+      <!-- Steps mini -->
+      <div class="mission-steps">
+        <div class="step-dot done"></div>
+        <div class="step-line done"></div>
+        <div class="step-dot active"></div>
+        <div class="step-line"></div>
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-dot"></div>
+      </div>
+
+      <!-- Provider row -->
+      <div class="mission-provider-row">
+        <div class="mission-avatar" style="background: #1D9E75;">JM</div>
+        <div class="mission-info">
+          <div class="mission-name">Jean-Marc Ndongo</div>
+          <div class="mission-service-label">Plombier  ·  Bonapriso  ·  4.8 *</div>
+        </div>
+        <div class="bottom-card-close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div>
+      </div>
+
+      <!-- Actions: Chat + Appel -->
+      <div class="mission-actions">
+        <button class="btn-chat">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          Message
+        </button>
+        <button class="btn-call">
+          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Appeler
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /phones-row -->
+</div>
+
+</body>
+</html>

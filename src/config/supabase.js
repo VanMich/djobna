@@ -14,13 +14,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 
-// URL de base du projet Supabase (sans /rest/v1/)
-const SUPABASE_URL = 'https://bvxrsytdbvhnmnqzcqev.supabase.co';
+// URL et clé chargées depuis les variables d'environnement (.env).
+// Les variables EXPO_PUBLIC_* sont injectées par Expo au build.
+// La clé anon reste sans danger côté client car la sécurité est gérée
+// par les Row Level Security policies dans Supabase.
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
-// Clé publique anonyme — sans danger côté client car la sécurité
-// est gérée par les Row Level Security policies dans Supabase
-const SUPABASE_ANON_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2eHJzeXRkYnZobm1ucXpjcWV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkwMjM2MzUsImV4cCI6MjA5NDU5OTYzNX0.w-LfvyWIpClsjKjUxkwwjW-tyxVkda1yDELX4tGVaT4';
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error(
+    "Variables Supabase manquantes. Copie .env.example en .env et renseigne " +
+      "EXPO_PUBLIC_SUPABASE_URL et EXPO_PUBLIC_SUPABASE_ANON_KEY, puis relance avec « expo start -c »."
+  );
+}
 
 // createClient() est l'équivalent de initializeApp() de Firebase.
 // Pas besoin de vérifier si le client existe déjà — Supabase le gère en interne.

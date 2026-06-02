@@ -1,10 +1,11 @@
-// src/screens/ClientProfileScreen.js
+﻿// src/screens/ClientProfileScreen.js
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  SafeAreaView,
   Alert,
   Switch,
   ActivityIndicator,
@@ -22,7 +23,7 @@ import MenuSection from "../components/clientProfile/MenuSection";
 import MenuItem from "../components/clientProfile/MenuItem";
 import Icon from "../components/ui/Icon";
 import { SkeletonProfileOwn } from "../components/ui";
-import { colors, spacing, radius } from "../theme";
+import { colors, spacing, radius, fonts } from "../theme";
 
 export default function ClientProfileScreen({ navigation }) {
   const {
@@ -63,7 +64,7 @@ export default function ClientProfileScreen({ navigation }) {
     } else if (providerStatus === "rejected") {
       Alert.alert(
         "Dossier rejeté",
-        "Votre dossier a été rejeté. Vous pouvez soumettre à nouveau vos documents.",
+        "Ton dossier a été rejeté. Tu peux soumettre à nouveau tes documents.",
         [
           { text: "Annuler", style: "cancel" },
           { text: "Soumettre à nouveau", onPress: () => navigation.navigate("ProviderSetup") },
@@ -103,7 +104,7 @@ export default function ClientProfileScreen({ navigation }) {
   const handleLogout = useCallback(() => {
     Alert.alert(
       "Se déconnecter ?",
-      "Vous devrez vous reconnecter avec votre numéro de téléphone.",
+      "Tu devras te reconnecter avec ton numéro de téléphone.",
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -134,7 +135,7 @@ export default function ClientProfileScreen({ navigation }) {
   const handleDeleteAccount = useCallback(() => {
     Alert.alert(
       "Supprimer mon compte ?",
-      "Cette action est irréversible. Toutes vos données seront supprimées.",
+      "Cette action est irréversible. Toutes tes données seront supprimées.",
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -144,7 +145,7 @@ export default function ClientProfileScreen({ navigation }) {
             // TODO: supprimer le compte Firebase Auth + Firestore
             Alert.alert(
               "À venir",
-              "Contactez le support pour supprimer votre compte.",
+              "Contacte le support pour supprimer ton compte.",
             );
           },
         },
@@ -152,35 +153,38 @@ export default function ClientProfileScreen({ navigation }) {
     );
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.root}>
-        <StatusBar style="light" />
-        <SkeletonProfileOwn statCount={3} />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
-      {/* Header */}
-      <ClientProfileHeader
-        profile={profile}
-        stats={stats}
-        onEditPhoto={handleEditProfile}
-        onSettings={() => {}}
-        // onSettings scroll vers la section Paramètres
-        // On peut aussi naviguer vers un écran dédié
-      />
+      {/* ── Barre fixe (titre + settings) — toujours visible ── */}
+      <SafeAreaView style={styles.topBarSafe}>
+        <View style={styles.topBar}>
+          <Text style={styles.pageTitle}>Mon profil</Text>
+          <TouchableOpacity
+            style={styles.settingsBtn}
+            onPress={() => {}}
+            activeOpacity={0.8}
+          >
+            <Icon name="settings" size={20} color={colors.ink700} />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
 
-      {/* Contenu scrollable */}
+      {loading ? (
+        <SkeletonProfileOwn statCount={3} />
+      ) : (
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Header (avatar + infos + stats) — scrolle avec le contenu */}
+        <ClientProfileHeader
+          profile={profile}
+          stats={stats}
+          onEditPhoto={handleEditProfile}
+        />
         {/* ── Bascule de rôle ── */}
         <Animated.View style={{ transform: [{ scale: roleScale }] }}>
           <TouchableOpacity
@@ -203,23 +207,23 @@ export default function ClientProfileScreen({ navigation }) {
                       providerStatus === "approved" ? "check-circle" : "x-circle"}
                 size={24}
                 color={providerStatus === null ? colors.primary :
-                       providerStatus === "pending" ? "#F5A623" :
-                       providerStatus === "approved" ? colors.primary : "#E24B4A"}
+                       providerStatus === "pending" ? colors.warning :
+                       providerStatus === "approved" ? colors.primary : colors.error}
                 weight="duotone"
               />
             </View>
             <View style={styles.roleCardText}>
               <Text style={styles.roleCardTitle}>
-                {providerStatus === null ? "Devenir prestataire" :
+                {providerStatus === null ? "Devenir pro" :
                  providerStatus === "pending" ? "Vérification en cours..." :
-                 providerStatus === "approved" ? "Passer en mode Prestataire" :
+                 providerStatus === "approved" ? "Passer en mode Pro" :
                  "Dossier rejeté — Réessayer"}
               </Text>
               <Text style={styles.roleCardSub}>
                 {roleLoading ? "Changement de mode en cours…" :
-                 providerStatus === null ? "Proposez vos services sur Djobna" :
-                 providerStatus === "pending" ? "Votre dossier est en cours d'examen" :
-                 providerStatus === "approved" ? "Votre compte prestataire est validé" :
+                 providerStatus === null ? "Propose tes services sur Djobna" :
+                 providerStatus === "pending" ? "Ton dossier est en cours d'examen" :
+                 providerStatus === "approved" ? "Ton compte pro est validé" :
                  "Cliquez pour soumettre à nouveau"}
               </Text>
             </View>
@@ -231,7 +235,7 @@ export default function ClientProfileScreen({ navigation }) {
         </Animated.View>
 
         {/* ── Favoris ── */}
-        <MenuSection title="Mes prestataires favoris">
+        <MenuSection title="Mes pros favoris">
           <FavoritesSection
             favorites={favorites}
             onPress={(providerId) =>
@@ -245,7 +249,7 @@ export default function ClientProfileScreen({ navigation }) {
         <MenuSection title="Mon compte">
           <MenuItem
             icon="pencil-simple"
-            iconBg="#F0FAF6"
+            iconBg={colors.primarySoft}
             iconColor={colors.primary}
             label="Modifier mon profil"
             sublabel="Nom, quartier, photo"
@@ -253,24 +257,24 @@ export default function ClientProfileScreen({ navigation }) {
           />
           <MenuItem
             icon="file-text"
-            iconBg="#EFF6FF"
-            iconColor="#3B82F6"
+            iconBg={colors.infoLight}
+            iconColor={colors.info}
             label="Mes demandes"
-            sublabel="Suivre vos demandes en cours"
+            sublabel="Suivre tes demandes en cours"
             onPress={() => navigation.navigate("MyRequests")}
           />
           <MenuItem
             icon="clipboard-text"
-            iconBg="#E8F4FF"
-            iconColor="#0EA5E9"
+            iconBg={colors.skySoft}
+            iconColor={colors.sky}
             label="Historique des demandes"
             sublabel={`${history.length} demande${history.length > 1 ? "s" : ""} au total`}
             onPress={() => navigation.navigate("MissionHistory")}
           />
           <MenuItem
             icon="star"
-            iconBg="#FFFBEB"
-            iconColor="#F59E0B"
+            iconBg={colors.mangoSoft}
+            iconColor={colors.mango}
             label="Mes avis"
             sublabel={`${stats.reviewsGiven || 0} avis donnés`}
             onPress={() =>
@@ -283,8 +287,8 @@ export default function ClientProfileScreen({ navigation }) {
         <MenuSection title="Notifications">
           <MenuItem
             icon="chat-circle"
-            iconBg="#F5EEFE"
-            iconColor="#8B5CF6"
+            iconBg={colors.purpleSoft}
+            iconColor={colors.purple}
             label="Messages"
             sublabel="Nouveaux messages chat"
             showArrow={false}
@@ -292,33 +296,33 @@ export default function ClientProfileScreen({ navigation }) {
               <Switch
                 value={notifMessages}
                 onValueChange={setNotifMessages}
-                trackColor={{ false: "#E8E8E8", true: colors.primary }}
-                thumbColor="#fff"
-                ios_backgroundColor="#E8E8E8"
+                trackColor={{ false: colors.ink100, true: colors.primary }}
+                thumbColor={colors.textInverse}
+                ios_backgroundColor={colors.ink100}
               />
             }
           />
           <MenuItem
             icon="wrench"
-            iconBg="#F0FAF6"
+            iconBg={colors.primarySoft}
             iconColor={colors.primary}
-            label="Offres prestataires"
+            label="Offres pro"
             sublabel="Nouvelles disponibilités"
             showArrow={false}
             rightComponent={
               <Switch
                 value={notifOffers}
                 onValueChange={setNotifOffers}
-                trackColor={{ false: "#E8E8E8", true: colors.primary }}
-                thumbColor="#fff"
-                ios_backgroundColor="#E8E8E8"
+                trackColor={{ false: colors.ink100, true: colors.primary }}
+                thumbColor={colors.textInverse}
+                ios_backgroundColor={colors.ink100}
               />
             }
           />
           <MenuItem
             icon="star"
-            iconBg="#FFFBEB"
-            iconColor="#F59E0B"
+            iconBg={colors.mangoSoft}
+            iconColor={colors.mango}
             label="Rappels d'avis"
             sublabel="Après une prestation"
             showArrow={false}
@@ -326,9 +330,9 @@ export default function ClientProfileScreen({ navigation }) {
               <Switch
                 value={notifReviews}
                 onValueChange={setNotifReviews}
-                trackColor={{ false: "#E8E8E8", true: colors.primary }}
-                thumbColor="#fff"
-                ios_backgroundColor="#E8E8E8"
+                trackColor={{ false: colors.ink100, true: colors.primary }}
+                thumbColor={colors.textInverse}
+                ios_backgroundColor={colors.ink100}
               />
             }
           />
@@ -338,8 +342,8 @@ export default function ClientProfileScreen({ navigation }) {
         <MenuSection title="Aide & Support">
           <MenuItem
             icon="question"
-            iconBg="#E8F4FF"
-            iconColor="#3B82F6"
+            iconBg={colors.skySoft}
+            iconColor={colors.info}
             label="Centre d'aide"
             sublabel="FAQ et tutoriels"
             onPress={() =>
@@ -348,21 +352,21 @@ export default function ClientProfileScreen({ navigation }) {
           />
           <MenuItem
             icon="chat-circle-dots"
-            iconBg="#F0FAF6"
+            iconBg={colors.primarySoft}
             iconColor={colors.primary}
             label="Nous contacter"
             sublabel="WhatsApp · Email"
             onPress={() =>
               Alert.alert(
                 "Contact",
-                "Contactez-nous sur WhatsApp : +237 6XX XXX XXX",
+                "Contacte-nous sur WhatsApp : +237 6XX XXX XXX",
               )
             }
           />
           <MenuItem
             icon="info"
-            iconBg="#F5F5F5"
-            iconColor="#888"
+            iconBg={colors.ink50}
+            iconColor={colors.ink500}
             label="À propos"
             sublabel="Djobna v1.0.0 — Fait au Cameroun"
             onPress={() =>
@@ -375,8 +379,8 @@ export default function ClientProfileScreen({ navigation }) {
         <MenuSection title="Confidentialité">
           <MenuItem
             icon="lock"
-            iconBg="#FFF0EE"
-            iconColor="#E24B4A"
+            iconBg={colors.errorLight}
+            iconColor={colors.error}
             label="Mes données"
             sublabel="Gérer, exporter, supprimer"
             onPress={() =>
@@ -388,8 +392,8 @@ export default function ClientProfileScreen({ navigation }) {
           />
           <MenuItem
             icon="trash"
-            iconBg="#FFF0EE"
-            iconColor="#E24B4A"
+            iconBg={colors.errorLight}
+            iconColor={colors.error}
             label="Supprimer mon compte"
             sublabel="Action irréversible"
             isDestructive
@@ -400,42 +404,65 @@ export default function ClientProfileScreen({ navigation }) {
         {/* ── Bouton déconnexion ── */}
         <MenuItem
           icon="sign-out"
-          iconBg="#FFF0EE"
-          iconColor="#E24B4A"
+          iconBg={colors.errorLight}
+          iconColor={colors.error}
           label="Se déconnecter"
           isDestructive
           onPress={handleLogout}
         />
       </ScrollView>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
+  topBarSafe: { backgroundColor: colors.background, zIndex: 10 },
+  topBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  pageTitle: {
+    fontSize: 22,
+    fontFamily: fonts.extraBold,
+    color: colors.ink900,
+    letterSpacing: -0.5,
+  },
+  settingsBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.ink50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   loader: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: colors.headerBg,
   },
-  scroll: { flex: 1, backgroundColor: "#F4F6F5" },
+  scroll: { flex: 1, backgroundColor: colors.background },
   scrollContent: { paddingBottom: 30 },
   roleCard: {
     flexDirection: "row", alignItems: "center", gap: 12,
-    backgroundColor: "#fff", marginHorizontal: 12, marginTop: 12,
+    backgroundColor: colors.card, marginHorizontal: 12, marginTop: 12,
     borderRadius: 16, padding: spacing.md,
     borderWidth: 1.5, borderColor: colors.primary,
   },
-  roleCardActive: { borderColor: colors.primary, backgroundColor: "#F0FAF6" },
-  roleCardPending: { borderColor: "#F5A623", backgroundColor: "#FFFBF0" },
-  roleCardRejected: { borderColor: "#E24B4A", backgroundColor: "#FFF0EE" },
+  roleCardActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  roleCardPending: { borderColor: colors.warning, backgroundColor: "#FFFBF0" },
+  roleCardRejected: { borderColor: colors.error, backgroundColor: "#FFF0EE" },
   roleCardIconWrap: {
     width: 44, height: 44, borderRadius: 12,
-    backgroundColor: "#F0FAF6", alignItems: "center", justifyContent: "center",
+    backgroundColor: colors.primarySoft, alignItems: "center", justifyContent: "center",
   },
   roleCardText: { flex: 1, gap: 2 },
-  roleCardTitle: { fontSize: 14, fontWeight: "700", color: colors.textDark },
+  roleCardTitle: { fontSize: 14, fontFamily: fonts.bold, color: colors.textDark },
   roleCardSub: { fontSize: 12, color: colors.textGray },
   roleCardArrow: { fontSize: 22, color: colors.textGray },
 });

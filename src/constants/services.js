@@ -1,23 +1,27 @@
 // src/constants/services.js
 // Liste des services disponibles sur Djobna (contexte camerounais)
 
+// keywords : synonymes / variantes que les utilisateurs tapent réellement
+// (fautes, formes courtes, métier vs prestation). Servent à la recherche
+// tolérante — voir useProviders.js et SearchModal.jsx. Pas besoin d'accents
+// ici : tout est normalisé au moment de la comparaison.
 export const SERVICES = [
-  { id: "mechanic", icon: "wrench", label: "Mécanicien" },
-  { id: "plumber", icon: "drop", label: "Plombier" },
-  { id: "electrician", icon: "lightning", label: "Électricien" },
-  { id: "barber", icon: "scissors", label: "Coiffeur / Ébarbeur" },
-  { id: "painter", icon: "paint-brush", label: "Peintre" },
-  { id: "carpenter", icon: "hammer", label: "Menuisier" },
-  { id: "tailor", icon: "needle", label: "Couturier" },
-  { id: "housekeeper", icon: "broom", label: "Femme de ménage" },
-  { id: "caterer", icon: "cooking-pot", label: "Traiteur" },
-  { id: "locksmith", icon: "key", label: "Serrurier" },
-  { id: "mover", icon: "package", label: "Déménageur" },
-  { id: "security", icon: "shield-check", label: "Gardien" },
-  { id: "gardener", icon: "plant", label: "Jardinier" },
-  { id: "welder", icon: "flame", label: "Soudeur" },
-  { id: "aircon", icon: "snowflake", label: "Climaticien" },
-  { id: "tiler", icon: "wall", label: "Carreleur" },
+  { id: "mechanic", icon: "wrench", label: "Mécanicien", keywords: ["mecanicien", "mecano", "garagiste", "garage", "voiture", "auto", "vidange", "moteur"] },
+  { id: "plumber", icon: "drop", label: "Plombier", keywords: ["plombier", "plomberie", "fuite", "tuyau", "eau", "robinet", "wc", "toilette", "canalisation", "douche"] },
+  { id: "electrician", icon: "lightning", label: "Électricien", keywords: ["electricien", "electricite", "courant", "prise", "tableau", "cablage", "lumiere", "ampoule", "panne electrique", "disjoncteur"] },
+  { id: "barber", icon: "scissors", label: "Coiffeur / Ébarbeur", keywords: ["coiffeur", "ebarbeur", "barbier", "coupe", "barbe", "cheveux", "salon", "coiffure"] },
+  { id: "painter", icon: "paint-brush", label: "Peintre", keywords: ["peintre", "peinture", "mur", "badigeon", "ravalement"] },
+  { id: "carpenter", icon: "hammer", label: "Menuisier", keywords: ["menuisier", "menuiserie", "bois", "meuble", "porte", "placard", "armoire", "ebeniste"] },
+  { id: "tailor", icon: "needle", label: "Couturier", keywords: ["couturier", "couture", "tailleur", "vetement", "retouche", "habit", "robe", "ourlet"] },
+  { id: "housekeeper", icon: "broom", label: "Femme de ménage", keywords: ["femme de menage", "menage", "nettoyage", "entretien", "aide menagere", "cleaning", "menagere", "repassage"] },
+  { id: "caterer", icon: "cooking-pot", label: "Traiteur", keywords: ["traiteur", "cuisine", "repas", "evenement", "cuisinier", "catering", "buffet", "fete"] },
+  { id: "locksmith", icon: "key", label: "Serrurier", keywords: ["serrurier", "serrure", "cle", "porte", "cadenas", "verrou"] },
+  { id: "mover", icon: "package", label: "Déménageur", keywords: ["demenageur", "demenagement", "transport", "cartons", "camion", "porteur"] },
+  { id: "security", icon: "shield-check", label: "Gardien", keywords: ["gardien", "securite", "vigile", "surveillance", "gardiennage", "agent"] },
+  { id: "gardener", icon: "plant", label: "Jardinier", keywords: ["jardinier", "jardin", "gazon", "pelouse", "plante", "espaces verts", "tonte", "haie"] },
+  { id: "welder", icon: "flame", label: "Soudeur", keywords: ["soudeur", "soudure", "metal", "fer", "ferronnerie", "portail", "grille"] },
+  { id: "aircon", icon: "snowflake", label: "Climaticien", keywords: ["climaticien", "climatisation", "clim", "climatiseur", "frigo", "froid", "froid clim", "air conditionne", "split", "ventilation"] },
+  { id: "tiler", icon: "wall", label: "Carreleur", keywords: ["carreleur", "carrelage", "carreaux", "faience", "dallage", "pose carreaux"] },
 ];
 
 // Quartiers de Douala

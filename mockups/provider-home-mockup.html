@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=375, initial-scale=1.0">
+  <title>Djobna — Accueil Pro (Mockup)</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #FAFAF7;
+      --surface: #FFFFFF;
+      --card: #FFFFFF;
+      --primary: #1D9E75;
+      --primarySoft: #E4F4ED;
+      --primaryDark: #14705A;
+      --green200: #A7E8D0;
+      --ink900: #0D1F1A;
+      --ink700: #2A4138;
+      --ink500: #5A6F66;
+      --ink300: #B5C0BA;
+      --ink100: #E4E8E6;
+      --ink50: #F1F3F1;
+      --mango: #F2A65A;
+      --mangoSoft: #FFE7CC;
+      --error: #E54848;
+      --errorLight: #FCE4E4;
+      --purple: #8B5CF6;
+      --purpleSoft: #F5EEFE;
+      --sky: #0EA5E9;
+      --skySoft: #E8F4FF;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --shadow-sm: 0 1px 3px rgba(13,31,26,.06);
+      --shadow-md: 0 4px 12px rgba(13,31,26,.08);
+    }
+
+    body {
+      font-family: 'Manrope', -apple-system, sans-serif;
+      background: #1a1a2e;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+    .phone-frame {
+      width: 375px;
+      height: 812px;
+      background: var(--bg);
+      border-radius: 40px;
+      overflow: hidden;
+      box-shadow: 0 25px 80px rgba(0,0,0,.3);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ═══ STATUS BAR ═══ */
+    .status-bar {
+      height: 47px;
+      padding: 14px 28px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .status-bar .time { font-size: 14px; font-weight: 700; color: var(--ink900); }
+    .status-bar .icons { display: flex; gap: 5px; align-items: center; }
+    .status-bar .icons span { font-size: 11px; color: var(--ink700); }
+
+    /* ═══ TOP BAR (fixe) ═══ */
+    .top-bar {
+      padding: 6px 20px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .greeting-block { display: flex; flex-direction: column; gap: 2px; }
+    .greeting-text {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--primary);
+      letter-spacing: 0.3px;
+    }
+    .user-name {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--ink900);
+      letter-spacing: -0.5px;
+    }
+    .notif-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--ink50);
+      border: 1px solid var(--ink100);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+    }
+    .notif-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--error);
+      border: 2px solid var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 800;
+      color: white;
+    }
+
+    /* ═══ BODY (scrollable) ═══ */
+    .scroll-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .scroll-body::-webkit-scrollbar { display: none; }
+
+    /* ═══ AVAILABILITY TOGGLE ═══ */
+    .availability-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-radius: var(--radius-lg);
+      background: var(--primarySoft);
+      border: 1px solid var(--green200);
+      gap: 12px;
+    }
+    .availability-card.offline {
+      background: var(--ink50);
+      border-color: var(--ink100);
+    }
+    .availability-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .availability-label { font-size: 14px; font-weight: 700; color: var(--ink900); }
+    .availability-sub { font-size: 11px; font-weight: 500; color: var(--primary); }
+    .toggle-track {
+      width: 48px;
+      height: 28px;
+      border-radius: 14px;
+      background: var(--primary);
+      position: relative;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .toggle-thumb {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: white;
+      position: absolute;
+      top: 3px;
+      right: 3px;
+      box-shadow: 0 2px 4px rgba(0,0,0,.15);
+    }
+
+    /* ═══ STATS GRID ═══ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .stat-card {
+      background: var(--card);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      border: 1px solid var(--ink100);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-card .stat-icon-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stat-icon-wrap {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .stat-icon-wrap.green { background: var(--primarySoft); }
+    .stat-icon-wrap.orange { background: var(--mangoSoft); }
+    .stat-icon-wrap.purple { background: var(--purpleSoft); }
+    .stat-icon-wrap.sky { background: var(--skySoft); }
+    .stat-trend {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primarySoft);
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .stat-value {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--ink900);
+      letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ink500);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    /* ═══ SECTION HEADER ═══ */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2px;
+    }
+    .section-title-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--ink900);
+      letter-spacing: -0.2px;
+    }
+    .section-badge {
+      min-width: 20px;
+      height: 20px;
+      border-radius: 10px;
+      background: var(--error);
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+    }
+    .section-badge.green { background: var(--primary); }
+    .section-link {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      cursor: pointer;
+    }
+
+    /* ═══ REQUEST CARD (Nouvelle demande) ═══ */
+    .request-card {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      border: 1.5px solid var(--primary);
+      box-shadow: 0 4px 16px rgba(29,158,117,.1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .request-top {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .request-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: #185FA5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .request-avatar span {
+      font-size: 15px;
+      font-weight: 800;
+      color: white;
+    }
+    .request-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .request-name { font-size: 14px; font-weight: 700; color: var(--ink900); }
+    .request-meta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--ink300);
+    }
+    .request-time-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--primaryDark);
+      background: var(--primarySoft);
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .request-service {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--primarySoft);
+      border: 1px solid var(--green200);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary);
+      align-self: flex-start;
+    }
+    .request-desc {
+      background: var(--ink50);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: var(--ink500);
+      line-height: 1.5;
+    }
+    .request-details {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .request-detail-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--ink500);
+      font-weight: 500;
+    }
+    .request-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      height: 42px;
+      border-radius: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-accept { background: var(--primary); color: white; }
+    .btn-decline { background: var(--ink50); color: var(--ink500); border: 1px solid var(--ink100); }
+
+    /* ═══ MISSION CARD ═══ */
+    .mission-card {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      border: 1px solid var(--ink100);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .mission-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .mission-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--purple);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .mission-avatar span { font-size: 13px; font-weight: 800; color: white; }
+    .mission-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .mission-name { font-size: 13px; font-weight: 700; color: var(--ink900); }
+    .mission-service { font-size: 11px; font-weight: 500; color: var(--ink500); }
+    .mission-status {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .mission-status.progress {
+      color: var(--primary);
+      background: var(--primarySoft);
+    }
+    .mission-progress-bar {
+      height: 4px;
+      background: var(--ink50);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .mission-progress-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 2px;
+    }
+    .mission-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mission-footer-info {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--ink500);
+      font-weight: 500;
+    }
+    .mission-cta {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      cursor: pointer;
+    }
+
+    /* ═══ REVENUE CARD ═══ */
+    .revenue-card {
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      border: 1px solid var(--ink100);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .revenue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .revenue-amount { font-size: 26px; font-weight: 800; color: var(--ink900); letter-spacing: -0.5px; }
+    .revenue-goal { font-size: 11px; color: var(--ink500); margin-top: 2px; font-weight: 500; }
+    .revenue-percent {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--primary);
+      background: var(--primarySoft);
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+    .revenue-progress-bar {
+      height: 6px;
+      background: var(--ink50);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .revenue-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), #34D399);
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    /* ═══ QUICK ACTIONS ═══ */
+    .quick-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .quick-action {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 8px;
+      background: var(--card);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--ink100);
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .quick-action:active { transform: scale(0.96); }
+    .quick-action-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .quick-action-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--ink700);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.2px;
+    }
+
+    /* ═══ ANNOTATIONS ═══ */
+    .annotation {
+      position: absolute;
+      font-size: 10px;
+      font-weight: 600;
+      color: #ff6b6b;
+      background: rgba(255,107,107,0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      pointer-events: none;
+    }
+
+    /* ═══ LABEL ═══ */
+    .mockup-label {
+      text-align: center;
+      color: rgba(255,255,255,0.5);
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 12px;
+      font-family: 'Manrope', sans-serif;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div>
+  <div class="phone-frame">
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span class="time">9:41</span>
+      <div class="icons">
+        <span>&#9679;&#9679;&#9679;&#9679;</span>
+        <span>WiFi</span>
+        <span>&#128267;</span>
+      </div>
+    </div>
+
+    <!-- ═══ TOP BAR (fixe) ═══ -->
+    <div class="top-bar">
+      <div class="greeting-block">
+        <span class="greeting-text">Bonjour &#128075;</span>
+        <span class="user-name">Alain</span>
+      </div>
+      <div class="notif-btn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2A4138" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <div class="notif-badge">3</div>
+      </div>
+    </div>
+
+    <!-- ═══ SCROLL BODY ═══ -->
+    <div class="scroll-body">
+
+      <!-- Toggle Disponibilite -->
+      <div class="availability-card">
+        <div class="availability-info">
+          <span class="availability-label">Je suis disponible</span>
+          <span class="availability-sub">Visible sur la carte &middot; 3 nouvelles demandes</span>
+        </div>
+        <div class="toggle-track">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+
+      <!-- Stats Grid (2x2) -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon-row">
+            <div class="stat-icon-wrap green">&#128640;</div>
+            <span class="stat-trend">+2</span>
+          </div>
+          <span class="stat-value">5</span>
+          <span class="stat-label">Missions aujourd'hui</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-row">
+            <div class="stat-icon-wrap orange">&#11088;</div>
+          </div>
+          <span class="stat-value">4.8</span>
+          <span class="stat-label">Note moyenne</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-row">
+            <div class="stat-icon-wrap purple">&#128176;</div>
+          </div>
+          <span class="stat-value">45K</span>
+          <span class="stat-label">Revenus du mois</span>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon-row">
+            <div class="stat-icon-wrap sky">&#128179;</div>
+          </div>
+          <span class="stat-value">12K</span>
+          <span class="stat-label">Solde disponible</span>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <div class="quick-action">
+          <div class="quick-action-icon" style="background: var(--primarySoft);">&#128197;</div>
+          <span class="quick-action-label">Planning</span>
+        </div>
+        <div class="quick-action">
+          <div class="quick-action-icon" style="background: var(--mangoSoft);">&#128172;</div>
+          <span class="quick-action-label">Messages</span>
+        </div>
+        <div class="quick-action">
+          <div class="quick-action-icon" style="background: var(--purpleSoft);">&#128200;</div>
+          <span class="quick-action-label">Revenus</span>
+        </div>
+        <div class="quick-action">
+          <div class="quick-action-icon" style="background: var(--skySoft);">&#9881;</div>
+          <span class="quick-action-label">Services</span>
+        </div>
+      </div>
+
+      <!-- Section : Nouvelles demandes -->
+      <div class="section-header">
+        <div class="section-title-row">
+          <span class="section-title">Nouvelles demandes</span>
+          <span class="section-badge">3</span>
+        </div>
+        <span class="section-link">Tout voir &rsaquo;</span>
+      </div>
+
+      <!-- Request Card -->
+      <div class="request-card">
+        <div class="request-top">
+          <div class="request-avatar"><span>JM</span></div>
+          <div class="request-info">
+            <span class="request-name">Jean-Marc Fotso</span>
+            <div class="request-meta">
+              <span>&#128205; Bonapriso</span>
+              <span>&middot;</span>
+              <span>Il y a 8 min</span>
+            </div>
+          </div>
+          <span class="request-time-badge">Urgent</span>
+        </div>
+        <span class="request-service">&#128295; Plomberie</span>
+        <div class="request-desc">
+          Fuite importante sous l'evier de la cuisine. Besoin d'intervention rapide si possible aujourd'hui.
+        </div>
+        <div class="request-details">
+          <div class="request-detail-item">&#128197; Aujourd'hui, 14h-17h</div>
+          <div class="request-detail-item">&#128176; Budget : 15 000 FCFA</div>
+        </div>
+        <div class="request-actions">
+          <button class="btn btn-accept">&#10003; Accepter</button>
+          <button class="btn btn-decline">&#10005; Decliner</button>
+        </div>
+      </div>
+
+      <!-- Section : Missions en cours -->
+      <div class="section-header" style="margin-top: 4px;">
+        <div class="section-title-row">
+          <span class="section-title">Missions en cours</span>
+          <span class="section-badge green">2</span>
+        </div>
+      </div>
+
+      <!-- Mission Card 1 -->
+      <div class="mission-card">
+        <div class="mission-top">
+          <div class="mission-avatar"><span>AS</span></div>
+          <div class="mission-info">
+            <span class="mission-name">Ange Simo</span>
+            <span class="mission-service">Electricite &middot; Akwa</span>
+          </div>
+          <span class="mission-status progress">En cours</span>
+        </div>
+        <div class="mission-progress-bar">
+          <div class="mission-progress-fill" style="width: 65%;"></div>
+        </div>
+        <div class="mission-footer">
+          <span class="mission-footer-info">&#128337; Commence a 10h00</span>
+          <span class="mission-cta">Ouvrir le chat &rsaquo;</span>
+        </div>
+      </div>
+
+      <!-- Mission Card 2 -->
+      <div class="mission-card">
+        <div class="mission-top">
+          <div class="mission-avatar" style="background: var(--mango);"><span>PD</span></div>
+          <div class="mission-info">
+            <span class="mission-name">Paul Djomo</span>
+            <span class="mission-service">Peinture &middot; Bonamoussadi</span>
+          </div>
+          <span class="mission-status progress">En cours</span>
+        </div>
+        <div class="mission-progress-bar">
+          <div class="mission-progress-fill" style="width: 30%;"></div>
+        </div>
+        <div class="mission-footer">
+          <span class="mission-footer-info">&#128337; Demain, 08h00</span>
+          <span class="mission-cta">Voir details &rsaquo;</span>
+        </div>
+      </div>
+
+      <!-- Revenue Card -->
+      <div class="section-header" style="margin-top: 4px;">
+        <div class="section-title-row">
+          <span class="section-title">Revenus du mois</span>
+        </div>
+        <span class="section-link">Details &rsaquo;</span>
+      </div>
+
+      <div class="revenue-card">
+        <div class="revenue-header">
+          <div>
+            <div class="revenue-amount">45 000 FCFA</div>
+            <div class="revenue-goal">Objectif : 150 000 FCFA</div>
+          </div>
+          <span class="revenue-percent">30%</span>
+        </div>
+        <div class="revenue-progress-bar">
+          <div class="revenue-progress-fill" style="width: 30%;"></div>
+        </div>
+      </div>
+
+    </div><!-- /scroll-body -->
+  </div><!-- /phone-frame -->
+  <p class="mockup-label">Djobna &mdash; Accueil Pro (v2 Mockup)</p>
+</div>
+
+</body>
+</html>

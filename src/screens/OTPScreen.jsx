@@ -1,4 +1,4 @@
-// src/screens/OTPScreen.jsx
+﻿// src/screens/OTPScreen.jsx
 // Écran de saisie du code OTP reçu par SMS
 //
 // Différences avec la version Firebase :
@@ -20,9 +20,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "../components/ui/Icon";
 import { useAuth } from "../hooks/useAuth";
-import { colors, spacing, radius } from "../theme";
+import { colors, spacing, radius, fonts } from "../theme";
 
 const OTP_LENGTH = 6;
 
@@ -118,7 +118,7 @@ export default function OTPScreen({ navigation, route }) {
 
     const result = await sendOTP(phone);
     if (!result.success) {
-      Alert.alert("Erreur", result.message || "Impossible de renvoyer le code.");
+      Alert.alert("Erreur", result.message || "Impossible de renvoyer le code. Réessaye.");
     }
   };
 
@@ -147,11 +147,11 @@ export default function OTPScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} activeOpacity={0.8}>
-          <Ionicons name="chevron-back" size={20} color={colors.headerText} />
+          <Icon name="chevron-back" size={20} color={colors.headerText} />
         </TouchableOpacity>
         <Text style={styles.title}>Code de{"\n"}vérification</Text>
         <Text style={styles.subtitle}>Code envoyé au {phone}</Text>
@@ -198,7 +198,7 @@ export default function OTPScreen({ navigation, route }) {
                 <View style={styles.keyEmpty} />
               ) : k === "⌫" ? (
                 <TouchableOpacity style={styles.key} onPress={handleDelete} activeOpacity={0.7}>
-                  <Ionicons name="backspace-outline" size={22} color={colors.textPrimary} />
+                  <Icon name="backspace-outline" size={22} color={colors.textPrimary} />
                 </TouchableOpacity>
               ) : (
                 <TouchableOpacity style={styles.key} onPress={() => handleKey(k)} activeOpacity={0.7}>
@@ -225,12 +225,12 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: radius.sm,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: colors.ink50,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: spacing.sm,
   },
-  title: { fontSize: 26, fontWeight: "700", color: colors.headerText, lineHeight: 34 },
+  title: { fontSize: 26, fontFamily: fonts.bold, color: colors.headerText, lineHeight: 34 },
   subtitle: { fontSize: 13, color: colors.headerSubtext },
   body: { flex: 1, padding: spacing.lg, alignItems: "center", gap: 20 },
   loadingOverlay: {
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
     gap: 12,
   },
-  loadingText: { fontSize: 14, color: colors.textSecondary, fontWeight: "500" },
+  loadingText: { fontSize: 14, color: colors.textSecondary, fontFamily: fonts.medium },
   boxes: { flexDirection: "row", gap: 8, marginTop: spacing.md },
   box: {
     width: 48,
@@ -260,13 +260,13 @@ const styles = StyleSheet.create({
   boxFilled: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
   boxActive: { borderColor: colors.primary, backgroundColor: colors.background, elevation: 3 },
   boxError: { borderColor: colors.error, backgroundColor: colors.errorLight },
-  boxText: { fontSize: 26, fontWeight: "700", color: colors.textMuted },
+  boxText: { fontSize: 26, fontFamily: fonts.bold, color: colors.textMuted },
   boxTextFilled: { color: colors.primaryDark },
   errorText: { fontSize: 13, color: colors.error, textAlign: "center" },
   timerRow: { alignItems: "center" },
   timerText: { fontSize: 13, color: colors.textSecondary },
-  timerCount: { color: colors.primary, fontWeight: "600" },
-  resendBtn: { fontSize: 14, color: colors.primary, fontWeight: "600" },
+  timerCount: { color: colors.primary, fontFamily: fonts.semiBold },
+  resendBtn: { fontSize: 14, color: colors.primary, fontFamily: fonts.semiBold },
   keypad: {
     width: "100%",
     flexDirection: "row",
@@ -286,5 +286,5 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   keyEmpty: { width: "30%", height: 56 },
-  keyText: { fontSize: 22, fontWeight: "600", color: colors.textPrimary },
+  keyText: { fontSize: 22, fontFamily: fonts.semiBold, color: colors.textPrimary },
 });

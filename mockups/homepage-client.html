@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Djobna — Homepage Client Mockup (DS)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   DJOBNA DESIGN SYSTEM TOKENS
+   ═══════════════════════════════════════════════════════ */
+:root {
+  /* Brand */
+  --primary: #1D9E75;
+  --primary-dark: #0F6E56;
+  --primary-soft: #E4F4ED;
+  --brand-deep: #0D1F1A;
+
+  /* Accent */
+  --mango: #F2A65A;
+  --mango-soft: #FFE7CC;
+  --mango-dark: #8A4A18;
+
+  /* Surfaces */
+  --background: #FAFAF7;
+  --surface: #FFFFFF;
+  --card: #FFFFFF;
+
+  /* Text (forest-tinted) */
+  --ink-900: #0D1F1A;
+  --ink-700: #2A4138;
+  --ink-500: #5A6F66;
+  --ink-300: #B5C0BA;
+  --ink-100: #E4E8E6;
+  --ink-50: #F1F3F1;
+
+  /* Status */
+  --error: #E54848;
+  --green-100: #D1F5E8;
+  --green-200: #A7E8D0;
+  --green-300: #5DCAA5;
+
+  /* Spacing (base 4) */
+  --sp-xs: 4px;
+  --sp-sm: 8px;
+  --sp-md: 16px;
+  --sp-lg: 24px;
+  --sp-xl: 32px;
+
+  /* Radius */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+  --r-xl: 24px;
+  --r-full: 9999px;
+
+  /* Shadows (forest-tinted, Airbnb-like) */
+  --shadow-sm: 0 1px 3px rgba(13,31,26,0.06);
+  --shadow-md: 0 4px 12px rgba(13,31,26,0.06);
+  --shadow-lg: 0 12px 32px rgba(13,31,26,0.12);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Manrope', sans-serif;
+  background: #E4E8E6;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px 60px;
+  min-height: 100vh;
+}
+
+/* ═══ PHONE FRAME ═══ */
+.phone {
+  width: 393px;
+  height: 852px;
+  background: var(--background);
+  border-radius: 48px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px rgba(13,31,26,0.18), 0 0 0 12px #1a1a1a;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.phone::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 126px; height: 34px;
+  background: #1a1a1a;
+  border-radius: 0 0 20px 20px;
+  z-index: 100;
+}
+
+/* ═══ STATUS BAR ═══ */
+.status-bar {
+  height: 54px;
+  padding: 14px 28px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--background);
+  flex-shrink: 0;
+}
+.status-time { font-weight: 700; font-size: 15px; color: var(--ink-900); }
+.status-icons { display: flex; gap: 6px; align-items: center; }
+.status-icons svg { width: 16px; height: 16px; fill: var(--ink-900); }
+
+/* ═══ HEADER ═══ */
+.header {
+  background: var(--background);
+  padding: 8px 20px 16px;
+  flex-shrink: 0;
+}
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.greeting { font-size: 13px; font-weight: 600; color: var(--ink-500); letter-spacing: 0.3px; }
+.user-name { font-size: 26px; font-weight: 800; color: var(--ink-900); letter-spacing: -0.5px; margin-top: 2px; }
+.notif-btn {
+  width: 44px; height: 44px; border-radius: var(--r-md);
+  background: var(--ink-50);
+  border: 1px solid var(--ink-100);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s;
+}
+.notif-btn:hover { background: var(--ink-100); }
+.notif-btn svg { width: 20px; height: 20px; color: var(--ink-700); stroke: var(--ink-700); fill: none; stroke-width: 2; }
+.notif-badge {
+  position: absolute; top: 6px; right: 6px;
+  width: 18px; height: 18px; border-radius: 9px;
+  background: var(--error);
+  color: white; font-size: 9px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--background);
+}
+
+/* Search bar */
+.search-row { display: flex; gap: 10px; align-items: center; }
+.search-bar {
+  flex: 1;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--ink-50);
+  border: 1.5px solid var(--ink-100);
+  border-radius: var(--r-md);
+  padding: 0 14px;
+  height: 48px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-bar:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
+}
+.search-bar svg { width: 18px; height: 18px; stroke: var(--ink-300); fill: none; stroke-width: 2; flex-shrink: 0; }
+.search-bar input {
+  flex: 1; border: none; outline: none; background: transparent;
+  font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 500;
+  color: var(--ink-900);
+}
+.search-bar input::placeholder { color: var(--ink-300); }
+.filter-btn {
+  width: 48px; height: 48px; border-radius: var(--r-md);
+  background: var(--ink-50);
+  border: 1.5px solid var(--ink-100);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.filter-btn:hover { background: var(--ink-100); }
+.filter-btn svg { width: 20px; height: 20px; stroke: var(--ink-700); fill: none; stroke-width: 2; }
+.filter-count {
+  position: absolute; top: -5px; right: -5px;
+  width: 18px; height: 18px; border-radius: 9px;
+  background: var(--primary); color: white;
+  font-size: 10px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--background);
+}
+
+/* ═══ CATEGORIES (NEW — horizontal scroll) ═══ */
+.categories-section {
+  padding: 16px 0 4px;
+  flex-shrink: 0;
+}
+.categories-label {
+  font-size: 11px; font-weight: 700; color: var(--ink-500);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  padding: 0 20px; margin-bottom: 10px;
+}
+.categories-scroll {
+  display: flex; gap: 10px;
+  padding: 0 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.categories-scroll::-webkit-scrollbar { display: none; }
+.cat-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  min-width: 72px;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.cat-card:hover { transform: translateY(-2px); }
+.cat-card.active .cat-icon { background: var(--primary); border-color: var(--primary); }
+.cat-card.active .cat-icon svg { stroke: white; }
+.cat-card.active .cat-name { color: var(--primary); font-weight: 700; }
+.cat-icon {
+  width: 52px; height: 52px; border-radius: var(--r-lg);
+  background: var(--card);
+  border: 1.5px solid var(--ink-100);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+}
+.cat-icon svg { width: 22px; height: 22px; stroke: var(--ink-700); fill: none; stroke-width: 1.8; }
+.cat-name {
+  font-size: 11px; font-weight: 600; color: var(--ink-500);
+  text-align: center; white-space: nowrap;
+}
+
+/* ═══ SECTION HEADER ═══ */
+.section-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 20px 8px;
+}
+.section-title { font-size: 18px; font-weight: 700; color: var(--ink-900); letter-spacing: -0.3px; }
+.section-count {
+  font-size: 12px; font-weight: 600; color: var(--ink-500);
+  background: var(--ink-50); padding: 4px 10px; border-radius: var(--r-full);
+}
+
+/* ═══ BODY — scrollable ═══ */
+.body {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.body::-webkit-scrollbar { display: none; }
+
+/* ═══ PROVIDER CARD ═══ */
+.card-list { display: flex; flex-direction: column; gap: 8px; padding: 0 20px 24px; }
+.provider-card {
+  background: var(--card);
+  border-radius: var(--r-xl);
+  padding: 14px;
+  display: flex; align-items: center; gap: 14px;
+  border: 1px solid var(--ink-100);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+.provider-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.provider-card:active { transform: scale(0.985); }
+
+/* Avatar */
+.avatar-wrap { position: relative; flex-shrink: 0; }
+.avatar {
+  width: 54px; height: 54px; border-radius: var(--r-lg);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 18px; color: white;
+}
+.avatar img { width: 100%; height: 100%; border-radius: var(--r-lg); object-fit: cover; }
+.status-dot {
+  position: absolute; bottom: -1px; right: -1px;
+  width: 14px; height: 14px; border-radius: 7px;
+  background: var(--primary);
+  border: 2.5px solid var(--card);
+}
+
+/* Card body */
+.card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.card-name-row { display: flex; align-items: center; gap: 6px; }
+.card-name { font-size: 15px; font-weight: 700; color: var(--ink-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.verified-badge {
+  width: 18px; height: 18px; border-radius: 9px;
+  background: var(--primary-soft);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.verified-badge svg { width: 11px; height: 11px; stroke: var(--primary); fill: none; stroke-width: 2.5; }
+.premium-badge {
+  display: flex; align-items: center; gap: 3px;
+  background: var(--mango-soft);
+  border: 1px solid var(--mango);
+  border-radius: var(--r-xs);
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+.premium-badge svg { width: 10px; height: 10px; fill: var(--mango); stroke: none; }
+.premium-badge span { font-size: 9px; font-weight: 800; color: var(--mango-dark); letter-spacing: 0.3px; }
+
+.card-sub {
+  font-size: 12px; font-weight: 500; color: var(--ink-500);
+  display: flex; align-items: center; gap: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card-sub svg { width: 13px; height: 13px; stroke: var(--primary); fill: none; stroke-width: 2; flex-shrink: 0; }
+
+.card-footer { display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+.rating-pill {
+  display: flex; align-items: center; gap: 3px;
+  background: var(--mango-soft);
+  border-radius: var(--r-xs);
+  padding: 3px 8px;
+}
+.rating-pill svg { width: 11px; height: 11px; fill: var(--mango); stroke: none; }
+.rating-val { font-size: 12px; font-weight: 700; color: var(--mango-dark); }
+.rating-count { font-size: 10px; font-weight: 500; color: var(--ink-500); margin-left: 1px; }
+
+.price-pill {
+  background: var(--primary-soft);
+  border-radius: var(--r-xs);
+  padding: 3px 8px;
+}
+.price-text { font-size: 10px; font-weight: 700; color: var(--primary-dark); }
+
+.card-chevron { flex-shrink: 0; }
+.card-chevron svg { width: 16px; height: 16px; stroke: var(--ink-300); fill: none; stroke-width: 2; }
+
+/* ═══ QUICK ACTIONS (NEW) ═══ */
+.quick-actions {
+  display: flex; gap: 10px;
+  padding: 0 20px 16px;
+}
+.quick-action {
+  flex: 1;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--ink-100);
+  border-radius: var(--r-lg);
+  padding: 14px;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.15s;
+}
+.quick-action:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.quick-action-icon {
+  width: 40px; height: 40px; border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.quick-action-icon svg { width: 18px; height: 18px; stroke-width: 2; fill: none; }
+.quick-action-text { font-size: 12px; font-weight: 700; color: var(--ink-900); line-height: 1.3; }
+.quick-action-sub { font-size: 10px; font-weight: 500; color: var(--ink-500); margin-top: 1px; }
+
+/* ═══ BOTTOM NAV ═══ */
+.bottom-nav {
+  background: var(--card);
+  border-top: 1px solid var(--ink-100);
+  padding: 8px 16px 28px;
+  display: flex; justify-content: space-around; align-items: center;
+  flex-shrink: 0;
+}
+.nav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer;
+  transition: transform 0.15s;
+  padding: 4px 12px;
+}
+.nav-item:hover { transform: translateY(-1px); }
+.nav-item svg { width: 22px; height: 22px; stroke-width: 2; fill: none; }
+.nav-item.active svg { stroke: var(--primary); }
+.nav-item span { font-size: 10px; font-weight: 600; color: var(--ink-300); }
+.nav-item.active span { color: var(--primary); font-weight: 700; }
+.nav-item.active { position: relative; }
+.nav-item.active::after {
+  content: '';
+  position: absolute; top: -8px;
+  width: 20px; height: 3px; border-radius: 2px;
+  background: var(--primary);
+}
+
+/* ═══ ANNOTATIONS ═══ */
+.page-wrapper {
+  display: flex;
+  gap: 60px;
+  align-items: flex-start;
+}
+.annotations {
+  width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 80px;
+}
+.annotation {
+  background: white;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+  border-left: 3px solid var(--primary);
+}
+.annotation-title { font-size: 11px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+.annotation p { font-size: 12px; font-weight: 500; color: var(--ink-700); line-height: 1.5; }
+.annotation code { background: var(--ink-50); padding: 1px 5px; border-radius: 4px; font-size: 11px; color: var(--primary-dark); }
+
+h1.page-title {
+  font-size: 28px; font-weight: 800; color: var(--ink-900);
+  text-align: center; margin-bottom: 8px; letter-spacing: -0.5px;
+}
+p.page-sub {
+  font-size: 14px; font-weight: 500; color: var(--ink-500);
+  text-align: center; margin-bottom: 40px;
+}
+.legend {
+  display: flex; gap: 16px; justify-content: center; margin-bottom: 32px; flex-wrap: wrap;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: var(--ink-500); }
+.legend-swatch { width: 14px; height: 14px; border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div style="max-width: 1200px; margin: 0 auto;">
+
+<h1 class="page-title">Djobna — Homepage Client</h1>
+<p class="page-sub">Mockup Design System v1 — Manrope, fond creme, forest-tinted neutrals, Airbnb-like</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-swatch" style="background: var(--primary);"></div> Primary #1D9E75</div>
+  <div class="legend-item"><div class="legend-swatch" style="background: var(--mango);"></div> Mango #F2A65A</div>
+  <div class="legend-item"><div class="legend-swatch" style="background: var(--background); border: 1px solid var(--ink-100);"></div> Background #FAFAF7</div>
+  <div class="legend-item"><div class="legend-swatch" style="background: var(--ink-900);"></div> Ink-900 #0D1F1A</div>
+</div>
+
+<div class="page-wrapper">
+
+  <!-- ═══ ANNOTATIONS LEFT ═══ -->
+  <div class="annotations">
+    <div class="annotation">
+      <div class="annotation-title">Header light</div>
+      <p>Fond <code>#FAFAF7</code> (creme), plus de header sombre. Recherche sur fond <code>ink-50</code> avec bordure <code>ink-100</code>.</p>
+    </div>
+    <div class="annotation">
+      <div class="annotation-title">Categories</div>
+      <p>Nouveau carrousel de categories avec icones dans des cartes blanches. Selection = fond <code>primary</code> + icone blanche.</p>
+    </div>
+    <div class="annotation">
+      <div class="annotation-title">Quick Actions</div>
+      <p>2 raccourcis contextuels (Urgence + Mes demandes) avec icones colorees sur fond soft.</p>
+    </div>
+    <div class="annotation">
+      <div class="annotation-title">Provider Cards</div>
+      <p>Radius <code>24px</code>, ombre <code>shadow-sm</code>, avatar radius <code>16px</code>. Rating pill mango, prix pill primary-soft.</p>
+    </div>
+    <div class="annotation">
+      <div class="annotation-title">Bottom Nav</div>
+      <p>4 onglets avec indicateur actif en haut (trait <code>primary</code> 3px). Labels <code>ink-300</code> inactif, <code>primary</code> actif.</p>
+    </div>
+  </div>
+
+  <!-- ═══ PHONE ═══ -->
+  <div class="phone">
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <span class="status-time">14:32</span>
+      <div class="status-icons">
+        <svg viewBox="0 0 24 24"><path d="M1 1h4v22H1zM7 6h4v17H7zM13 11h4v12h-4zM19 4h4v19h-4z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <svg viewBox="0 0 24 24"><rect x="2" y="6" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="20" y="10" width="2" height="4" rx="1" fill="currentColor"/><rect x="4" y="8" width="10" height="8" rx="1" fill="currentColor" opacity="0.6"/></svg>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <div class="header-top">
+        <div>
+          <div class="greeting">Bonjour</div>
+          <div class="user-name">Michel</div>
+        </div>
+        <div class="notif-btn">
+          <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+          <div class="notif-badge">3</div>
+        </div>
+      </div>
+      <div class="search-row">
+        <div class="search-bar">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <input type="text" placeholder="Rechercher un pro...">
+        </div>
+        <div class="filter-btn">
+          <svg viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="18" x2="20" y2="18"></line><circle cx="8" cy="6" r="2" fill="var(--background)"></circle><circle cx="16" cy="12" r="2" fill="var(--background)"></circle><circle cx="10" cy="18" r="2" fill="var(--background)"></circle></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- BODY -->
+    <div class="body">
+
+      <!-- Categories -->
+      <div class="categories-section">
+        <div class="categories-label">Services</div>
+        <div class="categories-scroll">
+          <div class="cat-card active">
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+            </div>
+            <div class="cat-name">Tous</div>
+          </div>
+          <div class="cat-card">
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 2v6l3-3M12 8l-3-3"></path><path d="M4.93 10H2l2 4h4l-3.07-4z"></path><path d="M19.07 10H22l-2 4h-4l3.07-4z"></path><path d="M12 22v-6"></path><path d="M8 16h8"></path></svg>
+            </div>
+            <div class="cat-name">Plombier</div>
+          </div>
+          <div class="cat-card">
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+            </div>
+            <div class="cat-name">Electricien</div>
+          </div>
+          <div class="cat-card">
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"></circle><path d="M8.12 8.12L12 12"></path><path d="M20 4L8.12 15.88"></path><circle cx="6" cy="18" r="3"></circle><path d="M14.8 14.8L20 20"></path></svg>
+            </div>
+            <div class="cat-name">Coiffeur</div>
+          </div>
+          <div class="cat-card">
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24"><path d="M2 18v3c0 .6.4 1 1 1h4v-3h3v-3h2l1.4-1.4a6.5 6.5 0 1 0-4-4Z"></path><circle cx="16.5" cy="7.5" r=".5"></circle></svg>
+            </div>
+            <div class="cat-name">Serrurier</div>
+          </div>
+          <div class="cat-card">
+            <div class="cat-icon">
+              <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            </div>
+            <div class="cat-name">Menage</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions">
+        <div class="quick-action">
+          <div class="quick-action-icon" style="background: #FCE4E4;">
+            <svg viewBox="0 0 24 24" style="stroke: var(--error);"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          </div>
+          <div>
+            <div class="quick-action-text">Urgence</div>
+            <div class="quick-action-sub">Pro dispo maintenant</div>
+          </div>
+        </div>
+        <div class="quick-action">
+          <div class="quick-action-icon" style="background: var(--primary-soft);">
+            <svg viewBox="0 0 24 24" style="stroke: var(--primary);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          </div>
+          <div>
+            <div class="quick-action-text">Mes demandes</div>
+            <div class="quick-action-sub">2 en cours</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section header -->
+      <div class="section-header">
+        <span class="section-title">Pres de toi</span>
+        <span class="section-count">12 pros</span>
+      </div>
+
+      <!-- Provider cards -->
+      <div class="card-list">
+
+        <!-- Card 1 — Premium -->
+        <div class="provider-card">
+          <div class="avatar-wrap">
+            <div class="avatar" style="background: #1D9E75;">JM</div>
+            <div class="status-dot"></div>
+          </div>
+          <div class="card-body">
+            <div class="card-name-row">
+              <span class="card-name">Jean-Marc Ndongo</span>
+              <div class="premium-badge">
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <span>PRO</span>
+              </div>
+            </div>
+            <div class="card-sub">
+              <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+              Plombier  +2  ·  Bonapriso
+            </div>
+            <div class="card-footer">
+              <div class="rating-pill">
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <span class="rating-val">4.8</span>
+                <span class="rating-count">(47)</span>
+              </div>
+              <div class="price-pill">
+                <span class="price-text">5 000 – 15 000 FCFA</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-chevron">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </div>
+
+        <!-- Card 2 — Verified -->
+        <div class="provider-card">
+          <div class="avatar-wrap">
+            <div class="avatar" style="background: #3C3489;">AE</div>
+            <div class="status-dot"></div>
+          </div>
+          <div class="card-body">
+            <div class="card-name-row">
+              <span class="card-name">Alain Ekambi</span>
+              <div class="verified-badge">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+            </div>
+            <div class="card-sub">
+              <svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+              Electricien  ·  Makepe
+            </div>
+            <div class="card-footer">
+              <div class="rating-pill">
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <span class="rating-val">4.6</span>
+                <span class="rating-count">(31)</span>
+              </div>
+              <div class="price-pill">
+                <span class="price-text">8 000 – 30 000 FCFA</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-chevron">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </div>
+
+        <!-- Card 3 — Nouveau -->
+        <div class="provider-card">
+          <div class="avatar-wrap">
+            <div class="avatar" style="background: #BA7517;">FN</div>
+            <div class="status-dot"></div>
+          </div>
+          <div class="card-body">
+            <div class="card-name-row">
+              <span class="card-name">Fatou Nkoulou</span>
+            </div>
+            <div class="card-sub">
+              <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"></circle><path d="M8.12 8.12L12 12"></path><path d="M20 4L8.12 15.88"></path><circle cx="6" cy="18" r="3"></circle><path d="M14.8 14.8L20 20"></path></svg>
+              Coiffeuse  ·  Akwa
+            </div>
+            <div class="card-footer">
+              <div class="rating-pill" style="background: var(--ink-50);">
+                <svg viewBox="0 0 24 24" style="fill: none; stroke: var(--ink-300); stroke-width: 2;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <span class="rating-val" style="color: var(--ink-500);">Nouveau</span>
+              </div>
+              <div class="price-pill">
+                <span class="price-text">2 000 – 8 000 FCFA</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-chevron">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="provider-card">
+          <div class="avatar-wrap">
+            <div class="avatar" style="background: #993C1D;">PT</div>
+            <div class="status-dot"></div>
+          </div>
+          <div class="card-body">
+            <div class="card-name-row">
+              <span class="card-name">Paul Tchamba</span>
+              <div class="verified-badge">
+                <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              </div>
+            </div>
+            <div class="card-sub">
+              <svg viewBox="0 0 24 24"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"></path><path d="M12 18h.01"></path></svg>
+              Peintre  ·  Bonamoussadi
+            </div>
+            <div class="card-footer">
+              <div class="rating-pill">
+                <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                <span class="rating-val">4.3</span>
+                <span class="rating-count">(18)</span>
+              </div>
+              <div class="price-pill">
+                <span class="price-text">10 000 – 40 000 FCFA</span>
+              </div>
+            </div>
+          </div>
+          <div class="card-chevron">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Bottom nav -->
+    <div class="bottom-nav">
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        <span>Accueil</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" stroke="var(--ink-300)"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <span>Carte</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" stroke="var(--ink-300)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        <span>Messages</span>
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" stroke="var(--ink-300)"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <span>Profil</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ ANNOTATIONS RIGHT ═══ -->
+  <div class="annotations">
+    <div class="annotation" style="border-left-color: var(--mango);">
+      <div class="annotation-title" style="color: var(--mango-dark);">Tokens utilises</div>
+      <p>
+        Fond: <code>background #FAFAF7</code><br>
+        Cartes: <code>card #FFFFFF</code><br>
+        Bordures: <code>ink-100 #E4E8E6</code><br>
+        Ombres: <code>shadow-sm</code> Airbnb-like<br>
+        Radius cartes: <code>24px (r-xl)</code><br>
+        Radius boutons: <code>12px (r-md)</code>
+      </p>
+    </div>
+    <div class="annotation" style="border-left-color: var(--mango);">
+      <div class="annotation-title" style="color: var(--mango-dark);">Typographie</div>
+      <p>
+        Nom user: <code>26px / 800</code><br>
+        Greeting: <code>13px / 600 ink-500</code><br>
+        Section title: <code>18px / 700</code><br>
+        Card name: <code>15px / 700</code><br>
+        Card sub: <code>12px / 500 ink-500</code><br>
+        Price: <code>10px / 700 primary-dark</code>
+      </p>
+    </div>
+    <div class="annotation" style="border-left-color: #E54848;">
+      <div class="annotation-title" style="color: #E54848;">Changements vs actuel</div>
+      <p>
+        1. Header light (plus de <code>rgba</code> dark)<br>
+        2. Carrousel categories (nouveau)<br>
+        3. Quick actions (nouveau)<br>
+        4. Search border <code>ink-100</code> + focus ring <code>primary</code><br>
+        5. Notif btn sur <code>ink-50</code><br>
+        6. Badge count section
+      </p>
+    </div>
+    <div class="annotation">
+      <div class="annotation-title">Interactions</div>
+      <p>
+        Hover cards: <code>shadow-md</code> + <code>translateY(-1px)</code><br>
+        Press: <code>scale(0.985)</code><br>
+        Search focus: border <code>primary</code> + <code>box-shadow</code> ring<br>
+        Spring animations sur l'entree des cartes (delay stagger 70ms)
+      </p>
+    </div>
+  </div>
+
+</div>
+</div>
+
+</body>
+</html>

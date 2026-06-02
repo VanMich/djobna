@@ -1,4 +1,4 @@
-// src/components/providerOwnProfile/EditProfileSheet.jsx
+﻿// src/components/providerOwnProfile/EditProfileSheet.jsx
 //
 // Feuille modale d'édition du profil prestataire (§14).
 // Sections (de haut en bas) :
@@ -22,11 +22,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 
 import { QUARTIERS_PAR_VILLE, SERVICES } from "../../constants/services";
 import Icon from "../ui/Icon";
-import { colors, radius } from "../../theme";
+import { colors, radius, fonts } from "../../theme";
 
 // Langues couramment parlées au Cameroun (§14 — section langues)
 const LANGUAGES = ["Français", "Anglais", "Duala", "Bamiléké", "Ewondo", "Bassa", "Fulfulde", "Pidgin", "Haoussa"];
@@ -111,7 +110,7 @@ export default function EditProfileSheet({
   // Enregistre toutes les modifications via le callback onSave fourni par le parent
   const handleSave = async () => {
     if (!displayName.trim()) {
-      Alert.alert("Erreur", "Entrez votre nom complet");
+      Alert.alert("Champ requis", "Entre ton nom complet");
       return;
     }
 
@@ -141,7 +140,7 @@ export default function EditProfileSheet({
     if (result.success) {
       onClose();
     } else {
-      Alert.alert("Erreur", "Impossible d'enregistrer. Réessayez.");
+      Alert.alert("Oups", "Impossible d'enregistrer. Réessaye.");
     }
   };
 
@@ -194,7 +193,7 @@ export default function EditProfileSheet({
               value={displayName}
               onChangeText={setDisplayName}
               placeholder="Ex : Paul Nguema"
-              placeholderTextColor="#AAB0B7"
+              placeholderTextColor={colors.ink300}
               autoCapitalize="words"
             />
           </View>
@@ -205,8 +204,8 @@ export default function EditProfileSheet({
               style={[styles.input, styles.inputMultiline]}
               value={bio}
               onChangeText={setBio}
-              placeholder="Décrivez votre expérience, vos spécialités..."
-              placeholderTextColor="#AAB0B7"
+              placeholder="Décris ton expérience, tes spécialités..."
+              placeholderTextColor={colors.ink300}
               multiline
               numberOfLines={4}
               maxLength={300}
@@ -223,12 +222,12 @@ export default function EditProfileSheet({
               activeOpacity={0.8}
             >
               <Text style={[styles.pickerText, !quartier && styles.pickerPlaceholder]}>
-                {quartier || "Choisissez votre quartier"}
+                {quartier || "Choisis ton quartier"}
               </Text>
-              <Ionicons
+              <Icon
                 name={showQPicker ? "chevron-up" : "chevron-down"}
                 size={16}
-                color="#AAB0B7"
+                color={colors.ink300}
               />
             </TouchableOpacity>
 
@@ -245,7 +244,7 @@ export default function EditProfileSheet({
                         {q}
                       </Text>
                       {quartier === q && (
-                        <Ionicons name="checkmark" size={14} color={colors.primary} />
+                        <Icon name="checkmark" size={14} color={colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -259,7 +258,7 @@ export default function EditProfileSheet({
           {/* ════ Section 2 : Zones d'intervention ════ */}
           <Text style={styles.sectionLabel}>ZONES D'INTERVENTION</Text>
           <Text style={styles.sectionSub}>
-            Quartiers où vous vous déplacez pour intervenir chez les clients.
+            Quartiers où tu te déplaces pour intervenir chez les clients.
           </Text>
 
           {/* Chips des zones déjà sélectionnées — tap pour retirer */}
@@ -272,7 +271,7 @@ export default function EditProfileSheet({
                 activeOpacity={0.8}
               >
                 <Text style={styles.chipSelectedText}>{zone}</Text>
-                <Ionicons name="close-circle" size={14} color={colors.primary} />
+                <Icon name="close-circle" size={14} color={colors.primary} />
               </TouchableOpacity>
             ))}
             {selectedZones.length === 0 && (
@@ -287,12 +286,12 @@ export default function EditProfileSheet({
               onPress={() => { setShowZonePicker(!showZonePicker); setShowQPicker(false); }}
               activeOpacity={0.8}
             >
-              <Ionicons name="add-circle-outline" size={16} color={colors.primary} />
+              <Icon name="add-circle-outline" size={16} color={colors.primary} />
               <Text style={styles.addZoneBtnText}>Ajouter une zone</Text>
-              <Ionicons
+              <Icon
                 name={showZonePicker ? "chevron-up" : "chevron-down"}
                 size={14}
-                color="#AAB0B7"
+                color={colors.ink300}
               />
             </TouchableOpacity>
           )}
@@ -307,7 +306,7 @@ export default function EditProfileSheet({
                     onPress={() => { toggleZone(q); setShowZonePicker(false); }}
                   >
                     <Text style={styles.pickerItemText}>{q}</Text>
-                    <Ionicons name="add" size={14} color={colors.primary} />
+                    <Icon name="add" size={14} color={colors.primary} />
                   </TouchableOpacity>
                 ))}
               </ScrollView>
@@ -342,7 +341,7 @@ export default function EditProfileSheet({
               <View style={styles.separator} />
               <Text style={styles.sectionLabel}>MES TARIFS</Text>
               <Text style={styles.sectionSub}>
-                Renseignez une fourchette de prix pour chacun de vos services.
+                Renseigne une fourchette de prix pour chacun de tes services.
               </Text>
 
               {providerServices.map((svc) => {
@@ -363,7 +362,7 @@ export default function EditProfileSheet({
                         value={d.customLabel}
                         onChangeText={(v) => setPricing(svc.id, "customLabel", v)}
                         placeholder={`Ex : "${svc.label} spécialisé"`}
-                        placeholderTextColor="#AAB0B7"
+                        placeholderTextColor={colors.ink300}
                       />
                     </View>
 
@@ -376,7 +375,7 @@ export default function EditProfileSheet({
                           value={d.minPrice}
                           onChangeText={(v) => setPricing(svc.id, "minPrice", v)}
                           placeholder="5 000"
-                          placeholderTextColor="#AAB0B7"
+                          placeholderTextColor={colors.ink300}
                           keyboardType="numeric"
                         />
                       </View>
@@ -388,7 +387,7 @@ export default function EditProfileSheet({
                           value={d.maxPrice}
                           onChangeText={(v) => setPricing(svc.id, "maxPrice", v)}
                           placeholder="15 000"
-                          placeholderTextColor="#AAB0B7"
+                          placeholderTextColor={colors.ink300}
                           keyboardType="numeric"
                         />
                       </View>
@@ -429,18 +428,18 @@ export default function EditProfileSheet({
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#fff" },
+  root: { flex: 1, backgroundColor: colors.card },
 
   // En-tête fixe
   header: {
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#EEF0EF",
+    borderBottomColor: colors.borderLight,
   },
   handle: {
     width: 40, height: 4, borderRadius: 2,
-    backgroundColor: "#DDD",
+    backgroundColor: colors.ink300,
     alignSelf: "center",
     marginTop: 8, marginBottom: 12,
   },
@@ -449,56 +448,56 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  title:           { fontSize: 16, fontWeight: "700", color: "#111" },
-  cancelBtn:       { fontSize: 14, color: "#888", fontWeight: "500" },
-  saveBtn:         { fontSize: 14, color: colors.primary, fontWeight: "700" },
+  title:           { fontSize: 16, fontFamily: fonts.bold, color: colors.ink900 },
+  cancelBtn:       { fontSize: 14, color: colors.ink500, fontFamily: fonts.medium },
+  saveBtn:         { fontSize: 14, color: colors.primary, fontFamily: fonts.bold },
   saveBtnDisabled: { opacity: 0.5 },
 
   content: { padding: 20, gap: 16 },
 
   // Titres de section
   sectionLabel: {
-    fontSize: 10, fontWeight: "800",
+    fontSize: 10, fontFamily: fonts.extraBold,
     color: colors.primary,
     letterSpacing: 1,
     marginTop: 4,
   },
-  sectionSub: { fontSize: 12, color: "#888", lineHeight: 17, marginTop: -10 },
+  sectionSub: { fontSize: 12, color: colors.ink500, lineHeight: 17, marginTop: -10 },
 
-  separator: { height: 1, backgroundColor: "#F0F0F0", marginVertical: 4 },
+  separator: { height: 1, backgroundColor: colors.ink50, marginVertical: 4 },
 
   // Champs texte
   field: { gap: 6 },
   label: {
-    fontSize: 10, fontWeight: "700",
-    color: "#AAB0B7", letterSpacing: 0.5,
+    fontSize: 10, fontFamily: fonts.bold,
+    color: colors.ink300, letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: colors.ink50,
     borderRadius: radius.md,
     padding: 14,
-    fontSize: 14, color: "#111",
-    borderWidth: 1.5, borderColor: "#E8E8E8",
+    fontSize: 14, color: colors.ink900,
+    borderWidth: 1.5, borderColor: colors.borderLight,
   },
   inputMultiline: { height: 120, textAlignVertical: "top" },
-  charCount: { fontSize: 11, color: "#AAB0B7", textAlign: "right" },
+  charCount: { fontSize: 11, color: colors.ink300, textAlign: "right" },
 
   // Dropdown partagé (quartier principal + zones)
   picker: {
-    backgroundColor: "#F5F5F5",
+    backgroundColor: colors.ink50,
     borderRadius: radius.md,
     padding: 14,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderWidth: 1.5, borderColor: "#E8E8E8",
+    borderWidth: 1.5, borderColor: colors.borderLight,
   },
-  pickerSelected:        { borderColor: colors.primary, backgroundColor: "#F0FAF6" },
-  pickerText:            { fontSize: 14, color: "#111", fontWeight: "500" },
-  pickerPlaceholder:     { color: "#AAB0B7", fontWeight: "400" },
+  pickerSelected:        { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  pickerText:            { fontSize: 14, color: colors.ink900, fontFamily: fonts.medium },
+  pickerPlaceholder:     { color: colors.ink300, fontFamily: fonts.regular },
   pickerList: {
     marginTop: 6,
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: radius.md,
     borderWidth: 1.5, borderColor: colors.primary,
     elevation: 4,
@@ -508,11 +507,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderBottomWidth: 0.5, borderBottomColor: "#F0F0F0",
+    borderBottomWidth: 0.5, borderBottomColor: colors.borderLight,
   },
-  pickerItemActive:      { backgroundColor: "#F0FAF6" },
-  pickerItemText:        { fontSize: 14, color: "#111" },
-  pickerItemTextActive:  { color: colors.primary, fontWeight: "600" },
+  pickerItemActive:      { backgroundColor: colors.primarySoft },
+  pickerItemText:        { fontSize: 14, color: colors.ink900 },
+  pickerItemTextActive:  { color: colors.primary, fontFamily: fonts.semiBold },
 
   // Bouton "Ajouter une zone" (tirets verts)
   addZoneBtn: {
@@ -524,44 +523,44 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1.5, borderColor: "#D1F5E8",
     borderStyle: "dashed",
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.primarySoft,
     alignSelf: "flex-start",
   },
-  addZoneBtnText: { fontSize: 13, color: colors.primary, fontWeight: "600" },
+  addZoneBtnText: { fontSize: 13, color: colors.primary, fontFamily: fonts.semiBold },
 
   // Chips (zones sélectionnées + langues)
   chipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
   chip: {
     paddingVertical: 6, paddingHorizontal: 12,
     borderRadius: 20,
-    borderWidth: 1.5, borderColor: "#E8E8E8",
-    backgroundColor: "#F5F5F5",
+    borderWidth: 1.5, borderColor: colors.borderLight,
+    backgroundColor: colors.ink50,
   },
-  chipText:     { fontSize: 12, color: "#555", fontWeight: "500" },
+  chipText:     { fontSize: 12, color: colors.ink500, fontFamily: fonts.medium },
   chipSelected: {
     paddingVertical: 6, paddingHorizontal: 12,
     borderRadius: 20,
     borderWidth: 1.5, borderColor: colors.primary,
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.primarySoft,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
   },
-  chipSelectedText: { fontSize: 12, color: colors.primary, fontWeight: "700" },
-  chipEmpty:        { fontSize: 12, color: "#AAB0B7", fontStyle: "italic" },
+  chipSelectedText: { fontSize: 12, color: colors.primary, fontFamily: fonts.bold },
+  chipEmpty:        { fontSize: 12, color: colors.ink300, fontStyle: "italic" },
 
   // Carte tarifs par service
   pricingCard: {
-    backgroundColor: "#F8FFFE",
+    backgroundColor: colors.primarySoft,
     borderRadius: 14,
-    borderWidth: 1, borderColor: "#E0F5EE",
+    borderWidth: 1, borderColor: colors.green200,
     padding: 14,
     gap: 12,
   },
   pricingHeader:      { flexDirection: "row", alignItems: "center", gap: 8 },
   pricingIcon:        { fontSize: 20 },
-  pricingServiceName: { fontSize: 14, fontWeight: "700", color: "#111" },
+  pricingServiceName: { fontSize: 14, fontFamily: fonts.bold, color: colors.ink900 },
   pricingField:       { gap: 6 },
   priceRow:           { flexDirection: "row", alignItems: "flex-end", gap: 10 },
-  priceDash:          { fontSize: 16, color: "#AAB0B7", paddingBottom: 14, fontWeight: "700" },
+  priceDash:          { fontSize: 16, color: colors.ink300, paddingBottom: 14, fontFamily: fonts.bold },
 });

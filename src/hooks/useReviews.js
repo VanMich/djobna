@@ -43,23 +43,31 @@ function mapReview(r) {
 export function useReviews(providerId) {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchReviews = useCallback(async () => {
+    if (!providerId) return;
+    setError(null);
+    const { data, error: fetchError } = await supabase
+      .from("reviews")
+      .select("*")
+      .eq("provider_id", providerId)
+      .eq("rated_by", "client")
+      .order("created_at", { ascending: false });
+
+    if (fetchError) {
+      setError(fetchError);
+    } else {
+      setReviews((data || []).map(mapReview));
+    }
+    setLoading(false);
+  }, [providerId]);
 
   // Charge les avis et s'abonne aux nouvelles soumissions en temps réel
   useEffect(() => {
     if (!providerId) { setLoading(false); return; }
 
-    const fetchReviews = async () => {
-      const { data } = await supabase
-        .from("reviews")
-        .select("*")
-        .eq("provider_id", providerId)
-        .eq("rated_by", "client")
-        .order("created_at", { ascending: false });
-
-      setReviews((data || []).map(mapReview));
-      setLoading(false);
-    };
-
+    setLoading(true);
     fetchReviews();
 
     // Realtime : nouvel avis soumis → mise à jour instantanée de la liste
@@ -74,7 +82,7 @@ export function useReviews(providerId) {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [providerId]);
+  }, [providerId, fetchReviews]);
 
   // Vérifie si le client connecté peut noter ce prestataire.
   // Conditions cumulatives :
@@ -158,5 +166,5 @@ export function useReviews(providerId) {
     }
   }, []);
 
-  return { reviews, loading, checkCanReview, submitReview, replyToReview };
+  return { reviews, loading, error, refetch: fetchReviews, checkCanReview, submitReview, replyToReview };
 }

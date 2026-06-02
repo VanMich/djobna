@@ -66,6 +66,13 @@ export function useClientProfile() {
           .eq("id", userId)
           .maybeSingle();
 
+        // Téléphone : table privée (lisible par le propriétaire seul)
+        const { data: privData } = await supabase
+          .from("user_private")
+          .select("phone_number")
+          .eq("id", userId)
+          .maybeSingle();
+
         if (!active) return;
         if (userError || !userData) {
           setProfile(null);
@@ -80,7 +87,7 @@ export function useClientProfile() {
           id: userData.id,
           displayName: userData.display_name,
           photoURL: userData.photo_url,
-          phoneNumber: userData.phone_number,
+          phoneNumber: privData?.phone_number,
           role: userData.role,
           activeRole: userData.active_role,
           ville: userData.ville,

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+﻿import React, { useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,8 @@ import {
   Animated,
   StyleSheet,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors, radius, shadows, typography } from "../../theme";
+import Icon from "../../components/ui/Icon";
+import { colors, radius, shadows, typography, fonts } from "../../theme";
 
 /**
  * Select — dropdown / picker moderne (remplace le pattern quartier picker)
@@ -20,7 +20,7 @@ import { colors, radius, shadows, typography } from "../../theme";
  *     value={quartier}
  *     options={["Akwa", "Bonabéri", "Bonamoussadi"]}
  *     onSelect={setQuartier}
- *     placeholder="Choisissez votre quartier"
+ *     placeholder="Choisis ton quartier"
  *   />
  *
  *   <Select
@@ -37,7 +37,7 @@ import { colors, radius, shadows, typography } from "../../theme";
  *     options={quartiers}
  *     onSelect={setQuartier}
  *     allowCustom
- *     customPlaceholder="Entrez votre quartier"
+ *     customPlaceholder="Entre ton quartier"
  *   />
  */
 export default function Select({
@@ -133,7 +133,7 @@ export default function Select({
           {value ? selectedLabel : placeholder}
         </Text>
         <Animated.View style={{ transform: [{ rotate: arrowRotation }] }}>
-          <Ionicons name="chevron-down" size={16} color={colors.textMuted} />
+          <Icon name="chevron-down" size={16} color={colors.textMuted} />
         </Animated.View>
       </TouchableOpacity>
 
@@ -148,7 +148,7 @@ export default function Select({
         {/* Search bar inside dropdown */}
         {searchable && open ? (
           <View style={styles.searchWrap}>
-            <Ionicons name="search" size={14} color={colors.textMuted} />
+            <Icon name="search" size={14} color={colors.textMuted} />
             <TextInput
               style={styles.searchInput}
               placeholder="Rechercher…"
@@ -159,7 +159,7 @@ export default function Select({
             />
             {search.length > 0 ? (
               <TouchableOpacity onPress={() => setSearch("")}>
-                <Ionicons name="close-circle" size={14} color={colors.textMuted} />
+                <Icon name="close-circle" size={14} color={colors.textMuted} />
               </TouchableOpacity>
             ) : null}
           </View>
@@ -191,7 +191,7 @@ export default function Select({
                   {opt.label}
                 </Text>
                 {value === opt.value ? (
-                  <Ionicons name="checkmark" size={16} color={colors.primary} />
+                  <Icon name="checkmark" size={16} color={colors.primary} />
                 ) : null}
               </TouchableOpacity>
             ))
@@ -252,13 +252,13 @@ const styles = StyleSheet.create({
   triggerText: {
     flex: 1,
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     color: colors.textPrimary,
     marginRight: 8,
   },
   triggerPlaceholder: {
     color: colors.textMuted,
-    fontWeight: "400",
+    fontFamily: fonts.regular,
   },
   dropdown: {
     overflow: "hidden",
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   },
   optionTextSelected: {
     color: colors.primary,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
   },
   customWrap: {
     padding: 14,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 12,
     color: colors.error,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     paddingHorizontal: 2,
   },
 });

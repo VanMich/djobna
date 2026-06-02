@@ -1,4 +1,4 @@
-// src/screens/ProviderProfileScreen.jsx
+﻿// src/screens/ProviderProfileScreen.jsx
 // Affiche le profil public d'un prestataire (vue client).
 //
 // Remplace Firebase :
@@ -19,9 +19,11 @@ import {
   Share,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import Icon from "../components/ui/Icon";
 
 import PortfolioTab from "../components/providerProfile/PortfolioTab";
 import ProfileHeader from "../components/providerProfile/ProfileHeader";
@@ -33,7 +35,7 @@ import RatingModal from "../components/reviews/RatingModal";
 import { useReviews } from "../hooks/useReviews";
 import { supabase } from "../config/supabase";
 import { SkeletonProfilePublic } from "../components/ui";
-import { colors } from "../theme";
+import { colors, fonts } from "../theme";
 
 export default function ProviderProfileScreen({ navigation, route }) {
   // initialTab permet d'ouvrir directement l'onglet "reviews" (ex : depuis "Mes avis reçus")
@@ -100,9 +102,9 @@ export default function ProviderProfileScreen({ navigation, route }) {
     if (result.success) {
       setCanReview(false);        // masque le bouton "Laisser un avis"
       setRatingModalVisible(false);
-      Alert.alert("Merci !", "Votre avis a été publié.");
+      Alert.alert("Merci !", "Ton avis a été publié.");
     } else {
-      Alert.alert("Erreur", "Impossible de publier l'avis. Réessayez.");
+      Alert.alert("Erreur", "Impossible de publier l'avis. Réessaye.");
     }
   }, [currentUserId, reviewRequestId, submitReview]);
 
@@ -145,6 +147,7 @@ export default function ProviderProfileScreen({ navigation, route }) {
             valueForMoney: data.rating_value_for_money || 0,
           },
           reviewCount: data.review_count || 0,
+          completedJobs: data.completed_jobs || 0,
           verificationStatus: data.verification_status,
           portfolio: data.portfolio || [],
         });
@@ -195,7 +198,7 @@ export default function ProviderProfileScreen({ navigation, route }) {
 
   const handleMore = useCallback(() => {
     Alert.alert("Options", "", [
-      { text: "Signaler ce prestataire", style: "destructive" },
+      { text: "Signaler ce pro", style: "destructive" },
       { text: "Copier le lien du profil" },
       { text: "Annuler", style: "cancel" },
     ]);
@@ -225,7 +228,7 @@ export default function ProviderProfileScreen({ navigation, route }) {
       if (!userData?.display_name || !userData?.quartier) {
         Alert.alert(
           "Profil incomplet",
-          "Complétez votre profil (nom et quartier) avant de solliciter un prestataire.",
+          "Complète ton profil (nom et quartier) avant de contacter un pro.",
           [
             { text: "Annuler", style: "cancel" },
             { text: "Compléter mon profil", onPress: () => navigation.navigate("ProfileSetup") },
@@ -252,53 +255,73 @@ export default function ProviderProfileScreen({ navigation, route }) {
     scrollRef.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
-  if (loading) {
-    return (
-      <View style={styles.root}>
-        <StatusBar style="light" />
-        <SkeletonProfilePublic />
-      </View>
-    );
-  }
-
-  if (!provider) {
+  if (!loading && !provider) {
     return (
       <View style={styles.loader}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <Text style={styles.emptyTitle}>Profil introuvable</Text>
-        <Text style={styles.emptyText}>Ce prestataire n'est plus disponible.</Text>
+        <Text style={styles.emptyText}>Ce pro n'est plus disponible.</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
-      <SafeAreaView style={styles.headerSafe}>
-        <ProfileHeader
-          provider={provider}
-          isFav={isFav}
-          onBack={handleBack}
-          onToggleFav={handleToggleFav}
-          onShare={handleShare}
-          onMore={handleMore}
-          onContact={handleContact}
-          onSolliciter={handleSolliciter}
-        />
+      <StatusBar style="dark" />
+
+      {/* ── Barre fixe (back + actions) — toujours visible ── */}
+      <SafeAreaView style={styles.topBarSafe}>
+        <View style={styles.topBar}>
+          <TouchableOpacity style={styles.backBtn} onPress={handleBack} activeOpacity={0.8}>
+            <Icon name="arrow-back" size={18} color={colors.ink700} />
+          </TouchableOpacity>
+          <View style={styles.topActions}>
+            <TouchableOpacity
+              style={[styles.iconBtn, isFav && styles.iconBtnFavActive]}
+              onPress={handleToggleFav}
+              activeOpacity={0.8}
+            >
+              <Icon
+                name={isFav ? "heart" : "heart-outline"}
+                size={18}
+                color={isFav ? colors.mango : colors.ink500}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtn} onPress={handleShare} activeOpacity={0.8}>
+              <Icon name="share-social-outline" size={18} color={colors.ink700} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.iconBtn} onPress={handleMore} activeOpacity={0.8}>
+              <Icon name="ellipsis-vertical" size={18} color={colors.ink700} />
+            </TouchableOpacity>
+          </View>
+        </View>
       </SafeAreaView>
 
-      <ProfileTabs
-        activeTab={activeTab}
-        reviewCount={provider?.reviewCount}
-        onTabChange={handleTabChange}
-      />
-
+      {loading ? (
+        <SkeletonProfilePublic />
+      ) : (
       <ScrollView
         ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1]}
       >
+        {/* Header body (avatar + infos + CTA + stats) */}
+        <ProfileHeader
+          provider={provider}
+          onContact={handleContact}
+          onSolliciter={handleSolliciter}
+        />
+
+        {/* Tabs — devient sticky quand on scrolle */}
+        <ProfileTabs
+          activeTab={activeTab}
+          reviewCount={provider?.reviewCount}
+          onTabChange={handleTabChange}
+        />
+
+        {/* Contenu de l'onglet actif */}
         {activeTab === "profile" && <ProfileTab provider={provider} />}
         {activeTab === "portfolio" && <PortfolioTab provider={provider} />}
         {activeTab === "reviews" && (
@@ -312,6 +335,7 @@ export default function ProviderProfileScreen({ navigation, route }) {
           />
         )}
       </ScrollView>
+      )}
 
       {/* ── Modal de notation (§15.2) ── */}
       <RatingModal
@@ -332,14 +356,41 @@ export default function ProviderProfileScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.headerBg },
-  headerSafe: { backgroundColor: colors.headerBg, zIndex: 20, elevation: 20 },
+  root: { flex: 1, backgroundColor: colors.background },
+  topBarSafe: { backgroundColor: colors.background, zIndex: 20, elevation: 20 },
+  topBar: {
+    height: 48,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.ink50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  topActions: { flexDirection: "row", gap: 8 },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.ink50,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconBtnFavActive: {
+    backgroundColor: colors.mangoSoft,
+  },
   loader: {
     flex: 1, alignItems: "center", justifyContent: "center",
-    backgroundColor: colors.headerBg, gap: 8, paddingHorizontal: 24,
+    backgroundColor: colors.background, gap: 8, paddingHorizontal: 24,
   },
-  emptyTitle: { color: colors.headerText, fontSize: 18, fontWeight: "800" },
-  emptyText: { color: colors.headerSubtext, fontSize: 13, textAlign: "center" },
-  scroll: { flex: 1, backgroundColor: "#F4F6F5" },
+  emptyTitle: { color: colors.ink900, fontSize: 18, fontFamily: fonts.extraBold },
+  emptyText: { color: colors.ink500, fontSize: 13, textAlign: "center" },
+  scroll: { flex: 1, backgroundColor: colors.background },
   scrollContent: { paddingBottom: 30 },
 });

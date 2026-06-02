@@ -1,174 +1,153 @@
 // src/components/homeProvider/MissionCard.jsx
-//
-// Carte affichée dans le bloc "Missions en cours" du dashboard prestataire (§13.1).
-// Props :
-//   mission   — objet mapRequest (voir useProviderDashboard)
-//   onPress   — ouvre le chat avec le client
-//   onComplete — marque la mission comme terminée (appelle completeRequest)
-
 import React from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { SERVICES } from "../../constants/services";
 import Icon from "../ui/Icon";
-import { colors } from "../../theme";
+import { colors, fonts, shadows } from "../../theme";
 
 function MissionCard({ mission, onPress, onComplete }) {
-  // Correction bug : le champ exposé par mapRequest s'appelle "service", pas "serviceType"
   const svc = SERVICES.find((s) => s.id === mission.service);
 
-  // Formate l'heure prévue depuis une ISO string ou un timestamp numérique
-  const formatTime = (value) => {
+  const initials = (mission.clientName || "XX")
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const formatSchedule = (value) => {
     if (!value) return null;
-    return new Date(value).toLocaleTimeString("fr-FR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const d = new Date(value);
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return isToday ? `Aujourd'hui, ${time}` : `Demain, ${time}`;
   };
 
-  // Confirmation avant de marquer comme terminée (action irréversible)
   const handleComplete = () => {
     Alert.alert(
-      "Marquer comme terminée ?",
-      "La mission passera en statut \"Terminée\" et sera déplacée dans le récapitulatif du jour.",
+      "J'ai terminé cette mission ?",
+      "Le client recevra une demande de confirmation pour clôturer la mission.",
       [
         { text: "Annuler", style: "cancel" },
-        {
-          text: "Confirmer",
-          onPress: () => onComplete?.(mission.id),
-        },
+        { text: "J'ai terminé", onPress: () => onComplete?.(mission.id, mission.clientId) },
       ],
     );
   };
 
-  const scheduledTime = formatTime(mission.scheduledDate || mission.scheduledAt);
+  const scheduledLabel = formatSchedule(mission.scheduledDate || mission.scheduledAt);
+  const awaitingClient = !!mission.providerCompletedAt;
 
   return (
-    <View style={styles.card}>
-      {/* ── Ligne principale : icône + infos + messagerie ── */}
-      <TouchableOpacity
-        style={styles.mainRow}
-        onPress={onPress}
-        activeOpacity={0.85}
-      >
-        {/* Icône du service */}
-        <View style={styles.iconWrap}>
-          <Icon name={svc?.icon || "wrench"} size={20} color={colors.primary} weight="duotone" />
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.95}>
+      <View style={styles.top}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>{initials}</Text>
         </View>
-
-        {/* Titre et méta */}
         <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={1}>
-            {/* Nom du service + nom du client si disponible */}
-            {svc?.label || "Mission"}
-            {mission.clientName ? ` · ${mission.clientName}` : ""}
+          <Text style={styles.name} numberOfLines={1}>{mission.clientName || "Client"}</Text>
+          <Text style={styles.service} numberOfLines={1}>
+            {svc?.label || "Mission"}{mission.quartier ? ` · ${mission.quartier}` : ""}
           </Text>
-          <View style={styles.metaRow}>
-            {/* Heure prévue */}
-            {scheduledTime && (
-              <>
-                <Ionicons name="time-outline" size={10} color="#AAB0B7" />
-                <Text style={styles.metaText}>Prévu à {scheduledTime}</Text>
-              </>
-            )}
-            {/* Quartier du client */}
-            {mission.quartier && (
-              <>
-                {scheduledTime && <Text style={styles.metaDot}>·</Text>}
-                <Text style={styles.metaText}>{mission.quartier}</Text>
-              </>
-            )}
+        </View>
+        <View style={styles.statusBadge}>
+          <Text style={styles.statusText}>En cours</Text>
+        </View>
+      </View>
+
+      <View style={styles.progressBg}>
+        <View style={[styles.progressFill, { width: awaitingClient ? "100%" : "60%" }]} />
+      </View>
+
+      <View style={styles.footer}>
+        <View style={styles.footerInfo}>
+          <Icon name="clock" size={12} color={colors.ink300} />
+          <Text style={styles.footerText}>{scheduledLabel || "Non planifié"}</Text>
+        </View>
+        {onComplete && awaitingClient ? (
+          <View style={styles.waitingPill}>
+            <Icon name="hourglass" size={11} color={colors.mangoDark} />
+            <Text style={styles.waitingText}>En attente du client</Text>
           </View>
-        </View>
-
-        {/* Bouton chat rapide */}
-        <View style={styles.chatBtn}>
-          <Ionicons name="chatbubble-ellipses" size={18} color={colors.primary} />
-        </View>
-      </TouchableOpacity>
-
-      {/* ── Bouton "Marquer comme terminée" (§13.1) ── */}
-      {/* Affiché uniquement si le callback est fourni (missions in_progress) */}
-      {onComplete && (
-        <TouchableOpacity
-          style={styles.completeBtn}
-          onPress={handleComplete}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="checkmark-circle-outline" size={14} color="#0F6E56" />
-          <Text style={styles.completeBtnText}>Marquer comme terminée</Text>
-        </TouchableOpacity>
-      )}
-    </View>
+        ) : onComplete ? (
+          <TouchableOpacity style={styles.ctaBtn} onPress={handleComplete} activeOpacity={0.8}>
+            <Icon name="check-circle" size={12} color={colors.primary} />
+            <Text style={styles.ctaText}>Terminer</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.ctaBtn}>
+            <Text style={styles.ctaText}>Chat</Text>
+            <Icon name="chevron-right" size={12} color={colors.primary} />
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 14,
     borderWidth: 1,
-    borderColor: "#EEF0EF",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
-  },
-
-  // Ligne cliquable (navigation vers le chat)
-  mainRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    borderColor: colors.ink100,
     gap: 10,
-    padding: 12,
+    ...shadows.sm,
   },
-
-  iconWrap: {
+  top: { flexDirection: "row", alignItems: "center", gap: 12 },
+  avatar: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.purple,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
-  // icon style removed — now uses Phosphor Icon component
-
-  info: { flex: 1, gap: 3 },
-  title: { fontSize: 13, fontWeight: "700", color: "#111" },
-  metaRow: { flexDirection: "row", alignItems: "center", gap: 4 },
-  metaText: { fontSize: 10, color: "#AAB0B7" },
-  metaDot: { fontSize: 10, color: "#AAB0B7" },
-
-  // Icône chat sur la droite
-  chatBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: "#F0FAF6",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
+  avatarText: { fontSize: 13, fontFamily: fonts.extraBold, color: colors.textInverse },
+  info: { flex: 1, gap: 2 },
+  name: { fontSize: 13, fontFamily: fonts.bold, color: colors.ink900 },
+  service: { fontSize: 11, fontFamily: fonts.medium, color: colors.ink500 },
+  statusBadge: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
   },
-
-  // Bouton "Marquer comme terminée" en bas de la carte
-  completeBtn: {
+  statusText: {
+    fontSize: 9,
+    fontFamily: fonts.bold,
+    color: colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  progressBg: {
+    height: 4,
+    backgroundColor: colors.ink50,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: 4,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+  },
+  footer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 9,
-    borderTopWidth: 1,
-    borderTopColor: "#EEF0EF",
-    backgroundColor: "#F8FFFC",
+    justifyContent: "space-between",
   },
-  completeBtnText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#0F6E56",
+  footerInfo: { flexDirection: "row", alignItems: "center", gap: 4 },
+  footerText: { fontSize: 11, fontFamily: fonts.medium, color: colors.ink500 },
+  ctaBtn: { flexDirection: "row", alignItems: "center", gap: 3 },
+  ctaText: { fontSize: 11, fontFamily: fonts.bold, color: colors.primary },
+  waitingPill: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    backgroundColor: colors.mangoSoft, borderRadius: 8,
+    paddingVertical: 4, paddingHorizontal: 8,
   },
+  waitingText: { fontSize: 10, fontFamily: fonts.bold, color: colors.mangoDark },
 });
 
 export default React.memo(MissionCard);

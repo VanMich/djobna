@@ -44,7 +44,9 @@ export function useServiceRequest() {
 
       const now = new Date().toISOString(); // remplace serverTimestamp() / Date.now()
 
-      const { error: insertError } = await supabase.from("requests").insert({
+      // .select("id").single() : on récupère l'id de la demande créée pour pouvoir
+      // le passer en relatedId à la notif → permet le deep-linking depuis la cloche.
+      const { data: inserted, error: insertError } = await supabase.from("requests").insert({
         client_id: user.id,
         client_name: userData?.display_name || "Client",
         quartier: userData?.quartier || "",
@@ -59,11 +61,11 @@ export function useServiceRequest() {
         status: "pending",
         created_at: now,
         updated_at: now,
-      });
+      }).select("id").single();
       if (insertError) throw insertError;
 
       // Notifie le prestataire (fire & forget)
-      pushNotify(providerId, "🔔 Nouvelle demande", `${userData?.display_name || "Un client"} a besoin de vous`);
+      pushNotify(providerId, "🔔 Nouvelle demande", `${userData?.display_name || "Un client"} a besoin de vous`, { persist: true, type: "request_received", relatedId: inserted?.id });
 
       return { success: true };
     } catch (err) {

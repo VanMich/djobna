@@ -1,8 +1,8 @@
-import React from "react";
+﻿import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Image } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "../../components/ui/Icon";
 import { AVATAR_COLORS } from "../../constants/services";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 function ConversationItem({ conversation, onPress }) {
   const { otherUser, lastMessage, lastMessageAt, lastSenderIsMe, unreadCount } = conversation;
@@ -28,7 +28,7 @@ function ConversationItem({ conversation, onPress }) {
         </Text>
         <View style={s.msgRow}>
           {lastSenderIsMe && (
-            <Ionicons name="checkmark-done" size={14} color={hasUnread ? "#5DCAA5" : "#AAB0B7"} style={s.checkIcon} />
+            <Icon name="checkmark-done" size={14} color={hasUnread ? colors.primary : colors.ink300} style={s.checkIcon} />
           )}
           <Text style={[s.msg, hasUnread && s.msgUnread]} numberOfLines={1}>
             {lastMessage}
@@ -70,9 +70,9 @@ const s = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "#F0F0F0",
+    borderBottomColor: colors.borderLight,
   },
   avatar: {
     width: 52,
@@ -81,17 +81,17 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 17, fontWeight: "800", color: "#fff" },
+  avatarText: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.textInverse },
   center: { flex: 1, marginLeft: 14, gap: 3 },
-  name: { fontSize: 15, fontWeight: "600", color: "#111" },
-  nameBold: { fontWeight: "800" },
+  name: { fontSize: 15, fontFamily: fonts.semiBold, color: colors.ink900 },
+  nameBold: { fontFamily: fonts.extraBold },
   msgRow: { flexDirection: "row", alignItems: "center" },
   checkIcon: { marginRight: 3 },
-  msg: { fontSize: 13, color: "#8B9098", flex: 1 },
-  msgUnread: { color: "#333", fontWeight: "600" },
+  msg: { fontSize: 13, fontFamily: fonts.regular, color: colors.ink300, flex: 1 },
+  msgUnread: { color: colors.ink700, fontFamily: fonts.semiBold },
   right: { alignItems: "flex-end", marginLeft: 10, gap: 6 },
-  time: { fontSize: 11, color: "#8B9098" },
-  timeUnread: { color: colors.primary, fontWeight: "700" },
+  time: { fontSize: 11, fontFamily: fonts.medium, color: colors.ink300 },
+  timeUnread: { color: colors.primary, fontFamily: fonts.bold },
   badge: {
     minWidth: 22,
     height: 22,
@@ -101,7 +101,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 5,
   },
-  badgeText: { fontSize: 11, fontWeight: "800", color: "#fff" },
+  badgeText: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.textInverse },
 });
 
 export default React.memo(ConversationItem);

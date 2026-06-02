@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import { AVATAR_COLORS } from "../../constants/services";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 /**
  * Avatar universel — affiche la photo de profil ou les initiales
@@ -42,7 +42,7 @@ export default function Avatar({ name, photoURL, size = 48, service, style }) {
         style,
       ]}
     >
-      <Text style={{ fontSize, fontWeight: "800", color: "#fff" }}>
+      <Text style={{ fontSize, fontFamily: fonts.extraBold, color: colors.textInverse }}>
         {initials}
       </Text>
     </View>

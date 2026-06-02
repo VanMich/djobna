@@ -1,6 +1,7 @@
 // src/components/providerProfile/PortfolioTab.jsx
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { colors, fonts } from "../../theme";
 
 import MenuItem from "../clientProfile/MenuItem";
 import MenuSection from "../clientProfile/MenuSection";
@@ -42,7 +43,7 @@ const styles = StyleSheet.create({
   container: { paddingBottom: 10 },
   emptyText: {
     fontSize: 12,
-    color: "#AAB0B7",
+    color: colors.ink300,
     paddingHorizontal: 14,
     paddingBottom: 14,
   },

@@ -1,8 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Star } from "phosphor-react-native";
-import { colors, radius } from "../../theme";
+import Icon from "./Icon";
+import { colors, radius, fonts } from "../../theme";
 
 /**
  * Badge / StatusBadge — affiche un statut, une notification, ou un tag
@@ -43,7 +42,7 @@ export default function Badge({
   return (
     <View style={[styles.badge, v.container, s.container, style]}>
       {icon ? (
-        <Ionicons name={icon} size={s.iconSize} color={v.iconColor} style={{ marginRight: 3 }} />
+        <Icon name={icon} size={s.iconSize} color={v.iconColor} style={{ marginRight: 3 }} />
       ) : null}
       <Text style={[styles.badgeText, v.text, s.text]}>{label}</Text>
     </View>
@@ -94,7 +93,7 @@ export function VerifiedBadge({ size = 18, style }) {
 export function PremiumBadge({ style }) {
   return (
     <View style={[styles.premiumBadge, style]}>
-      <Star size={10} color="#B45309" weight="fill" />
+      <Icon name="star" size={10} color="#B45309" />
       <Text style={styles.premiumText}>Pro</Text>
     </View>
   );
@@ -194,7 +193,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   badgeText: {
-    fontWeight: "700",
+    fontFamily: fonts.bold,
   },
   // Count badge (notification)
   countBadge: {
@@ -214,7 +213,7 @@ const styles = StyleSheet.create({
   },
   countText: {
     fontSize: 10,
-    fontWeight: "800",
+    fontFamily: fonts.extraBold,
     color: "#FFFFFF",
   },
   countTextSm: {
@@ -227,7 +226,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   verifiedText: {
-    fontWeight: "800",
+    fontFamily: fonts.extraBold,
     color: colors.primary,
   },
   // Premium
@@ -244,7 +243,7 @@ const styles = StyleSheet.create({
   },
   premiumText: {
     fontSize: 9,
-    fontWeight: "700",
+    fontFamily: fonts.bold,
     color: "#B45309",
   },
   // Dot

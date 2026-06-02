@@ -1,5 +1,4 @@
-// src/components/providerProfile/ServiceRequestModal.jsx
-import { Ionicons } from "@expo/vector-icons";
+﻿// src/components/providerProfile/ServiceRequestModal.jsx
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
@@ -20,7 +19,7 @@ import { SERVICES } from "../../constants/services";
 import { useServiceRequest } from "../../hooks/useServiceRequest";
 import { supabase } from "../../config/supabase";
 import Icon from "../ui/Icon";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 export default function ServiceRequestModal({ visible, onClose, provider }) {
   const [selectedService, setSelectedService] = useState(null);
@@ -86,7 +85,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
 
   const handlePickPhoto = async () => {
     if (photos.length >= 3) {
-      Alert.alert("Maximum atteint", "Vous pouvez joindre jusqu'à 3 photos.");
+      Alert.alert("Maximum atteint", "Tu peux joindre jusqu'à 3 photos.");
       return;
     }
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -105,11 +104,11 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
 
   const validate = () => {
     if (!selectedService) {
-      Alert.alert("Service requis", "Sélectionnez le service souhaité.");
+      Alert.alert("Service requis", "Sélectionne le service souhaité.");
       return false;
     }
     if (!title.trim()) {
-      Alert.alert("Intitulé requis", "Décrivez brièvement votre tâche.");
+      Alert.alert("Intitulé requis", "Décris brièvement ta tâche.");
       return false;
     }
     if (description.trim().length < 20) {
@@ -146,7 +145,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
         );
       } catch (err) {
         console.error("Erreur upload photos:", err);
-        Alert.alert("Erreur", "Impossible d'uploader les photos. Réessayez.");
+        Alert.alert("Erreur", "Impossible d'uploader les photos. Réessaye.");
         return;
       }
     }
@@ -164,11 +163,11 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
     if (result.success) {
       Alert.alert(
         "Demande envoyée ✓",
-        `${provider?.displayName} a reçu votre demande et vous répondra dès que possible.`,
+        `${provider?.displayName} a reçu ta demande et te répondra dès que possible.`,
         [{ text: "OK", onPress: handleClose }],
       );
     } else {
-      Alert.alert("Erreur", "Impossible d'envoyer la demande. Réessayez.");
+      Alert.alert("Erreur", "Impossible d'envoyer la demande. Réessaye.");
     }
   };
 
@@ -194,7 +193,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
         {/* ── Header ── */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.closeBtn} onPress={handleClose} activeOpacity={0.8}>
-            <Ionicons name="close" size={20} color="#555" />
+            <Icon name="close" size={20} color={colors.ink500} />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>Solliciter un service</Text>
@@ -224,7 +223,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
                     onPress={() => setSelectedService(svc.id)}
                     activeOpacity={0.8}
                   >
-                    <Icon name={svc.icon} size={16} color={active ? "#fff" : colors.primary} weight="duotone" />
+                    <Icon name={svc.icon} size={16} color={active ? colors.textInverse : colors.primary} weight="duotone" />
                     <Text style={[styles.chipText, active && styles.chipTextActive]}>
                       {provider?.servicePricing?.[svc.id]?.customLabel || svc.label}
                     </Text>
@@ -234,7 +233,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
             </View>
             {selectedPricing && (
               <View style={styles.pricingHint}>
-                <Ionicons name="pricetag-outline" size={13} color={colors.primary} />
+                <Icon name="pricetag-outline" size={13} color={colors.primary} />
                 <Text style={styles.pricingHintText}>
                   {(selectedPricing.minPrice || 0).toLocaleString("fr-FR")} –{" "}
                   {(selectedPricing.maxPrice || 0).toLocaleString("fr-FR")} FCFA
@@ -252,7 +251,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
             <TextInput
               style={styles.input}
               placeholder='Ex : "Réparation fuite robinet cuisine"'
-              placeholderTextColor="#C0C0C0"
+              placeholderTextColor={colors.ink100}
               value={title}
               onChangeText={setTitle}
               maxLength={80}
@@ -266,8 +265,8 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
             </Text>
             <TextInput
               style={[styles.input, styles.textarea]}
-              placeholder="Décrivez le problème, les difficultés d'accès, ce que vous attendez…"
-              placeholderTextColor="#C0C0C0"
+              placeholder="Décris le problème, les difficultés d'accès, ce que tu attends…"
+              placeholderTextColor={colors.ink100}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -294,11 +293,11 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
               Lieu d'intervention <Text style={styles.required}>*</Text>
             </Text>
             <View style={styles.inputRow}>
-              <Ionicons name="location-outline" size={16} color="#AAB0B7" style={styles.inputIcon} />
+              <Icon name="location-outline" size={16} color={colors.ink300} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, styles.inputWithIcon]}
                 placeholder="Rue, quartier, repère…"
-                placeholderTextColor="#C0C0C0"
+                placeholderTextColor={colors.ink100}
                 value={location}
                 onChangeText={setLocation}
               />
@@ -309,16 +308,16 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
           <View style={styles.section}>
             <Text style={styles.label}>Date et heure souhaitées</Text>
             <TouchableOpacity style={styles.dateField} onPress={openPicker} activeOpacity={0.8}>
-              <Ionicons name="calendar-outline" size={16} color={scheduledDate ? colors.primary : "#AAB0B7"} />
+              <Icon name="calendar-outline" size={16} color={scheduledDate ? colors.primary : colors.ink300} />
               <Text style={[styles.dateFieldText, !scheduledDate && styles.dateFieldPlaceholder]}>
                 {scheduledDate ? formatScheduledDate(scheduledDate) : "Sélectionner une date et heure"}
               </Text>
               {scheduledDate ? (
                 <TouchableOpacity onPress={() => setScheduledDate(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="close-circle" size={18} color="#C0C0C0" />
+                  <Icon name="close-circle" size={18} color={colors.ink100} />
                 </TouchableOpacity>
               ) : (
-                <Ionicons name="chevron-forward" size={16} color="#C0C0C0" />
+                <Icon name="chevron-forward" size={16} color={colors.ink100} />
               )}
             </TouchableOpacity>
 
@@ -348,7 +347,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
               <TextInput
                 style={[styles.input, styles.budgetInput]}
                 placeholder="Ex : 15 000"
-                placeholderTextColor="#C0C0C0"
+                placeholderTextColor={colors.ink100}
                 value={budget}
                 onChangeText={setBudget}
                 keyboardType="numeric"
@@ -370,13 +369,13 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
                     style={styles.photoRemove}
                     onPress={() => setPhotos((p) => p.filter((_, j) => j !== i))}
                   >
-                    <Ionicons name="close-circle" size={20} color="#E24B4A" />
+                    <Icon name="close-circle" size={20} color={colors.error} />
                   </TouchableOpacity>
                 </View>
               ))}
               {photos.length < 3 && (
                 <TouchableOpacity style={styles.photoAdd} onPress={handlePickPhoto} activeOpacity={0.8}>
-                  <Ionicons name="camera-outline" size={26} color="#AAB0B7" />
+                  <Icon name="camera-outline" size={26} color={colors.ink300} />
                   <Text style={styles.photoAddText}>Ajouter</Text>
                 </TouchableOpacity>
               )}
@@ -392,7 +391,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
             activeOpacity={0.85}
             disabled={loading}
           >
-            <Ionicons name="flash" size={16} color="#fff" />
+            <Icon name="flash" size={16} color={colors.textInverse} />
             <Text style={styles.submitBtnText}>
               {loading ? "Envoi en cours…" : "Envoyer la demande"}
             </Text>
@@ -404,7 +403,7 @@ export default function ServiceRequestModal({ visible, onClose, provider }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#fff" },
+  root: { flex: 1, backgroundColor: colors.card },
 
   header: {
     flexDirection: "row",
@@ -413,27 +412,27 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    borderBottomColor: colors.borderLight,
   },
   closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "#F4F4F4",
+    backgroundColor: colors.ink50,
     alignItems: "center",
     justifyContent: "center",
   },
   headerCenter: { flex: 1, alignItems: "center", gap: 2 },
-  headerTitle: { fontSize: 15, fontWeight: "800", color: "#111" },
-  headerSub: { fontSize: 12, color: "#888" },
+  headerTitle: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.ink900 },
+  headerSub: { fontSize: 12, color: colors.ink500 },
   headerRight: { width: 36 },
 
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 12, gap: 4 },
 
   section: { gap: 8 },
-  label: { fontSize: 13, fontWeight: "700", color: "#333" },
-  required: { color: "#E24B4A" },
+  label: { fontSize: 13, fontFamily: fonts.bold, color: colors.ink700 },
+  required: { color: colors.error },
 
   chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: {
@@ -444,39 +443,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1.5,
-    borderColor: "#E8E8E8",
-    backgroundColor: "#FAFAFA",
+    borderColor: colors.borderLight,
+    backgroundColor: colors.ink50,
   },
-  chipActive: { borderColor: colors.primary, backgroundColor: "#F0FAF6" },
+  chipActive: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
   chipIcon: { fontSize: 15 },
-  chipText: { fontSize: 13, fontWeight: "600", color: "#555" },
+  chipText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.ink500 },
   chipTextActive: { color: colors.primary },
 
   pricingHint: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.primarySoft,
     borderRadius: 8,
     paddingVertical: 6,
     paddingHorizontal: 10,
     alignSelf: "flex-start",
   },
-  pricingHintText: { fontSize: 12, color: colors.primary, fontWeight: "600" },
+  pricingHintText: { fontSize: 12, color: colors.primary, fontFamily: fonts.semiBold },
 
   input: {
     borderWidth: 1.5,
-    borderColor: "#E8E8E8",
+    borderColor: colors.borderLight,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
     fontSize: 14,
-    color: "#111",
-    backgroundColor: "#FAFAFA",
+    color: colors.ink900,
+    backgroundColor: colors.ink50,
   },
   textarea: { height: 100, paddingTop: 12 },
-  counter: { fontSize: 11, color: "#AAB0B7", textAlign: "right" },
-  counterWarn: { color: "#F59E0B" },
+  counter: { fontSize: 11, color: colors.ink300, textAlign: "right" },
+  counterWarn: { color: colors.mango },
 
   inputRow: { position: "relative" },
   inputIcon: { position: "absolute", left: 14, top: 14, zIndex: 1 },
@@ -487,29 +486,29 @@ const styles = StyleSheet.create({
   budgetUnit: {
     width: 64,
     borderWidth: 1.5,
-    borderColor: "#E8E8E8",
+    borderColor: colors.borderLight,
     borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F4F4F4",
+    backgroundColor: colors.ink50,
   },
-  budgetUnitText: { fontSize: 12, fontWeight: "700", color: "#888" },
+  budgetUnitText: { fontSize: 12, fontFamily: fonts.bold, color: colors.ink500 },
 
   dateField: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     borderWidth: 1.5,
-    borderColor: "#E8E8E8",
+    borderColor: colors.borderLight,
     borderRadius: 12,
     paddingVertical: 13,
     paddingHorizontal: 14,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: colors.ink50,
   },
-  dateFieldText: { flex: 1, fontSize: 14, color: "#111" },
-  dateFieldPlaceholder: { color: "#C0C0C0" },
+  dateFieldText: { flex: 1, fontSize: 14, color: colors.ink900 },
+  dateFieldPlaceholder: { color: colors.ink100 },
   pickerDone: { alignSelf: "flex-end", paddingHorizontal: 16, paddingVertical: 8 },
-  pickerDoneText: { fontSize: 14, fontWeight: "700", color: colors.primary },
+  pickerDoneText: { fontSize: 14, fontFamily: fonts.bold, color: colors.primary },
 
   photosRow: { flexDirection: "row", gap: 10 },
   photoThumb: { position: "relative", width: 80, height: 80 },
@@ -520,20 +519,20 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: "#E8E8E8",
+    borderColor: colors.borderLight,
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: colors.ink50,
   },
-  photoAddText: { fontSize: 10, color: "#AAB0B7", fontWeight: "600" },
+  photoAddText: { fontSize: 10, color: colors.ink300, fontFamily: fonts.semiBold },
 
   footer: {
     padding: 16,
     paddingBottom: Platform.OS === "ios" ? 32 : 16,
     borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
+    borderTopColor: colors.borderLight,
   },
   submitBtn: {
     height: 52,
@@ -550,5 +549,5 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   submitBtnDisabled: { opacity: 0.6 },
-  submitBtnText: { fontSize: 15, fontWeight: "800", color: "#fff" },
+  submitBtnText: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textInverse },
 });

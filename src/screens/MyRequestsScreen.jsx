@@ -1,25 +1,26 @@
-import { Ionicons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
+﻿import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef } from "react";
 import {
   Animated,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { SERVICES } from "../constants/services";
 import { useMyRequests } from "../hooks/useMyRequests";
 import Icon from "../components/ui/Icon";
-import { colors, radius, spacing, shadows } from "../theme";
+import ErrorState from "../components/ui/ErrorState";
+import { MissionProgress } from "../components/tracking/MissionTimeline";
+import { colors, radius, spacing, shadows, fonts } from "../theme";
 
 const STATUS_CONFIG = {
-  pending: { label: "En attente", bg: "#FFF7ED", color: "#C2410C", border: "#FDBA74" },
-  in_progress: { label: "En cours", bg: "#EFF6FF", color: "#1D4ED8", border: "#93C5FD" },
-  completed: { label: "Terminée", bg: "#F0FDF4", color: "#15803D", border: "#86EFAC" },
-  declined: { label: "Refusée", bg: "#FEF2F2", color: "#B91C1C", border: "#FCA5A5" },
+  pending: { label: "En attente", bg: colors.mangoSoft, color: colors.mangoDark, border: colors.mango },
+  in_progress: { label: "En cours", bg: colors.infoLight, color: colors.info, border: colors.infoBorder },
+  completed: { label: "Terminée", bg: colors.successSoft, color: colors.primary, border: colors.successBorder },
+  declined: { label: "Refusée", bg: colors.errorLight, color: colors.error, border: colors.errorBorder },
 };
 
 function formatDate(ts) {
@@ -29,7 +30,7 @@ function formatDate(ts) {
 }
 
 export default function MyRequestsScreen({ navigation }) {
-  const { requests, loading } = useMyRequests();
+  const { requests, loading, error, refetch } = useMyRequests();
 
   const handlePress = (req) => {
     if (req.status === "in_progress" || req.status === "completed") {
@@ -43,12 +44,12 @@ export default function MyRequestsScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
 
       <SafeAreaView style={styles.headerSafe}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <Ionicons name="arrow-back" size={22} color="#fff" />
+            <Icon name="arrow-back" size={20} color={colors.ink700} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Mes demandes</Text>
           <View style={styles.backBtn} />
@@ -62,6 +63,8 @@ export default function MyRequestsScreen({ navigation }) {
       >
         {loading ? (
           <SkeletonList />
+        ) : error ? (
+          <ErrorState onRetry={refetch} />
         ) : requests.length === 0 ? (
           <EmptyState />
         ) : (
@@ -124,7 +127,7 @@ function RequestCard({ request, index, onPress }) {
         <View style={styles.cardBody}>
           <View style={styles.cardTopRow}>
             <Text style={styles.providerName} numberOfLines={1}>
-              {request.providerName || "Prestataire"}
+              {request.providerName || "Pro"}
             </Text>
             <View style={[styles.statusBadge, { backgroundColor: status.bg, borderColor: status.border }]}>
               <Text style={[styles.statusText, { color: status.color }]}>{status.label}</Text>
@@ -141,20 +144,26 @@ function RequestCard({ request, index, onPress }) {
 
           <View style={styles.cardFooter}>
             <View style={styles.datePill}>
-              <Ionicons name="calendar-outline" size={11} color={colors.textGray} />
+              <Icon name="calendar-outline" size={11} color={colors.textGray} />
               <Text style={styles.dateText}>{formatDate(request.createdAt)}</Text>
             </View>
             {isClickable && (
               <View style={styles.chatHint}>
-                <Ionicons name="chatbubble-outline" size={11} color={colors.primary} />
+                <Icon name="chatbubble-outline" size={11} color={colors.primary} />
                 <Text style={styles.chatHintText}>Ouvrir le chat</Text>
               </View>
             )}
           </View>
+
+          <MissionProgress
+            status={request.status}
+            devisAccepted={request.devisAccepted}
+            style={styles.progress}
+          />
         </View>
 
         {isClickable && (
-          <Ionicons name="chevron-forward" size={16} color="#DDD" />
+          <Icon name="chevron-forward" size={16} color={colors.ink100} />
         )}
       </TouchableOpacity>
     </Animated.View>
@@ -207,11 +216,11 @@ function EmptyState() {
   return (
     <View style={styles.empty}>
       <Animated.View style={[{ transform: [{ translateY: bounce }] }]}>
-        <Icon name="tray-arrow-down" size={52} color="#CCC" weight="duotone" />
+        <Icon name="tray-arrow-down" size={52} color={colors.ink300} weight="duotone" />
       </Animated.View>
       <Text style={styles.emptyTitle}>Aucune demande pour le moment</Text>
       <Text style={styles.emptySub}>
-        Vos demandes de services apparaîtront ici une fois envoyées.
+        Tes demandes de services apparaîtront ici une fois envoyées.
       </Text>
     </View>
   );
@@ -227,8 +236,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  backBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
-  headerTitle: { fontSize: 18, fontWeight: "700", color: colors.headerText },
+  backBtn: { width: 40, height: 40, borderRadius: radius.md, backgroundColor: colors.ink50, alignItems: "center", justifyContent: "center" },
+  headerTitle: { fontSize: 18, fontFamily: fonts.bold, color: colors.headerText },
 
   body: { flex: 1, backgroundColor: colors.surface },
   bodyContent: { padding: spacing.md, paddingBottom: 40, gap: 10 },
@@ -252,18 +261,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 16, fontWeight: "800", color: colors.textInverse },
+  avatarText: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.textInverse },
 
   cardBody: { flex: 1, gap: 4 },
   cardTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
-  providerName: { fontSize: 14, fontWeight: "700", color: colors.textPrimary, flex: 1 },
+  providerName: { fontSize: 14, fontFamily: fonts.bold, color: colors.textPrimary, flex: 1 },
   statusBadge: {
     borderRadius: radius.sm,
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderWidth: 1,
   },
-  statusText: { fontSize: 10, fontWeight: "700" },
+  statusText: { fontSize: 10, fontFamily: fonts.bold },
 
   serviceLabel: { fontSize: 12, color: colors.textSecondary },
 
@@ -283,23 +292,24 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     paddingHorizontal: 7,
   },
-  chatHintText: { fontSize: 10, fontWeight: "600", color: colors.primary },
+  chatHintText: { fontSize: 10, fontFamily: fonts.semiBold, color: colors.primary },
+  progress: { marginTop: 8 },
 
   skeletonCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 20,
     padding: 14,
     flexDirection: "row",
     gap: 13,
     borderWidth: 1,
-    borderColor: "#EEF0EF",
+    borderColor: colors.borderLight,
   },
-  skeletonAvatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: "#E8E8E8" },
+  skeletonAvatar: { width: 48, height: 48, borderRadius: 14, backgroundColor: colors.skeleton },
   skeletonBody: { flex: 1, justifyContent: "center" },
-  skeletonLine: { height: 12, borderRadius: 6, backgroundColor: "#E8E8E8", width: "80%" },
+  skeletonLine: { height: 12, borderRadius: 6, backgroundColor: colors.skeleton, width: "80%" },
 
   empty: { alignItems: "center", paddingTop: 80, gap: 12 },
   emptyIcon: { fontSize: 52 },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: "#333" },
-  emptySub: { fontSize: 13, color: "#888", textAlign: "center", lineHeight: 20, paddingHorizontal: 30 },
+  emptyTitle: { fontSize: 17, fontFamily: fonts.bold, color: colors.ink700 },
+  emptySub: { fontSize: 13, color: colors.ink500, textAlign: "center", lineHeight: 20, paddingHorizontal: 30 },
 });

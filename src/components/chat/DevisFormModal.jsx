@@ -1,5 +1,5 @@
-// src/components/chat/DevisFormModal.jsx
-import { Ionicons } from "@expo/vector-icons";
+﻿// src/components/chat/DevisFormModal.jsx
+import Icon from "../../components/ui/Icon";
 import { useState } from "react";
 import {
   KeyboardAvoidingView,
@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 export default function DevisFormModal({ visible, onClose, onSend }) {
   const [title, setTitle] = useState("");
@@ -65,7 +65,7 @@ export default function DevisFormModal({ visible, onClose, onSend }) {
               <Text style={styles.headerSub}>Détaillez les prestations</Text>
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.8}>
-              <Ionicons name="close" size={18} color="#555" />
+              <Icon name="close" size={18} color={colors.ink500} />
             </TouchableOpacity>
           </View>
 
@@ -80,7 +80,7 @@ export default function DevisFormModal({ visible, onClose, onSend }) {
               <TextInput
                 style={styles.input}
                 placeholder="Ex : Vidange Toyota Corolla"
-                placeholderTextColor="#AAB0B7"
+                placeholderTextColor={colors.ink300}
                 value={title}
                 onChangeText={setTitle}
                 returnKeyType="next"
@@ -95,14 +95,14 @@ export default function DevisFormModal({ visible, onClose, onSend }) {
                   <TextInput
                     style={[styles.input, styles.lineLabel]}
                     placeholder={`Prestation ${index + 1}`}
-                    placeholderTextColor="#AAB0B7"
+                    placeholderTextColor={colors.ink300}
                     value={line.label}
                     onChangeText={(v) => updateLine(index, "label", v)}
                   />
                   <TextInput
                     style={[styles.input, styles.lineAmount]}
                     placeholder="0"
-                    placeholderTextColor="#AAB0B7"
+                    placeholderTextColor={colors.ink300}
                     value={line.amount}
                     onChangeText={(v) => updateLine(index, "amount", v)}
                     keyboardType="numeric"
@@ -113,13 +113,13 @@ export default function DevisFormModal({ visible, onClose, onSend }) {
                       onPress={() => removeLine(index)}
                       activeOpacity={0.8}
                     >
-                      <Ionicons name="trash-outline" size={16} color="#E05555" />
+                      <Icon name="trash-outline" size={16} color={colors.error} />
                     </TouchableOpacity>
                   )}
                 </View>
               ))}
               <TouchableOpacity style={styles.addLineBtn} onPress={addLine} activeOpacity={0.8}>
-                <Ionicons name="add-circle-outline" size={15} color={colors.primary} />
+                <Icon name="add-circle-outline" size={15} color={colors.primary} />
                 <Text style={styles.addLineBtnText}>Ajouter une ligne</Text>
               </TouchableOpacity>
             </View>
@@ -136,7 +136,7 @@ export default function DevisFormModal({ visible, onClose, onSend }) {
               <TextInput
                 style={styles.input}
                 placeholder="Ex : 27 mai 2026"
-                placeholderTextColor="#AAB0B7"
+                placeholderTextColor={colors.ink300}
                 value={validUntil}
                 onChangeText={setValidUntil}
               />
@@ -149,7 +149,7 @@ export default function DevisFormModal({ visible, onClose, onSend }) {
               disabled={!canSend}
               activeOpacity={0.85}
             >
-              <Ionicons name="document-text-outline" size={16} color="#fff" />
+              <Icon name="document-text-outline" size={16} color={colors.textInverse} />
               <Text style={styles.sendBtnText}>Envoyer le devis</Text>
             </TouchableOpacity>
 
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheet: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: "90%",
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#D0D5DD",
+    backgroundColor: colors.ink100,
     alignSelf: "center",
     marginBottom: 6,
   },
@@ -189,15 +189,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F0F0",
+    borderBottomColor: colors.borderLight,
   },
-  headerTitle: { fontSize: 17, fontWeight: "800", color: "#111" },
-  headerSub: { fontSize: 12, color: "#AAB0B7", marginTop: 2 },
+  headerTitle: { fontSize: 17, fontFamily: fonts.extraBold, color: colors.ink900 },
+  headerSub: { fontSize: 12, fontFamily: fonts.medium, color: colors.ink300, marginTop: 2 },
   closeBtn: {
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: colors.ink50,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -207,20 +207,21 @@ const styles = StyleSheet.create({
   field: { gap: 8 },
   fieldLabel: {
     fontSize: 11,
-    fontWeight: "700",
-    color: "#AAB0B7",
+    fontFamily: fonts.bold,
+    color: colors.ink300,
     letterSpacing: 0.6,
     textTransform: "uppercase",
   },
   input: {
-    backgroundColor: "#F8F8F8",
+    backgroundColor: colors.ink50,
     borderRadius: 12,
     paddingVertical: 12,
     paddingHorizontal: 14,
     fontSize: 14,
-    color: "#111",
+    fontFamily: fonts.regular,
+    color: colors.ink900,
     borderWidth: 1,
-    borderColor: "#ECECEC",
+    borderColor: colors.borderLight,
   },
 
   lineRow: {
@@ -248,26 +249,26 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 2,
   },
-  addLineBtnText: { fontSize: 13, fontWeight: "600", color: colors.primary },
+  addLineBtnText: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.primary },
 
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#F0FAF6",
+    backgroundColor: colors.primarySoft,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "#C8EDDF",
+    borderColor: colors.green200,
   },
   totalLabel: {
     fontSize: 11,
-    fontWeight: "800",
-    color: "#0F6E56",
+    fontFamily: fonts.extraBold,
+    color: colors.primaryDark,
     letterSpacing: 0.8,
   },
-  totalAmount: { fontSize: 22, fontWeight: "800", color: colors.primary },
+  totalAmount: { fontSize: 22, fontFamily: fonts.extraBold, color: colors.primary },
 
   sendBtn: {
     flexDirection: "row",
@@ -284,5 +285,5 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   sendBtnDisabled: { opacity: 0.45, elevation: 0, shadowOpacity: 0 },
-  sendBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  sendBtnText: { fontSize: 15, fontFamily: fonts.bold, color: colors.textInverse },
 });

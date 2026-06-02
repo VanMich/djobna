@@ -42,7 +42,9 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
   const [loading, setLoading] = useState(true);
   const [requestId, setRequestId] = useState(requestIdParam);
   const [requestStatus, setRequestStatus] = useState(null);
+  const [providerCompletedAt, setProviderCompletedAt] = useState(null);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
+  const [isOtherOnline, setIsOtherOnline] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const typingTimeoutRef = useRef(null);
   const typingChannelRef = useRef(null);
@@ -114,13 +116,19 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
       setRequestId(chatData.request_id);
 
       const { data: reqData } = await supabase
-        .from("requests").select("status").eq("id", chatData.request_id).single();
-      if (reqData) setRequestStatus(reqData.status);
+        .from("requests").select("status, provider_completed_at").eq("id", chatData.request_id).single();
+      if (reqData) {
+        setRequestStatus(reqData.status);
+        setProviderCompletedAt(reqData.provider_completed_at ? new Date(reqData.provider_completed_at).getTime() : null);
+      }
 
       reqChannel = supabase
         .channel(`req-status-${chatData.request_id}`)
         .on("postgres_changes", { event: "UPDATE", schema: "public", table: "requests", filter: `id=eq.${chatData.request_id}` },
-          (payload) => { if (payload.new?.status) setRequestStatus(payload.new.status); })
+          (payload) => {
+            if (payload.new?.status) setRequestStatus(payload.new.status);
+            setProviderCompletedAt(payload.new?.provider_completed_at ? new Date(payload.new.provider_completed_at).getTime() : null);
+          })
         .subscribe();
     })();
 
@@ -206,6 +214,33 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
       supabase.removeChannel(typingChannel);
       typingChannelRef.current = null;
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [chatId, userId]);
+
+  // ── 4b. Présence "En ligne" (Realtime Presence, éphémère) ─────────────────
+  useEffect(() => {
+    if (!chatId || !userId) return;
+
+    const presenceChannel = supabase.channel(`presence-${chatId}`, {
+      config: { presence: { key: userId } },
+    });
+
+    presenceChannel
+      .on("presence", { event: "sync" }, () => {
+        const state = presenceChannel.presenceState();
+        // L'autre est en ligne si une clé différente de la mienne est présente
+        const others = Object.keys(state).filter((k) => k !== userId);
+        setIsOtherOnline(others.length > 0);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await presenceChannel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+      setIsOtherOnline(false);
     };
   }, [chatId, userId]);
 
@@ -358,7 +393,25 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
     [chatId, userId, otherUserId],
   );
 
-  // ── Confirm complete ──────────────────────────────────────────────────────
+  // ── Prestataire : déclarer avoir terminé (double confirmation) ─────────────
+  // Ne clôture PAS la mission : horodate provider_completed_at, le client confirme ensuite.
+  const markProviderDone = useCallback(async () => {
+    if (!requestId || !chatId) throw new Error("Données manquantes (requestId ou chatId)");
+    const now = new Date().toISOString();
+
+    const { error } = await supabase.from("requests").update({ provider_completed_at: now }).eq("id", requestId);
+    if (error) throw error;
+    setProviderCompletedAt(new Date(now).getTime());
+
+    await supabase.from("messages").insert({
+      chat_id: chatId, sender_id: userId, type: "system",
+      text: "🏁 Prestation terminée — en attente de confirmation du client", created_at: now,
+    });
+    await supabase.from("chats").update({ last_message: "Prestation terminée", last_message_at: now }).eq("id", chatId);
+    pushNotify(otherUserId, "Mission terminée ?", "Le prestataire indique avoir terminé. Confirme pour clôturer.", { persist: true, type: "mission_complete", relatedId: requestId });
+  }, [requestId, chatId, userId, otherUserId]);
+
+  // ── Client : confirmer la fin → clôture la mission ─────────────────────────
   const confirmComplete = useCallback(async () => {
     if (!requestId || !chatId) throw new Error("Données manquantes (requestId ou chatId)");
     const now = new Date().toISOString();
@@ -372,7 +425,7 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
       text: "✅ Prestation confirmée par le client. Mission terminée !", created_at: now,
     });
     await supabase.from("chats").update({ last_message: "Mission terminée", last_message_at: now }).eq("id", chatId);
-    pushNotify(otherUserId, "Mission terminée", "La prestation a été confirmée.");
+    pushNotify(otherUserId, "Mission terminée", "La prestation a été confirmée.", { persist: true, type: "mission_complete", relatedId: requestId });
   }, [requestId, chatId, userId, otherUserId]);
 
   // ── Retry failed message ──────────────────────────────────────────────────
@@ -400,9 +453,9 @@ export function useChat(otherUserId, { chatIdParam = null, requestIdParam = null
 
   return {
     messages, loading, chatId, currentUserId: userId,
-    requestId, requestStatus,
-    isOtherTyping, replyTo, setReplyTo,
+    requestId, requestStatus, providerCompletedAt,
+    isOtherTyping, isOtherOnline, replyTo, setReplyTo,
     sendMessage, sendImage, sendDevis, respondToDevis, cancelDevis,
-    confirmComplete, retryMessage, broadcastTyping,
+    markProviderDone, confirmComplete, retryMessage, broadcastTyping,
   };
 }

@@ -1,6 +1,7 @@
 // src/components/clientProfile/MenuSection.js
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { colors, fonts } from "../../theme";
 
 export default function MenuSection({ title, children, last }) {
   return (
@@ -13,19 +14,19 @@ export default function MenuSection({ title, children, last }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     marginHorizontal: 12,
     marginTop: 10,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#EEF0EF",
+    borderColor: colors.borderLight,
   },
   containerLast: { marginBottom: 10 },
   title: {
     fontSize: 10,
-    fontWeight: "700",
-    color: "#AAB0B7",
+    fontFamily: fonts.bold,
+    color: colors.ink300,
     letterSpacing: 0.6,
     textTransform: "uppercase",
     paddingHorizontal: 14,

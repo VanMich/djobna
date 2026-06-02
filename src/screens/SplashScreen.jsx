@@ -14,8 +14,9 @@
 import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { supabase } from "../config/supabase";
-import { colors } from "../theme";
+import { colors, fonts } from "../theme";
 
 // Détermine vers quel écran rediriger selon l'état de l'utilisateur
 async function getAuthenticatedRoute(user) {
@@ -76,6 +77,13 @@ export default function SplashScreen({ navigation }) {
 
     const checkSession = async () => {
       try {
+        // Vérifier si l'onboarding a déjà été vu
+        const onboardingDone = await AsyncStorage.getItem("onboarding_done");
+        if (!onboardingDone) {
+          timer = setTimeout(() => navigation.replace("Onboarding"), 1200);
+          return;
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         const nextRoute = await getAuthenticatedRoute(session?.user ?? null);
         timer = setTimeout(() => navigation.replace(nextRoute), 1200);
@@ -104,7 +112,7 @@ export default function SplashScreen({ navigation }) {
         </View>
         <Text style={styles.appName}>Djobna</Text>
         <Text style={styles.tagline}>
-          Trouvez le bon prestataire{"\n"}près de chez vous, maintenant.
+          Trouve le bon pro{"\n"}près de chez toi, maintenant.
         </Text>
         <View style={styles.dots}>
           {[0, 1, 2].map((i) => (
@@ -122,7 +130,7 @@ export default function SplashScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.headerBg,
+    backgroundColor: "#0D1F1A",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -131,20 +139,20 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
   },
-  logoText: { fontSize: 32, fontWeight: "800", color: "#fff" },
+  logoText: { fontSize: 32, fontFamily: fonts.extraBold, color: "#FFFFFF" },
   appName: {
     fontSize: 36,
-    fontWeight: "800",
-    color: colors.headerText,
+    fontFamily: fonts.extraBold,
+    color: "#FFFFFF",
     letterSpacing: -1,
   },
   tagline: {
     fontSize: 14,
-    color: colors.headerSubtext,
+    color: "rgba(255,255,255,0.75)",
     textAlign: "center",
     lineHeight: 22,
   },
@@ -153,6 +161,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.primary,
+    backgroundColor: "rgba(255,255,255,0.6)",
   },
 });

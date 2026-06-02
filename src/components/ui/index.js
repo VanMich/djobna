@@ -21,4 +21,5 @@ export {
   SkeletonChatBubbles,
   SkeletonProfileOwn,
   SkeletonProfilePublic,
+  SkeletonProviderHome,
 } from "./Skeleton";

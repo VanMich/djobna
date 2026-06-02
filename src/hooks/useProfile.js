@@ -60,7 +60,6 @@ export function useProfile() {
       // upsert = insert si inexistant, update si déjà présent
       const { error: userError } = await supabase.from("users").upsert({
         id: user.id,                 // clé primaire = id Supabase Auth
-        phone_number: user.phone,    // user.phone sous Supabase (= user.phoneNumber Firebase)
         display_name: displayName,   // camelCase → snake_case
         photo_url,
         role: "client",
@@ -72,6 +71,14 @@ export function useProfile() {
         updated_at: now,
       });
       if (userError) throw userError;
+
+      // Téléphone stocké dans la table privée (lisible par le propriétaire seul)
+      const { error: privError } = await supabase.from("user_private").upsert({
+        id: user.id,
+        phone_number: user.phone,    // user.phone sous Supabase (= user.phoneNumber Firebase)
+        updated_at: now,
+      });
+      if (privError) throw privError;
 
       // Écriture dans la table clients (remplace setDoc sur /clients/{uid})
       const { error: clientError } = await supabase.from("clients").upsert({

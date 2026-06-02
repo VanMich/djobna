@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../config/supabase";
 
 function mapRequest(r) {
@@ -17,8 +17,10 @@ function mapRequest(r) {
     budget: r.budget,
     photos: r.photos || [],
     status: r.status,
+    devisAccepted: r.devis_accepted ?? false,
     quartier: r.quartier,
     createdAt: r.created_at ? new Date(r.created_at).getTime() : null,
+    completedAt: r.completed_at ? new Date(r.completed_at).getTime() : null,
   };
 }
 
@@ -26,6 +28,7 @@ export function useMyRequests() {
   const [userId, setUserId] = useState(null);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -33,20 +36,27 @@ export function useMyRequests() {
     });
   }, []);
 
+  const fetchRequests = useCallback(async () => {
+    if (!userId) return;
+    setError(null);
+    const { data, error: fetchError } = await supabase
+      .from("requests")
+      .select("*, providers:provider_id(display_name, photo_url)")
+      .eq("client_id", userId)
+      .order("created_at", { ascending: false });
+    if (fetchError) {
+      setError(fetchError);
+    } else {
+      setRequests((data || []).map(mapRequest));
+    }
+    setLoading(false);
+  }, [userId]);
+
   useEffect(() => {
     if (userId === null) return;
     if (!userId) { setLoading(false); return; }
 
-    const fetchRequests = async () => {
-      const { data } = await supabase
-        .from("requests")
-        .select("*, providers:provider_id(display_name, photo_url)")
-        .eq("client_id", userId)
-        .order("created_at", { ascending: false });
-      setRequests((data || []).map(mapRequest));
-      setLoading(false);
-    };
-
+    setLoading(true);
     fetchRequests();
 
     const channel = supabase
@@ -60,7 +70,12 @@ export function useMyRequests() {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [userId]);
+  }, [userId, fetchRequests]);
 
-  return { requests, loading };
+  const refetch = useCallback(() => {
+    setLoading(true);
+    fetchRequests();
+  }, [fetchRequests]);
+
+  return { requests, loading, error, refetch };
 }

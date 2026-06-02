@@ -1,9 +1,9 @@
-import { Ionicons } from "@expo/vector-icons";
+import Icon from "../ui/Icon";
 import * as ImagePicker from "expo-image-picker";
-import { useRef, useState } from "react";
-import { Alert, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Animated, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { supabase } from "../../config/supabase";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 import DevisFormModal from "./DevisFormModal";
 
 export default function ChatInput({
@@ -15,6 +15,19 @@ export default function ChatInput({
   const [uploading, setUploading] = useState(false);
   const [showDevisModal, setShowDevisModal] = useState(false);
   const typingTimerRef = useRef(null);
+
+  // Petit "pop" du bouton d'envoi quand le message devient envoyable
+  const hasText = text.trim().length > 0;
+  const sendScale = useRef(new Animated.Value(1)).current;
+  const prevHasTextRef = useRef(false);
+
+  useEffect(() => {
+    if (hasText && !prevHasTextRef.current) {
+      sendScale.setValue(0.6);
+      Animated.spring(sendScale, { toValue: 1, useNativeDriver: true, tension: 220, friction: 7 }).start();
+    }
+    prevHasTextRef.current = hasText;
+  }, [hasText, sendScale]);
 
   const handleTextChange = (val) => {
     setText(val);
@@ -60,7 +73,7 @@ export default function ChatInput({
       const uri = result.assets[0].uri;
       const { data: { session } } = await supabase.auth.getSession();
       const user = session?.user;
-      if (!user) { Alert.alert("Erreur", "Vous devez être connecté."); return; }
+      if (!user) { Alert.alert("Erreur", "Tu dois être connecté."); return; }
       const ext = uri.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${user.id}/${Date.now()}.${ext}`;
       const formData = new FormData();
@@ -70,7 +83,7 @@ export default function ChatInput({
       onSendImage(supabase.storage.from("chat-images").getPublicUrl(path).data.publicUrl);
     } catch (err) {
       console.error("Erreur upload image:", err);
-      Alert.alert("Erreur", "Impossible d'envoyer l'image.");
+      Alert.alert("Erreur", "Impossible d'envoyer l'image. Réessaye.");
     } finally {
       setUploading(false);
     }
@@ -96,7 +109,7 @@ export default function ChatInput({
             <Text style={s.replyBarText} numberOfLines={1}>{replyPreview}</Text>
           </View>
           <TouchableOpacity onPress={onCancelReply} style={s.replyBarClose} activeOpacity={0.7}>
-            <Ionicons name="close" size={18} color="#888" />
+            <Icon name="close" size={18} color={colors.ink500} />
           </TouchableOpacity>
         </View>
       )}
@@ -106,13 +119,13 @@ export default function ChatInput({
           style={[s.iconBtn, uploading && { opacity: 0.4 }]}
           onPress={handleAttach} disabled={uploading} activeOpacity={0.7}
         >
-          <Ionicons name={uploading ? "cloud-upload-outline" : "add"} size={22} color={colors.primary} />
+          <Icon name={uploading ? "cloud-upload-outline" : "add"} size={22} color={colors.primary} />
         </TouchableOpacity>
 
         <TextInput
           style={s.input}
           placeholder="Message..."
-          placeholderTextColor="#AAB0B7"
+          placeholderTextColor={colors.ink300}
           value={text}
           onChangeText={handleTextChange}
           multiline
@@ -121,29 +134,31 @@ export default function ChatInput({
           blurOnSubmit={false}
         />
 
-        <TouchableOpacity
-          style={[s.sendBtn, !text.trim() && s.sendBtnOff]}
-          onPress={handleSend} disabled={!text.trim()} activeOpacity={0.8}
-        >
-          <Ionicons name="send" size={18} color="#fff" />
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: sendScale }] }}>
+          <TouchableOpacity
+            style={[s.sendBtn, !hasText && s.sendBtnOff]}
+            onPress={handleSend} disabled={!hasText} activeOpacity={0.8}
+          >
+            <Icon name="send" size={18} color={colors.textInverse} />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  root: { backgroundColor: "#fff", borderTopWidth: 1, borderTopColor: "#EAEAEA", paddingBottom: Platform.OS === "ios" ? 20 : 12 },
+  root: { backgroundColor: colors.card, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingBottom: Platform.OS === "ios" ? 20 : 12 },
 
   replyBar: {
     flexDirection: "row", alignItems: "center",
     paddingHorizontal: 12, paddingVertical: 8,
-    backgroundColor: "#F8FAF9", borderBottomWidth: 1, borderBottomColor: "#EAEAEA",
+    backgroundColor: colors.surface, borderBottomWidth: 1, borderBottomColor: colors.borderLight,
   },
   replyBarAccent: { width: 3, height: "100%", borderRadius: 2, backgroundColor: colors.primary, marginRight: 8 },
   replyBarContent: { flex: 1 },
-  replyBarLabel: { fontSize: 11, fontWeight: "700", color: colors.primary },
-  replyBarText: { fontSize: 12, color: "#666", marginTop: 1 },
+  replyBarLabel: { fontSize: 11, fontFamily: fonts.bold, color: colors.primary },
+  replyBarText: { fontSize: 12, fontFamily: fonts.regular, color: colors.ink500, marginTop: 1 },
   replyBarClose: { width: 30, height: 30, alignItems: "center", justifyContent: "center" },
 
   inputRow: {
@@ -155,14 +170,14 @@ const s = StyleSheet.create({
     backgroundColor: colors.green100, alignItems: "center", justifyContent: "center",
   },
   input: {
-    flex: 1, backgroundColor: "#F5F5F5", borderRadius: 22,
+    flex: 1, backgroundColor: colors.ink50, borderRadius: 22,
     paddingVertical: Platform.OS === "ios" ? 10 : 8,
-    paddingHorizontal: 16, fontSize: 15, color: "#111",
-    maxHeight: 120, borderWidth: 1, borderColor: "#E8E8E8",
+    paddingHorizontal: 16, fontSize: 15, fontFamily: fonts.regular, color: colors.ink900,
+    maxHeight: 120, borderWidth: 1, borderColor: colors.borderLight,
   },
   sendBtn: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: colors.primary, alignItems: "center", justifyContent: "center",
   },
-  sendBtnOff: { backgroundColor: "#CCC" },
+  sendBtnOff: { backgroundColor: colors.ink100 },
 });

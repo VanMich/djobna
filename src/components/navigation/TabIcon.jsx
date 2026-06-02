@@ -4,18 +4,19 @@
 
 import React from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../theme";
+import Icon from "../ui/Icon";
+import { colors, fonts } from "../../theme";
 
 export default function TabIcon({ name, focused, badge }) {
   return (
     <View style={styles.iconWrap}>
       <View style={[styles.indicator, focused && styles.indicatorActive]} />
       <View style={[styles.iconBubble, focused && styles.iconBubbleActive]}>
-        <Ionicons
-          name={focused ? name : `${name}-outline`}
-          size={26}
-          color={focused ? colors.primary : "#AAB0B7"}
+        <Icon
+          name={name}
+          size={24}
+          color={focused ? colors.primary : colors.ink300}
+          strokeWidth={focused ? 2.2 : 1.8}
         />
         {badge > 0 && (
           <View style={styles.badge}>
@@ -28,10 +29,10 @@ export default function TabIcon({ name, focused, badge }) {
 }
 
 export const tabBarStyle = {
-  backgroundColor: "#fff",
+  backgroundColor: colors.surface,
   borderTopWidth: 0,
-  shadowColor: "#000",
-  shadowOpacity: 0.08,
+  shadowColor: colors.ink900,
+  shadowOpacity: 0.06,
   shadowRadius: 16,
   shadowOffset: { width: 0, height: -4 },
   elevation: 16,
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "transparent",
   },
-  iconBubbleActive: { backgroundColor: "#F0FAF6" },
+  iconBubbleActive: { backgroundColor: colors.primarySoft },
   badge: {
     position: "absolute",
     top: 2,
@@ -75,10 +76,10 @@ const styles = StyleSheet.create({
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#E24B4A",
+    backgroundColor: colors.error,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 3,
   },
-  badgeText: { fontSize: 9, fontWeight: "800", color: "#fff" },
+  badgeText: { fontSize: 9, fontFamily: fonts.extraBold, color: colors.textInverse },
 });

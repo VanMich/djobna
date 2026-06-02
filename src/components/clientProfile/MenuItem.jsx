@@ -1,8 +1,8 @@
 // src/components/clientProfile/MenuItem.js
 import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { CaretRight } from "phosphor-react-native";
 import Icon from "../ui/Icon";
+import { colors, fonts } from "../../theme";
 
 export default function MenuItem({
   icon,
@@ -30,7 +30,7 @@ export default function MenuItem({
           <Icon
             name={icon}
             size={18}
-            color={iconColor || (isDestructive ? "#E24B4A" : "#555")}
+            color={iconColor || (isDestructive ? colors.error : colors.ink500)}
             weight="duotone"
           />
         </View>
@@ -51,7 +51,7 @@ export default function MenuItem({
             style={[styles.badge, { backgroundColor: badgeBg || "#F0FAF6" }]}
           >
             <Text
-              style={[styles.badgeText, { color: badgeColor || "#0F6E56" }]}
+              style={[styles.badgeText, { color: badgeColor || colors.primaryDark }]}
             >
               {badge}
             </Text>
@@ -59,7 +59,7 @@ export default function MenuItem({
         )}
         {rightComponent}
         {showArrow && !rightComponent && (
-          <CaretRight size={14} color="#CCC" weight="bold" />
+          <Icon name="chevron-right" size={14} color={colors.ink300} />
         )}
       </View>
     </TouchableOpacity>
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     gap: 12,
     borderBottomWidth: 0.5,
-    borderBottomColor: "#F5F5F5",
+    borderBottomColor: colors.ink50,
   },
   iconWrap: {
     width: 36,
@@ -84,16 +84,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexShrink: 0,
   },
-  // icon style removed — now uses Phosphor Icon component
   textBlock: { flex: 1, gap: 2 },
-  label: { fontSize: 13, fontWeight: "600", color: "#111" },
-  labelDestructive: { color: "#E24B4A" },
-  sublabel: { fontSize: 11, color: "#888" },
+  label: { fontSize: 13, fontFamily: fonts.semiBold, color: colors.ink900 },
+  labelDestructive: { color: colors.error },
+  sublabel: { fontSize: 11, color: colors.ink500, fontFamily: fonts.medium },
   right: { flexDirection: "row", alignItems: "center", gap: 6 },
   badge: {
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: 20,
   },
-  badgeText: { fontSize: 10, fontWeight: "700" },
+  badgeText: { fontSize: 10, fontFamily: fonts.bold },
 });

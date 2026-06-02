@@ -1,10 +1,11 @@
 // src/components/providerProfile/ProfileHeader.jsx
-import { Ionicons } from "@expo/vector-icons";
+// Partie "body" du header public (avatar + infos + CTA + stats).
+// La topRow (back + favori + share + more) est gérée dans le screen directement.
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { AVATAR_COLORS, SERVICES } from "../../constants/services";
 import Icon from "../ui/Icon";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 function getRating(provider) {
   if (typeof provider?.rating === "object") return provider.rating?.global ?? 0;
@@ -13,11 +14,6 @@ function getRating(provider) {
 
 export default function ProfileHeader({
   provider,
-  isFav,
-  onBack,
-  onToggleFav,
-  onShare,
-  onMore,
   onContact,
   onSolliciter,
 }) {
@@ -54,32 +50,6 @@ export default function ProfileHeader({
 
   return (
     <View style={styles.header}>
-      {/* ── Ligne navigation ── */}
-      <View style={styles.topRow}>
-        <TouchableOpacity style={styles.backBtn} onPress={onBack} activeOpacity={0.8}>
-          <Ionicons name="arrow-back" size={18} color="#9FE1CB" />
-        </TouchableOpacity>
-        <View style={styles.topActions}>
-          <TouchableOpacity
-            style={[styles.iconBtn, isFav && styles.iconBtnFavActive]}
-            onPress={onToggleFav}
-            activeOpacity={0.8}
-          >
-            <Ionicons
-              name={isFav ? "heart" : "heart-outline"}
-              size={18}
-              color={isFav ? colors.star : "#9FE1CB"}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={onShare} activeOpacity={0.8}>
-            <Ionicons name="share-social-outline" size={18} color="#9FE1CB" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={onMore} activeOpacity={0.8}>
-            <Ionicons name="ellipsis-vertical" size={18} color="#9FE1CB" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
       {/* ── Avatar + infos ── */}
       <View style={styles.avatarRow}>
         <View style={{ position: "relative", flexShrink: 0 }}>
@@ -88,7 +58,7 @@ export default function ProfileHeader({
           </View>
           {isVerified && (
             <View style={styles.verifiedBadge}>
-              <Ionicons name="checkmark" size={10} color="#fff" />
+              <Icon name="checkmark" size={10} color={colors.textInverse} />
             </View>
           )}
           {isPremium && (
@@ -111,7 +81,7 @@ export default function ProfileHeader({
             <Text style={styles.services} numberOfLines={1}>{serviceLabels}</Text>
           ) : null}
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-            <Icon name="map-pin" size={12} color={colors.headerSubtext} weight="fill" />
+            <Icon name="map-pin" size={12} color={colors.ink500} />
             <Text style={styles.location}>
               {provider?.quartier || "Douala"}
               {isVerified ? " · Vérifié" : ""}
@@ -127,7 +97,7 @@ export default function ProfileHeader({
           onPress={onSolliciter}
           activeOpacity={0.85}
         >
-          <Ionicons name="flash" size={15} color="#fff" />
+          <Icon name="flash" size={15} color={colors.textInverse} />
           <Text style={styles.ctaBtnPrimaryText}>Solliciter les services</Text>
         </TouchableOpacity>
       </View>
@@ -141,7 +111,7 @@ export default function ProfileHeader({
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 3 }}>
               <Text style={styles.statValue}>{s.value}</Text>
-              {s.hasIcon && <Icon name="star" size={12} color="#F59E0B" weight="fill" />}
+              {s.hasIcon && <Icon name="star" size={12} color={colors.mango} />}
             </View>
             <Text style={styles.statLabel}>{s.label}</Text>
           </View>
@@ -153,42 +123,11 @@ export default function ProfileHeader({
 
 const styles = StyleSheet.create({
   header: {
-    backgroundColor: colors.headerBg,
+    backgroundColor: colors.background,
     paddingHorizontal: 16,
-    paddingTop: 6,
+    paddingTop: 10,
     paddingBottom: 12,
     gap: 14,
-  },
-  topRow: {
-    height: 40,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,.1)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,.08)",
-  },
-  topActions: { flexDirection: "row", gap: 8 },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,.1)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,.08)",
-  },
-  iconBtnFavActive: {
-    backgroundColor: "rgba(245,166,35,.15)",
-    borderColor: "rgba(245,166,35,.3)",
   },
 
   avatarRow: { flexDirection: "row", alignItems: "center", gap: 14 },
@@ -199,7 +138,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 24, fontWeight: "800", color: "#fff" },
+  avatarText: { fontSize: 24, fontFamily: fonts.extraBold, color: colors.textInverse },
   verifiedBadge: {
     position: "absolute",
     bottom: -3,
@@ -220,26 +159,26 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#F59E0B",
+    backgroundColor: colors.mango,
     borderWidth: 2,
     borderColor: colors.background,
     alignItems: "center",
     justifyContent: "center",
   },
-  premiumBadgeText: { fontSize: 9, color: "#fff", fontWeight: "800" },
+  premiumBadgeText: { fontSize: 9, color: colors.textInverse, fontFamily: fonts.extraBold },
 
   infoBlock: { flex: 1, gap: 4 },
   nameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  name: { fontSize: 18, fontWeight: "800", color: "#fff", letterSpacing: -0.3, flex: 1 },
+  name: { fontSize: 18, fontFamily: fonts.extraBold, color: colors.ink900, letterSpacing: -0.3, flex: 1 },
   premiumTag: {
-    backgroundColor: "#F59E0B",
+    backgroundColor: colors.mango,
     borderRadius: 6,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  premiumTagText: { fontSize: 9, fontWeight: "800", color: "#fff" },
-  services: { fontSize: 11, color: "#5DCAA5", fontWeight: "600" },
-  location: { fontSize: 11, color: "rgba(255,255,255,.4)" },
+  premiumTagText: { fontSize: 9, fontFamily: fonts.extraBold, color: colors.textInverse },
+  services: { fontSize: 11, color: colors.primary, fontFamily: fonts.semiBold },
+  location: { fontSize: 11, color: colors.ink300, fontFamily: fonts.medium },
 
   ctaRow: { flexDirection: "row" },
   ctaBtnPrimary: {
@@ -257,15 +196,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 5,
   },
-  ctaBtnPrimaryText: { color: "#fff", fontSize: 13, fontWeight: "800" },
+  ctaBtnPrimaryText: { color: colors.textInverse, fontSize: 13, fontFamily: fonts.extraBold },
 
   statsBar: {
-    height: 46,
     flexDirection: "row",
-    backgroundColor: "rgba(29,158,117,.18)",
+    backgroundColor: colors.primarySoft,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(29,158,117,.2)",
+    borderColor: colors.green200,
     overflow: "hidden",
   },
   statItem: {
@@ -276,13 +214,13 @@ const styles = StyleSheet.create({
   },
   statItemBorder: {
     borderRightWidth: 1,
-    borderRightColor: "rgba(29,158,117,.2)",
+    borderRightColor: colors.green200,
   },
-  statValue: { fontSize: 14, fontWeight: "800", color: "#5DCAA5" },
+  statValue: { fontSize: 14, fontFamily: fonts.extraBold, color: colors.primaryDark },
   statLabel: {
     fontSize: 9,
-    fontWeight: "600",
-    color: "rgba(29,158,117,.7)",
+    fontFamily: fonts.semiBold,
+    color: colors.ink500,
     textTransform: "uppercase",
     letterSpacing: 0.4,
   },

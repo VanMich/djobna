@@ -1,9 +1,9 @@
-import React from "react";
+﻿import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../theme";
+import Icon from "../../components/ui/Icon";
+import { colors, fonts } from "../../theme";
 
-function DevisCard({ message, isMe, onRespond, onCancel, userRole }) {
+function DevisCard({ message, isMe, onRespond, onCancel, onPay, userRole }) {
   const { devis } = message;
   const isPending = devis?.status === "pending";
   const isAccepted = devis?.status === "accepted";
@@ -26,7 +26,7 @@ function DevisCard({ message, isMe, onRespond, onCancel, userRole }) {
       <View style={[s.card, isCancelled && s.cardCancelled]}>
         <View style={s.cardHeader}>
           <View style={s.labelWrap}>
-            <Ionicons name="document-text" size={12} color={isCancelled ? "#AAB0B7" : colors.primary} />
+            <Icon name="document-text" size={12} color={isCancelled ? colors.ink300 : colors.primary} />
             <Text style={[s.label, isCancelled && s.labelCancelled]}>DEVIS DJOBNA</Text>
           </View>
           {isAccepted && (
@@ -72,7 +72,7 @@ function DevisCard({ message, isMe, onRespond, onCancel, userRole }) {
 
         {devis?.validUntil && !isCancelled && (
           <View style={s.validityRow}>
-            <Ionicons name="calendar-outline" size={11} color="#AAB0B7" />
+            <Icon name="calendar-outline" size={11} color={colors.ink300} />
             <Text style={s.validityText}>Valable jusqu'au {devis.validUntil}</Text>
           </View>
         )}
@@ -84,7 +84,7 @@ function DevisCard({ message, isMe, onRespond, onCancel, userRole }) {
               onPress={() => onRespond(message.id, "accepted")}
               activeOpacity={0.85}
             >
-              <Ionicons name="checkmark" size={14} color="#fff" />
+              <Icon name="checkmark" size={14} color={colors.textInverse} />
               <Text style={s.acceptText}>Accepter</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -92,17 +92,28 @@ function DevisCard({ message, isMe, onRespond, onCancel, userRole }) {
               onPress={() => onRespond(message.id, "refused")}
               activeOpacity={0.85}
             >
-              <Ionicons name="close" size={14} color="#888" />
+              <Icon name="close" size={14} color={colors.ink500} />
               <Text style={s.refuseText}>Refuser</Text>
             </TouchableOpacity>
           </View>
+        )}
+
+        {isAccepted && !isMe && userRole === "client" && devis?.status !== "paid" && (
+          <TouchableOpacity
+            style={[s.actionBtn, s.payBtn]}
+            onPress={() => onPay?.(devis)}
+            activeOpacity={0.85}
+          >
+            <Icon name="credit-card" size={14} color={colors.textInverse} />
+            <Text style={s.payText}>Payer {(devis.total || devis.price || 0).toLocaleString("fr-FR")} FCFA</Text>
+          </TouchableOpacity>
         )}
 
         {isPending && isMe && userRole === "provider" && (
           <View style={s.providerPending}>
             <Text style={s.waitingText}>En attente de réponse du client</Text>
             <TouchableOpacity style={s.cancelBtn} onPress={handleCancel} activeOpacity={0.8}>
-              <Ionicons name="close-circle-outline" size={14} color={colors.error} />
+              <Icon name="close-circle-outline" size={14} color={colors.error} />
               <Text style={s.cancelText}>Annuler</Text>
             </TouchableOpacity>
           </View>
@@ -118,11 +129,11 @@ function DevisCard({ message, isMe, onRespond, onCancel, userRole }) {
 }
 
 function DevisStatusIcon({ message }) {
-  if (message.status === "sending") return <Ionicons name="time-outline" size={13} color="#AAB0B7" />;
-  if (message.status === "error") return <Ionicons name="alert-circle" size={13} color="#E05555" />;
-  if (message.status === "read" || message.read) return <Ionicons name="checkmark-done" size={13} color="#5DCAA5" />;
-  if (message.status === "delivered" || message.delivered) return <Ionicons name="checkmark-done" size={13} color="#AAB0B7" />;
-  return <Ionicons name="checkmark" size={13} color="#AAB0B7" />;
+  if (message.status === "sending") return <Icon name="time-outline" size={13} color={colors.ink300} />;
+  if (message.status === "error") return <Icon name="alert-circle" size={13} color={colors.error} />;
+  if (message.status === "read" || message.read) return <Icon name="checkmark-done" size={13} color={colors.primary} />;
+  if (message.status === "delivered" || message.delivered) return <Icon name="checkmark-done" size={13} color={colors.ink300} />;
+  return <Icon name="checkmark" size={13} color={colors.ink300} />;
 }
 
 const s = StyleSheet.create({
@@ -131,43 +142,43 @@ const s = StyleSheet.create({
   wrapThem: { alignSelf: "flex-start", alignItems: "flex-start" },
 
   card: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1.5,
     borderColor: colors.primary,
     padding: 14,
     gap: 8,
   },
-  cardCancelled: { borderColor: "#DDD", opacity: 0.75 },
+  cardCancelled: { borderColor: colors.ink100, opacity: 0.75 },
   cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   labelWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
-  label: { fontSize: 9, fontWeight: "700", color: colors.primary, letterSpacing: 0.5 },
-  labelCancelled: { color: "#AAB0B7" },
+  label: { fontSize: 9, fontFamily: fonts.bold, color: colors.primary, letterSpacing: 0.5 },
+  labelCancelled: { color: colors.ink300 },
 
   statusBadge: { paddingVertical: 3, paddingHorizontal: 8, borderRadius: 20 },
-  statusAccepted: { backgroundColor: "#E8F5F0" },
+  statusAccepted: { backgroundColor: colors.primarySoft },
   statusRefused: { backgroundColor: "#FCEAEA" },
-  statusCancelledBadge: { backgroundColor: "#F5F5F5" },
-  statusAcceptedText: { fontSize: 10, fontWeight: "700", color: "#0F6E56" },
-  statusRefusedText: { fontSize: 10, fontWeight: "700", color: colors.error },
-  statusCancelledText: { fontSize: 10, fontWeight: "700", color: "#888" },
+  statusCancelledBadge: { backgroundColor: colors.ink50 },
+  statusAcceptedText: { fontSize: 10, fontFamily: fonts.bold, color: colors.primaryDark },
+  statusRefusedText: { fontSize: 10, fontFamily: fonts.bold, color: colors.error },
+  statusCancelledText: { fontSize: 10, fontFamily: fonts.bold, color: colors.ink500 },
 
-  title: { fontSize: 13, fontWeight: "700", color: "#111" },
-  titleCancelled: { color: "#888", textDecorationLine: "line-through" },
-  price: { fontSize: 22, fontWeight: "800", color: colors.primary },
+  title: { fontSize: 13, fontFamily: fonts.bold, color: colors.ink900 },
+  titleCancelled: { color: colors.ink500, textDecorationLine: "line-through" },
+  price: { fontSize: 22, fontFamily: fonts.extraBold, color: colors.primary },
 
   linesTable: { gap: 6, marginTop: 2 },
   lineRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  lineLabel: { fontSize: 12, color: "#555", flex: 1, marginRight: 8 },
-  lineAmount: { fontSize: 12, fontWeight: "600", color: "#333" },
-  lineCancelled: { color: "#AAB0B7" },
-  lineSeparator: { height: 1, backgroundColor: "#ECECEC", marginVertical: 4 },
-  totalLabel: { fontSize: 11, fontWeight: "800", color: "#0F6E56", letterSpacing: 0.5 },
-  totalAmount: { fontSize: 16, fontWeight: "800", color: colors.primary },
-  totalCancelled: { color: "#AAB0B7" },
+  lineLabel: { fontSize: 12, fontFamily: fonts.regular, color: colors.ink500, flex: 1, marginRight: 8 },
+  lineAmount: { fontSize: 12, fontFamily: fonts.semiBold, color: colors.ink700 },
+  lineCancelled: { color: colors.ink300 },
+  lineSeparator: { height: 1, backgroundColor: colors.borderLight, marginVertical: 4 },
+  totalLabel: { fontSize: 11, fontFamily: fonts.extraBold, color: colors.primaryDark, letterSpacing: 0.5 },
+  totalAmount: { fontSize: 16, fontFamily: fonts.extraBold, color: colors.primary },
+  totalCancelled: { color: colors.ink300 },
 
   validityRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  validityText: { fontSize: 10, color: "#AAB0B7", fontStyle: "italic" },
+  validityText: { fontSize: 10, fontFamily: fonts.medium, color: colors.ink300, fontStyle: "italic" },
 
   actions: { flexDirection: "row", gap: 8, marginTop: 4 },
   actionBtn: {
@@ -175,22 +186,24 @@ const s = StyleSheet.create({
     gap: 4, paddingVertical: 8, borderRadius: 10,
   },
   acceptBtn: { backgroundColor: colors.primary },
-  refuseBtn: { backgroundColor: "#F5F5F5", borderWidth: 1, borderColor: "#E8E8E8" },
-  acceptText: { fontSize: 12, fontWeight: "700", color: "#fff" },
-  refuseText: { fontSize: 12, fontWeight: "700", color: "#888" },
+  refuseBtn: { backgroundColor: colors.ink50, borderWidth: 1, borderColor: colors.borderLight },
+  payBtn: { backgroundColor: colors.primary, marginTop: 4 },
+  acceptText: { fontSize: 12, fontFamily: fonts.bold, color: colors.textInverse },
+  refuseText: { fontSize: 12, fontFamily: fonts.bold, color: colors.ink500 },
+  payText: { fontSize: 12, fontFamily: fonts.bold, color: colors.textInverse },
 
   providerPending: { gap: 8, marginTop: 4 },
-  waitingText: { fontSize: 11, color: "#AAB0B7", fontStyle: "italic" },
+  waitingText: { fontSize: 11, fontFamily: fonts.medium, color: colors.ink300, fontStyle: "italic" },
   cancelBtn: {
     flexDirection: "row", alignItems: "center", gap: 4,
     alignSelf: "flex-start", paddingVertical: 6, paddingHorizontal: 10,
     borderRadius: 8, backgroundColor: "#FFF0F0",
   },
-  cancelText: { fontSize: 11, fontWeight: "700", color: colors.error },
+  cancelText: { fontSize: 11, fontFamily: fonts.bold, color: colors.error },
 
   meta: { flexDirection: "row", alignItems: "center", gap: 3 },
   metaMe: { flexDirection: "row-reverse" },
-  time: { fontSize: 10, color: "#AAB0B7" },
+  time: { fontSize: 10, fontFamily: fonts.medium, color: colors.ink300 },
 });
 
 export default React.memo(DevisCard);

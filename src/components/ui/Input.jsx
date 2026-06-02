@@ -7,9 +7,8 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Lock } from "phosphor-react-native";
-import { colors, radius, typography } from "../../theme";
+import Icon from "./Icon";
+import { colors, radius, typography, fonts } from "../../theme";
 
 /**
  * Input universel — champ texte moderne avec label, icône, erreur, compteur
@@ -88,7 +87,7 @@ export default function Input({
             {value || placeholder || "—"}
           </Text>
           {rightComponent || (
-            <Lock size={16} color="#AAB0B7" weight="fill" />
+            <Icon name="lock" size={16} color={colors.ink300} />
           )}
         </View>
       </View>
@@ -108,7 +107,7 @@ export default function Input({
         ]}
       >
         {icon ? (
-          <Ionicons
+          <Icon
             name={icon}
             size={18}
             color={isFocused ? colors.primary : colors.textMuted}
@@ -153,7 +152,7 @@ export default function Input({
             disabled={!onIconRightPress}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons
+            <Icon
               name={iconRight}
               size={18}
               color={colors.textMuted}
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 15,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     color: colors.textPrimary,
     paddingVertical: 0,
   },
@@ -249,7 +248,7 @@ const styles = StyleSheet.create({
   readOnlyText: {
     flex: 1,
     fontSize: 15,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
   bottomRow: {
@@ -261,16 +260,16 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 12,
     color: colors.error,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
     flex: 1,
   },
   countText: {
     fontSize: 11,
     color: colors.textMuted,
-    fontWeight: "500",
+    fontFamily: fonts.medium,
   },
   countTextMax: {
     color: colors.error,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
   },
 });

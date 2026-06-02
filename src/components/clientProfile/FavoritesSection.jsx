@@ -1,4 +1,4 @@
-// src/components/clientProfile/FavoritesSection.js
+﻿// src/components/clientProfile/FavoritesSection.js
 import React from "react";
 import {
   View,
@@ -8,18 +8,17 @@ import {
   StyleSheet,
   Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { AVATAR_COLORS, SERVICES } from "../../constants/services";
 import Icon from "../ui/Icon";
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 export default function FavoritesSection({ favorites, onPress, onRemove }) {
   if (favorites.length === 0) {
     return (
       <View style={styles.emptyWrap}>
-        <Ionicons name="heart-outline" size={28} color="#DDD" />
+        <Icon name="heart-outline" size={28} color={colors.ink100} />
         <Text style={styles.emptyText}>
-          Aucun favori — ajoutez des prestataires depuis leur profil
+          Aucun favori — ajoute des pros depuis leur profil
         </Text>
       </View>
     );
@@ -28,7 +27,7 @@ export default function FavoritesSection({ favorites, onPress, onRemove }) {
   const handleLongPress = (provider) => {
     Alert.alert(
       "Retirer des favoris ?",
-      `Retirer ${provider.displayName} de vos favoris ?`,
+      `Retirer ${provider.displayName} de tes favoris ?`,
       [
         { text: "Annuler", style: "cancel" },
         {
@@ -92,11 +91,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarText: { fontSize: 15, fontWeight: "800", color: "#fff" },
+  avatarText: { fontSize: 15, fontFamily: fonts.extraBold, color: colors.textInverse },
   name: {
     fontSize: 10,
-    fontWeight: "600",
-    color: "#555",
+    fontFamily: fonts.semiBold,
+    color: colors.ink500,
     textAlign: "center",
     width: 52,
   },
@@ -109,7 +108,8 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 12,
-    color: "#AAB0B7",
+    fontFamily: fonts.medium,
+    color: colors.ink300,
     flex: 1,
     lineHeight: 18,
   },

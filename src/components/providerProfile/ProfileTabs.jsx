@@ -2,7 +2,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { colors } from "../../theme";
+import { colors, fonts } from "../../theme";
 
 const TABS = [
   { id: "profile", label: "Profil" },
@@ -39,16 +39,17 @@ export default function ProfileTabs({ activeTab, reviewCount, onTabChange }) {
 
 const styles = StyleSheet.create({
   wrap: {
-    backgroundColor: "#F4F6F5",
+    backgroundColor: colors.background,
     paddingHorizontal: 12,
     paddingTop: 10,
+    paddingBottom: 6,
   },
   container: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#EEF0EF",
+    borderColor: colors.borderLight,
     padding: 4,
   },
   tab: {
@@ -57,7 +58,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 12,
   },
-  tabActive: { backgroundColor: "#F0FAF6" },
-  tabText: { fontSize: 12, fontWeight: "700", color: "#AAB0B7" },
+  tabActive: { backgroundColor: colors.primarySoft },
+  tabText: { fontSize: 12, fontFamily: fonts.bold, color: colors.ink300 },
   tabTextActive: { color: colors.primary },
 });

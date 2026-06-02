@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, Animated, StyleSheet, SafeAreaView } from "react-native";
+import { View, Animated, StyleSheet } from "react-native";
 import { colors, radius } from "../../theme";
 
 /**
@@ -50,16 +50,22 @@ export default function Skeleton({ width, height, circle, size, radius: r, style
  */
 export function SkeletonCard({ style }) {
   return (
-    <View style={[s.card, style]}>
-      <View style={s.cardRow}>
-        <Skeleton circle size={48} />
-        <View style={s.cardLines}>
-          <Skeleton width={140} height={14} />
-          <Skeleton width={90} height={11} />
+    <View style={[s.cardWrap, style]}>
+      <View style={s.card}>
+        {/* Avatar */}
+        <Skeleton width={54} height={54} radius={18} />
+        {/* Body */}
+        <View style={s.cardBody}>
+          <Skeleton width={130} height={14} radius={6} />
+          <Skeleton width={170} height={11} radius={5} />
+          <View style={s.cardFooterRow}>
+            <Skeleton width={60} height={20} radius={6} />
+            <Skeleton width={80} height={20} radius={6} />
+          </View>
         </View>
+        {/* Chevron */}
+        <Skeleton width={16} height={16} radius={4} />
       </View>
-      <Skeleton width="100%" height={12} style={{ marginTop: 14 }} />
-      <Skeleton width="70%" height={12} style={{ marginTop: 6 }} />
     </View>
   );
 }
@@ -68,7 +74,7 @@ export function SkeletonList({ count = 3, style }) {
   return (
     <View style={style}>
       {Array.from({ length: count }).map((_, i) => (
-        <SkeletonCard key={i} style={{ marginBottom: 12 }} />
+        <SkeletonCard key={i} />
       ))}
     </View>
   );
@@ -125,63 +131,33 @@ export function SkeletonChatBubbles() {
 }
 
 /**
- * Skeleton sur fond sombre (headers dark) — shimmer blanc translucide
- */
-function DarkSkeleton({ width, height, circle, size, radius: r, style }) {
-  const shimmer = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmer, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(shimmer, { toValue: 0, duration: 900, useNativeDriver: true }),
-      ])
-    ).start();
-  }, [shimmer]);
-  const opacity = shimmer.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.35] });
-  const w = circle ? size || 48 : width || "100%";
-  const h = circle ? size || 48 : height || 16;
-  const br = circle ? (size || 48) / 2 : r !== undefined ? r : radius.sm;
-  return (
-    <Animated.View style={[{ width: w, height: h, borderRadius: br, backgroundColor: "#fff", opacity }, style]} />
-  );
-}
-
-/**
- * Skeleton profil propre (client & prestataire) — fond sombre
- * Reproduit : titre + avatar 64px + nom/infos + barre stats + blocs menu
+ * Skeleton profil propre (client & prestataire)
+ * Affiché sous la topBar fixe — ne contient que le body (avatar + stats + menu)
  */
 export function SkeletonProfileOwn({ statCount = 3 }) {
   return (
-    <View style={s.profileRoot}>
-      {/* Header sombre — SafeAreaView pour respecter le notch */}
-      <SafeAreaView style={s.profileSafe}>
-      <View style={s.profileHeader}>
-        {/* Titre + settings */}
-        <View style={s.profileTopRow}>
-          <DarkSkeleton width={120} height={20} radius={8} />
-          <DarkSkeleton width={40} height={40} radius={12} />
-        </View>
-        {/* Avatar + infos */}
+    <View style={s.profileBodyFull}>
+      {/* Header body (avatar + infos + stats) */}
+      <View style={s.profileHeaderBody}>
         <View style={s.profileAvatarRow}>
-          <DarkSkeleton width={64} height={64} radius={20} />
+          <Skeleton width={64} height={64} radius={20} />
           <View style={s.profileInfoLines}>
-            <DarkSkeleton width={140} height={16} radius={8} />
-            <DarkSkeleton width={110} height={11} radius={6} />
-            <DarkSkeleton width={80} height={11} radius={6} />
+            <Skeleton width={140} height={16} radius={8} />
+            <Skeleton width={110} height={11} radius={6} />
+            <Skeleton width={80} height={11} radius={6} />
           </View>
         </View>
-        {/* Stats */}
         <View style={s.profileStatsBar}>
           {Array.from({ length: statCount }).map((_, i) => (
             <View key={i} style={s.profileStatItem}>
-              <DarkSkeleton width={32} height={14} radius={6} />
-              <DarkSkeleton width={44} height={8} radius={4} />
+              <Skeleton width={32} height={14} radius={6} />
+              <Skeleton width={44} height={8} radius={4} />
             </View>
           ))}
         </View>
       </View>
-      </SafeAreaView>
-      {/* Body — blocs menu en clair */}
+
+      {/* Blocs menu */}
       <View style={s.profileBody}>
         {[0, 1, 2].map((i) => (
           <View key={i} style={s.profileMenuBlock}>
@@ -203,53 +179,43 @@ export function SkeletonProfileOwn({ statCount = 3 }) {
 }
 
 /**
- * Skeleton profil public prestataire — fond sombre
- * Reproduit : back + actions + avatar + nom + CTA + stats + tabs + contenu
+ * Skeleton profil public prestataire
+ * Affiché sous la topBar fixe — ne contient que le body (avatar + CTA + stats + tabs + contenu)
  */
 export function SkeletonProfilePublic() {
   return (
-    <View style={s.profileRoot}>
-      {/* Header sombre — SafeAreaView pour respecter le notch */}
-      <SafeAreaView style={s.profileSafe}>
-      <View style={s.profileHeader}>
-        {/* Back + actions */}
-        <View style={s.profileTopRow}>
-          <DarkSkeleton width={40} height={40} radius={12} />
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <DarkSkeleton width={40} height={40} radius={12} />
-            <DarkSkeleton width={40} height={40} radius={12} />
-            <DarkSkeleton width={40} height={40} radius={12} />
-          </View>
-        </View>
-        {/* Avatar + infos */}
+    <View style={s.profileBodyFull}>
+      {/* Header body (avatar + infos + CTA + stats) */}
+      <View style={s.profileHeaderBody}>
         <View style={s.profileAvatarRow}>
-          <DarkSkeleton width={64} height={64} radius={20} />
+          <Skeleton width={64} height={64} radius={20} />
           <View style={s.profileInfoLines}>
-            <DarkSkeleton width={150} height={16} radius={8} />
-            <DarkSkeleton width={180} height={11} radius={6} />
-            <DarkSkeleton width={100} height={11} radius={6} />
+            <Skeleton width={150} height={16} radius={8} />
+            <Skeleton width={180} height={11} radius={6} />
+            <Skeleton width={100} height={11} radius={6} />
           </View>
         </View>
         {/* CTA */}
-        <DarkSkeleton width="100%" height={44} radius={13} />
+        <Skeleton width="100%" height={44} radius={13} />
         {/* Stats */}
         <View style={s.profileStatsBar}>
           {[0, 1, 2, 3].map((i) => (
             <View key={i} style={s.profileStatItem}>
-              <DarkSkeleton width={32} height={14} radius={6} />
-              <DarkSkeleton width={44} height={8} radius={4} />
+              <Skeleton width={32} height={14} radius={6} />
+              <Skeleton width={44} height={8} radius={4} />
             </View>
           ))}
         </View>
       </View>
-      </SafeAreaView>
+
       {/* Tabs placeholder */}
       <View style={s.profileTabsRow}>
         <Skeleton width={70} height={12} radius={6} />
         <Skeleton width={70} height={12} radius={6} />
         <Skeleton width={70} height={12} radius={6} />
       </View>
-      {/* Body */}
+
+      {/* Body content */}
       <View style={s.profileBody}>
         {[0, 1, 2].map((i) => (
           <View key={i} style={s.profileMenuBlock}>
@@ -268,16 +234,92 @@ export function SkeletonProfilePublic() {
   );
 }
 
+/**
+ * Skeleton pour la page d'accueil prestataire (HomeProviderScreen)
+ * Reproduit : toggle dispo + grille 2×2 stats + 2 request cards
+ */
+export function SkeletonProviderHome() {
+  return (
+    <View style={s.providerHome}>
+      {/* Toggle disponibilité */}
+      <View style={s.phToggle}>
+        <View style={s.phToggleLines}>
+          <Skeleton width={150} height={14} radius={6} />
+          <Skeleton width={220} height={10} radius={5} />
+        </View>
+        <Skeleton width={48} height={28} radius={14} />
+      </View>
+
+      {/* Grille stats 2×2 */}
+      <View style={s.phStatsGrid}>
+        {[0, 1, 2, 3].map((i) => (
+          <View key={i} style={s.phStatCard}>
+            <Skeleton width={36} height={36} radius={10} />
+            <Skeleton width={40} height={20} radius={6} style={{ marginTop: 6 }} />
+            <Skeleton width={70} height={8} radius={4} style={{ marginTop: 4 }} />
+          </View>
+        ))}
+      </View>
+
+      {/* Section titre */}
+      <View style={s.phSectionHeader}>
+        <Skeleton width={140} height={14} radius={6} />
+        <Skeleton width={20} height={20} radius={10} />
+      </View>
+
+      {/* Request card skeleton 1 */}
+      <View style={s.phRequestCard}>
+        <View style={s.phRequestTop}>
+          <Skeleton width={40} height={40} radius={12} />
+          <View style={s.phRequestInfo}>
+            <Skeleton width={110} height={13} radius={6} />
+            <Skeleton width={150} height={10} radius={5} />
+          </View>
+          <Skeleton width={50} height={20} radius={10} />
+        </View>
+        <Skeleton width={100} height={22} radius={11} />
+        <Skeleton width="100%" height={36} radius={8} />
+        <View style={s.phRequestActions}>
+          <Skeleton width="48%" height={40} radius={11} />
+          <Skeleton width="48%" height={40} radius={11} />
+        </View>
+      </View>
+
+      {/* Request card skeleton 2 */}
+      <View style={s.phRequestCard}>
+        <View style={s.phRequestTop}>
+          <Skeleton width={40} height={40} radius={12} />
+          <View style={s.phRequestInfo}>
+            <Skeleton width={90} height={13} radius={6} />
+            <Skeleton width={130} height={10} radius={5} />
+          </View>
+          <Skeleton width={50} height={20} radius={10} />
+        </View>
+        <Skeleton width={120} height={22} radius={11} />
+        <Skeleton width="100%" height={36} radius={8} />
+        <View style={s.phRequestActions}>
+          <Skeleton width="48%" height={40} radius={11} />
+          <Skeleton width="48%" height={40} radius={11} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
+  cardWrap: { paddingHorizontal: 20, marginBottom: 8 },
   card: {
     backgroundColor: colors.card,
-    borderRadius: radius.lg,
-    padding: 16,
+    borderRadius: radius.xl,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: colors.ink100,
   },
-  cardRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  cardLines: { flex: 1, gap: 8 },
+  cardBody: { flex: 1, gap: 6 },
+  cardFooterRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
   convRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -294,26 +336,22 @@ const s = StyleSheet.create({
     maxWidth: "75%",
   },
   // ── Profil skeletons ──
-  profileRoot: { flex: 1 },
-  profileSafe: { backgroundColor: colors.headerBg },
-  profileHeader: {
-    backgroundColor: colors.headerBg,
+  profileBodyFull: { flex: 1, backgroundColor: colors.background },
+  profileHeaderBody: {
+    backgroundColor: colors.background,
     paddingHorizontal: 16,
     paddingBottom: 16,
     paddingTop: 10,
     gap: 14,
   },
-  profileTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
   profileAvatarRow: { flexDirection: "row", alignItems: "center", gap: 14 },
   profileInfoLines: { flex: 1, gap: 8 },
   profileStatsBar: {
     flexDirection: "row",
-    backgroundColor: "rgba(29,158,117,0.18)",
+    backgroundColor: colors.primarySoft,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.green200,
     overflow: "hidden",
     paddingVertical: 10,
   },
@@ -322,13 +360,11 @@ const s = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     paddingVertical: 14,
-    backgroundColor: "#F4F6F5",
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderLight,
+    backgroundColor: colors.background,
   },
-  profileBody: { backgroundColor: "#F4F6F5", padding: 12, gap: 14, flex: 1 },
+  profileBody: { backgroundColor: colors.background, padding: 12, gap: 14, flex: 1 },
   profileMenuBlock: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.card,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
@@ -341,4 +377,43 @@ const s = StyleSheet.create({
     paddingVertical: 8,
   },
   profileMenuLines: { flex: 1, gap: 6 },
+  // ── Provider Home skeleton ──
+  providerHome: { padding: 16, gap: 16 },
+  phToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.ink50,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.ink100,
+  },
+  phToggleLines: { flex: 1, gap: 6 },
+  phStatsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  phStatCard: {
+    width: "47.5%",
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.ink100,
+  },
+  phSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  phRequestCard: {
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: colors.ink100,
+  },
+  phRequestTop: { flexDirection: "row", alignItems: "center", gap: 10 },
+  phRequestInfo: { flex: 1, gap: 5 },
+  phRequestActions: { flexDirection: "row", justifyContent: "space-between" },
 });

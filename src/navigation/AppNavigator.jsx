@@ -12,7 +12,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { supabase } from "../config/supabase";
 import { useNotifications } from "../hooks/useNotifications";
 import { useUnreadCount } from "../hooks/useUnreadCount";
-import { colors } from "../theme";
+import { colors, fonts } from "../theme";
 import ClientTabNavigator from "./ClientTabNavigator";
 import ProviderTabNavigator from "./ProviderTabNavigator";
 
@@ -140,6 +140,6 @@ const styles = StyleSheet.create({
   loadingText: {
     color: colors.headerSubtext,
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: fonts.semiBold,
   },
 });

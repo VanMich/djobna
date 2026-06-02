@@ -1,23 +1,11 @@
-// src/components/homeProvider/AvailabilityToggle.js
+// src/components/homeProvider/AvailabilityToggle.jsx
 import React, { useRef, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-} from "react-native";
-import { colors } from "../../theme";
+import { View, Text, TouchableOpacity, StyleSheet, Animated } from "react-native";
+import { colors, fonts } from "../../theme";
 
-export default function AvailabilityToggle({
-  isAvailable,
-  onToggle,
-  requestCount,
-}) {
-  // Animation du thumb du toggle
+export default function AvailabilityToggle({ isAvailable, onToggle, requestCount }) {
   const thumbAnim = useRef(new Animated.Value(isAvailable ? 1 : 0)).current;
 
-  // Sync animation quand isAvailable change de l'extérieur (Realtime, etc.)
   useEffect(() => {
     Animated.spring(thumbAnim, {
       toValue: isAvailable ? 1 : 0,
@@ -27,28 +15,21 @@ export default function AvailabilityToggle({
     }).start();
   }, [isAvailable]);
 
-  const handleToggle = () => {
-    const newValue = !isAvailable;
-    onToggle(newValue);
-  };
-
-  // Interpolations pour l'animation
   const thumbTranslateX = thumbAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [3, 23],
   });
   const trackColor = thumbAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ["rgba(255,255,255,0.2)", colors.primary],
+    outputRange: [colors.ink100, colors.primary],
   });
 
   return (
     <TouchableOpacity
       style={[styles.container, !isAvailable && styles.containerOff]}
-      onPress={handleToggle}
+      onPress={() => onToggle(!isAvailable)}
       activeOpacity={0.9}
     >
-      {/* Texte et sous-titre */}
       <View style={styles.textBlock}>
         <Text style={[styles.label, !isAvailable && styles.labelOff]}>
           {isAvailable ? "Je suis disponible" : "Je suis hors ligne"}
@@ -58,17 +39,13 @@ export default function AvailabilityToggle({
             ? requestCount > 0
               ? `Visible sur la carte · ${requestCount} nouvelle${requestCount > 1 ? "s" : ""} demande${requestCount > 1 ? "s" : ""}`
               : "Visible sur la carte · En attente de demandes"
-            : "Non visible · Aucune nouvelle demande"}
+            : "Non visible · Active pour recevoir des demandes"}
         </Text>
       </View>
 
-      {/* Toggle animé */}
       <Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
         <Animated.View
-          style={[
-            styles.thumb,
-            { transform: [{ translateX: thumbTranslateX }] },
-          ]}
+          style={[styles.thumb, { transform: [{ translateX: thumbTranslateX }] }]}
         />
       </Animated.View>
     </TouchableOpacity>
@@ -80,42 +57,36 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(255,255,255,.08)",
-    borderRadius: 12,
-    padding: 12,
+    backgroundColor: colors.primarySoft,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,.06)",
+    borderColor: colors.green200,
   },
   containerOff: {
-    backgroundColor: "rgba(255,255,255,.04)",
-    borderColor: "rgba(255,255,255,.03)",
+    backgroundColor: colors.ink50,
+    borderColor: colors.ink100,
   },
   textBlock: { flex: 1, gap: 3 },
-  label: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#fff",
-  },
-  labelOff: { color: "rgba(255,255,255,.4)" },
-  sublabel: { fontSize: 10, color: "#9FE1CB" },
-  sublabelOff: { color: "rgba(255,255,255,.25)" },
-
+  label: { fontSize: 14, fontFamily: fonts.bold, color: colors.ink900 },
+  labelOff: { color: colors.ink500 },
+  sublabel: { fontSize: 11, fontFamily: fonts.medium, color: colors.primary },
+  sublabelOff: { color: colors.ink300 },
   track: {
-    width: 46,
-    height: 26,
-    borderRadius: 13,
+    width: 48,
+    height: 28,
+    borderRadius: 14,
     flexShrink: 0,
     marginLeft: 12,
     justifyContent: "center",
   },
   thumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: "#fff",
-    // Ombre pour le thumb
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.card,
     shadowColor: "#000",
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
     elevation: 3,
